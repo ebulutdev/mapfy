@@ -1,0 +1,99 @@
+[
+    {
+        "name": "İstanbul",
+        "population": 15519267,
+        "area": 5461,
+        "description": "Türkiye'nin en kalabalık şehri ve kültürel başkenti."
+    },
+    {
+        "name": "Ankara",
+        "population": 5663322,
+        "area": 25632,
+        "description": "Türkiye'nin başkenti ve ikinci en kalabalık şehri."
+    },
+    {
+        "name": "İzmir",
+        "population": 4427897,
+        "area": 11873,
+        "description": "Ege Bölgesi'nin en büyük şehri."
+    },
+    {
+        "name": "Bursa",
+        "population": 3056572,
+        "area": 10899,
+        "description": "Osmanlı'nın ilk başkenti."
+    },
+    {
+        "name": "Antalya",
+        "population": 2548308,
+        "area": 20791,
+        "description": "Türkiye'nin en önemli turizm merkezi."
+    },
+    {
+        "name": "Adana",
+        "population": 2274107,
+        "area": 14030,
+        "description": "Çukurova'nın merkezi."
+    },
+    {
+        "name": "Konya",
+        "population": 2274107,
+        "area": 40813,
+        "description": "Mevlana'nın şehri."
+    },
+    {
+        "name": "Gaziantep",
+        "population": 2106184,
+        "area": 6841,
+        "description": "Güneydoğu Anadolu'nun önemli şehri."
+    },
+    {
+        "name": "Trabzon",
+        "population": 811901,
+        "area": 4685,
+        "description": "Karadeniz'in incisi."
+    },
+    {
+        "name": "Samsun",
+        "population": 1362859,
+        "area": 9579,
+        "description": "Atatürk'ün 19 Mayıs'ta geldiği şehir."
+    },
+    {
+        "name": "Kıbrıs",
+        "population": 326000,
+        "area": 9251,
+        "description": "Akdeniz'deki stratejik ada."
+    },
+    {
+        "name": "Eskişehir",
+        "population": 898369,
+        "area": 13852,
+        "description": "Üniversite şehri."
+    },
+    {
+        "name": "Kayseri",
+        "population": 1425678,
+        "area": 17109,
+        "description": "Erciyes Dağı ile ünlü şehir."
+    },
+    {
+        "name": "Muğla",
+        "population": 1024100,
+        "area": 13338,
+        "description": "Ege ve Akdeniz kıyıları ile ünlü."
+    },
+    {
+        "name": "Denizli",
+        "population": 1058156,
+        "area": 11868,
+        "description": "Pamukkale ile ünlü şehir."
+    },
+    {
+        "name": "Mardin",
+        "population": 854716,
+        "area": 8889,
+        "description": "Tarihi taş evleri ile ünlü şehir."
+    }
+]
+

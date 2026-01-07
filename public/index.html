@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#FFFC00">
+    <title>Mapfy - Türkiye Haritası</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">MAPFY</h1>
+                <div class="subtitle">Türkiye Haritası</div>
+            </div>
+            <div class="controls-info">
+                <span class="info-text">👆 Sürükle • 🔍 Zoom • 🖱️ Tıkla</span>
+            </div>
+        </header>
+
+        <!-- Map Container -->
+        <div id="map-container" class="map-container">
+            <svg id="svg-turkey" viewBox="0 0 1005 490" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                <!-- SVG içeriği JavaScript ile yüklenecek -->
+            </svg>
+            
+            <!-- Zoom Controls -->
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-in" title="Yakınlaştır">+</button>
+                <button class="zoom-btn" id="zoom-out" title="Uzaklaştır">−</button>
+                <button class="zoom-btn" id="reset-zoom" title="Sıfırla">⌂</button>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading">Harita yükleniyor...</div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
