@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 -- Eğer tablo zaten varsa, yeni sütunları ekle
 ALTER TABLE profiles 
+  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS snapchat_username VARCHAR(255),
   ADD COLUMN IF NOT EXISTS instagram_username VARCHAR(255),
   ADD COLUMN IF NOT EXISTS facebook_username VARCHAR(255),
@@ -52,9 +53,13 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS district VARCHAR(100),
   ADD COLUMN IF NOT EXISTS gender VARCHAR(10);
 
+-- user_id için unique constraint ekle (bir kullanıcı sadece bir profil)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id) WHERE user_id IS NOT NULL;
+
 -- Index ekle (performans için) - eğer yoksa
 CREATE INDEX IF NOT EXISTS idx_profiles_city ON profiles(city_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_created ON profiles(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
 
 -- Row Level Security (RLS) ayarla
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -148,11 +153,137 @@ npm install @supabase/supabase-js
 
 `public/supabase-config.js` dosyası oluşturuldu (aşağıda kod var)
 
-## 7. HTML'e Supabase Script Ekleme
+## 7. Google OAuth Ayarları
+
+### Adım 1: Google Cloud Console'da OAuth Credentials Oluşturma
+
+1. **Google Cloud Console**'a git: https://console.cloud.google.com
+2. Yeni bir proje oluştur veya mevcut projeyi seç
+3. **APIs & Services** → **Credentials** menüsüne git
+4. **+ CREATE CREDENTIALS** → **OAuth client ID** seç
+5. Eğer ilk kez OAuth kullanıyorsan, **Configure Consent Screen** ekranı çıkacak:
+   - **User Type**: **External** seç → **Create**
+   - **App name**: `Mapfy` (veya istediğin isim)
+   - **User support email**: Kendi email'ini seç
+   - **Developer contact information**: Email'ini gir
+   - **Save and Continue** → **Save and Continue** (Scopes için) → **Save and Continue** (Test users için) → **Back to Dashboard**
+6. **Credentials** sayfasına geri dön
+7. **+ CREATE CREDENTIALS** → **OAuth client ID**
+8. **Application type**: **Web application** seç
+9. **Name**: `Mapfy Web Client` (veya istediğin isim)
+10. **Authorized redirect URIs** bölümüne şu URI'leri ekle (her birini ayrı ayrı):
+    ```
+    https://zwlyucqzjnqtrcztzhcs.supabase.co/auth/v1/callback
+    http://localhost:3000
+    http://localhost:5173
+    http://localhost:8080
+    http://127.0.0.1:3000
+    http://127.0.0.1:5173
+    http://127.0.0.1:8080
+    ```
+    ⚠️ **ÖNEMLİ**: Eğer canlı bir domain kullanıyorsan (örn: `https://mapfy.vercel.app`), onu da ekle:
+    ```
+    https://mapfy.vercel.app
+    ```
+11. **Create** butonuna tıkla
+12. **Client ID** ve **Client Secret** değerlerini kopyala (bir daha gösterilmeyecek!)
+
+### Adım 2: Supabase'de Google Provider'ı Aktif Etme
+
+1. Supabase Dashboard'a git: https://supabase.com/dashboard
+2. Projeni seç
+3. Sol menüden **Authentication** → **Providers** seç
+4. **Google** provider'ını bul
+5. **Enable Google** toggle'ını aç
+6. Kopyaladığın **Client ID** ve **Client Secret** değerlerini yapıştır:
+   - **Client ID (for OAuth)**: Google'dan aldığın Client ID
+   - **Client Secret (for OAuth)**: Google'dan aldığın Client Secret
+7. **Redirect URL** bölümünü kontrol et - şu URL görünmeli:
+   ```
+   https://zwlyucqzjnqtrcztzhcs.supabase.co/auth/v1/callback
+   ```
+   ⚠️ **ÖNEMLİ**: Bu URL'yi kopyala ve Google Cloud Console'a ekle (yukarıdaki Adım 1, madde 10)
+8. **Save** butonuna tıkla
+
+### ❌ Hata: redirect_uri_mismatch Çözümü
+
+Eğer "redirect_uri_mismatch" hatası alıyorsan, şu adımları takip et:
+
+1. **Google Cloud Console**'a git: https://console.cloud.google.com
+2. **APIs & Services** → **Credentials** menüsüne git
+3. OAuth 2.0 Client ID'ni bul ve **düzenle** (kalem ikonuna tıkla)
+4. **Authorized redirect URIs** bölümüne şunu **tam olarak** ekle:
+   ```
+   https://zwlyucqzjnqtrcztzhcs.supabase.co/auth/v1/callback
+   ```
+5. **SAVE** butonuna tıkla
+6. **5-10 dakika bekle** (Google'ın değişiklikleri yayınlaması için)
+7. Tarayıcıyı **tamamen kapat** ve tekrar aç
+8. Tekrar dene
+
+⚠️ **Dikkat Edilmesi Gerekenler**: 
+- URI'yi **tam olarak** kopyala-yapıştır yap (boşluk, büyük/küçük harf önemli)
+- `http://` değil, mutlaka `https://` kullan
+- Sonunda `/` (slash) olmamalı
+- Değişikliklerin yayınlanması 5-10 dakika sürebilir
+- Eğer hala çalışmazsa, tarayıcı cache'ini temizle (Ctrl+Shift+Delete)
+
+### ✅ Test Etme
+
+1. Tarayıcıda siteni aç
+2. Artı (+) butonuna tıkla
+3. "Google ile Giriş Yap" butonuna tıkla
+4. Google hesabını seç
+5. İzinleri onayla
+6. Başarıyla giriş yapıldıysa, navbar'da profil avatar'ın görünmeli
+
+## 8. HTML'e Supabase Script Ekleme
 
 `index.html` dosyasına ekle (app.js'den önce):
 ```html
 <script type="module" src="supabase-client.js"></script>
+```
+
+## 9. Row Level Security (RLS) Politikalarını Güncelleme
+
+Kullanıcıların sadece kendi profillerini güncelleyebilmesi için RLS politikalarını güncelle:
+
+```sql
+-- 1. INSERT: Önce varsa eskini sil, sonra yenisini oluştur
+DROP POLICY IF EXISTS "Anyone can insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Authenticated users can insert profiles" ON profiles;
+
+CREATE POLICY "Authenticated users can insert profiles"
+  ON profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- 2. UPDATE: Önce varsa eskini sil, sonra yenisini oluştur
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- 3. DELETE: Önce varsa eskini sil, sonra yenisini oluştur
+DROP POLICY IF EXISTS "Users can delete own profile" ON profiles;
+-- Eski, güvensiz "herkes silebilir" kuralı varsa onu da temizle
+DROP POLICY IF EXISTS "Anyone can delete profiles" ON profiles;
+
+CREATE POLICY "Users can delete own profile"
+  ON profiles FOR DELETE
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- 4. SELECT: Herkes profilleri okuyabilir (mevcut policy korunuyor)
+-- Eğer SELECT policy yoksa, aşağıdakini ekle:
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+
+CREATE POLICY "Public profiles are viewable by everyone"
+  ON profiles FOR SELECT
+  USING (true);
 ```
 
 ## Önemli Notlar:
@@ -164,8 +295,14 @@ npm install @supabase/supabase-js
 
 🔒 **Row Level Security:**
 - Şu anda herkes profil ekleyip silebilir
-- İstersen authentication ekleyebilirsin (auth kullanıcıları sadece kendi profillerini silebilir)
+- Yukarıdaki RLS politikalarını uygulayarak, kullanıcılar sadece kendi profillerini yönetebilir
 
 📦 **Storage Limitleri:**
 - Free tier: 1GB storage
 - Her görseli optimize et (max 500KB önerilir)
+
+🔐 **Google OAuth:**
+- **Redirect URI**: `https://zwlyucqzjnqtrcztzhcs.supabase.co/auth/v1/callback`
+- Bu URL'yi Google Cloud Console'da mutlaka ekle
+- Test modunda sadece eklediğin test kullanıcıları giriş yapabilir
+- Production için OAuth consent screen'i yayınla

@@ -803,11 +803,11 @@ body {
 
 .modal-title {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 600;
     color: #3ECF8E;
     margin-bottom: 18px;
     text-align: center;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 .modal-body {
@@ -825,9 +825,9 @@ body {
 
 .form-label {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     color: rgba(255, 255, 255, 0.9);
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
 }
 
 .form-input {
@@ -948,6 +948,64 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
+/* Gender Toggle (Modal içinde) */
+.gender-toggle {
+    display: flex;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.gender-toggle .gender-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 80px;
+}
+
+.gender-toggle .gender-btn:hover {
+    background: rgba(62, 207, 142, 0.1);
+    border-color: rgba(62, 207, 142, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+}
+
+.gender-toggle .gender-btn.active {
+    background: linear-gradient(135deg, rgba(62, 207, 142, 0.2) 0%, rgba(62, 207, 142, 0.1) 100%);
+    border-color: #3ECF8E;
+    color: #3ECF8E;
+    box-shadow: 0 4px 15px rgba(62, 207, 142, 0.2);
+}
+
+.gender-toggle .gender-btn.active .gender-icon {
+    stroke: #3ECF8E;
+    transform: scale(1.1);
+}
+
+.gender-icon {
+    width: 32px;
+    height: 32px;
+    stroke: currentColor;
+    transition: all 0.3s ease;
+}
+
+.gender-toggle .gender-btn:hover .gender-icon {
+    transform: scale(1.05);
+}
+
 /* City Suggestions */
 .city-suggestions {
     position: absolute;
@@ -1008,7 +1066,7 @@ body {
     padding: 14px 24px;
     border-radius: 10px;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: 'Inter', sans-serif;
@@ -1790,6 +1848,441 @@ body {
     
     .results-grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+}
+
+/* ==================== AUTH MODAL ==================== */
+.auth-modal-content {
+    max-width: 400px;
+    text-align: center;
+}
+
+.auth-subtitle {
+    color: #999;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.auth-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 20px;
+    background: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-google:hover {
+    background: #f5f5f5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-google:active {
+    transform: scale(0.98);
+}
+
+.btn-google svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* User Profile Dropdown */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+}
+
+.nav-item.dropdown .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Edit Profile Modal */
+.btn-danger {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 12px;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.btn-danger:active {
+    transform: scale(0.98);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #333;
+}
+
+.btn-secondary {
+    background: #333;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.btn-secondary:hover {
+    background: #444;
+}
+
+@media (max-width: 768px) {
+    .auth-modal-content {
+        max-width: 90%;
+    }
+    
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+    
+    .btn-secondary,
+    .btn-primary,
+    .btn-danger {
+        width: 100%;
+    }
+    
+    /* Profil Ayarları Modal - Mobil Optimizasyonu */
+    .modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        width: 100%;
+        max-height: 90vh;
+        border-radius: 20px 20px 0 0;
+        padding: 16px;
+        margin: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    
+    .modal-content::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    
+    .modal-close {
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 20px;
+    }
+    
+    .modal-title {
+        font-size: 16px;
+        font-weight: 500;
+        margin-bottom: 10px;
+        padding-right: 40px;
+        letter-spacing: 0.2px;
+    }
+    
+    .modal-body {
+        gap: 10px;
+    }
+    
+    .form-section {
+        gap: 5px;
+    }
+    
+    .form-label {
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 0.1px;
+    }
+    
+    .form-input {
+        padding: 10px 12px;
+        font-size: 13px;
+        font-weight: 400;
+        border-radius: 8px;
+        min-height: 42px; /* Touch target */
+    }
+    
+    /* Fotoğraf Yükleme Alanı */
+    .photo-upload-area {
+        min-height: 100px;
+        padding: 10px;
+    }
+    
+    .upload-icon {
+        font-size: 28px;
+    }
+    
+    .upload-text {
+        font-size: 12px;
+        font-weight: 400;
+    }
+    
+    /* Cinsiyet Butonları */
+    .gender-toggle-group {
+        gap: 6px;
+    }
+    
+    .gender-toggle {
+        gap: 6px;
+        padding: 2px;
+    }
+    
+    .gender-toggle .gender-btn {
+        padding: 10px 12px;
+        font-size: 12px;
+        font-weight: 400;
+        min-height: 65px;
+        gap: 5px;
+    }
+    
+    .gender-icon {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .gender-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 400;
+        min-height: 42px;
+        border-radius: 8px;
+    }
+    
+    /* Sosyal Medya Input'ları - Mobilde Tek Kolon */
+    .social-inputs {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .social-input-group {
+        margin-bottom: 0;
+    }
+    
+    .social-label {
+        font-size: 11px;
+        font-weight: 400;
+        margin-bottom: 5px;
+    }
+    
+    .social-icon {
+        width: 16px;
+        height: 16px;
+    }
+    
+    /* Modal Actions */
+    .modal-actions {
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+    }
+    
+    .btn-secondary,
+    .btn-primary {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 400;
+        min-height: 42px;
+        border-radius: 8px;
+    }
+    
+    .btn-danger {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 400;
+        min-height: 42px;
+        margin-top: 6px;
+        border-radius: 8px;
+    }
+    
+    /* Crop Butonları */
+    .crop-btn {
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 400;
+        min-height: 40px;
+    }
+    
+    /* Modal Close */
+    .modal-close {
+        width: 28px;
+        height: 28px;
+        font-size: 18px;
+    }
+    
+    /* Crop Controls */
+    .crop-controls {
+        gap: 8px;
+        padding: 10px;
+    }
+    
+    .crop-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        max-height: 95vh;
+        padding: 10px;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .modal-title {
+        font-size: 15px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        padding-right: 35px;
+    }
+    
+    .modal-body {
+        gap: 8px;
+    }
+    
+    .form-section {
+        gap: 4px;
+    }
+    
+    .form-label {
+        font-size: 10px;
+        font-weight: 400;
+    }
+    
+    .form-input {
+        padding: 9px 11px;
+        font-size: 12px;
+        font-weight: 400;
+        min-height: 40px;
+    }
+    
+    .photo-upload-area {
+        min-height: 90px;
+        padding: 8px;
+    }
+    
+    .upload-icon {
+        font-size: 24px;
+    }
+    
+    .upload-text {
+        font-size: 11px;
+        font-weight: 400;
+    }
+    
+    .gender-toggle {
+        gap: 5px;
+        padding: 2px;
+    }
+    
+    .gender-toggle .gender-btn {
+        padding: 8px 10px;
+        font-size: 11px;
+        font-weight: 400;
+        min-height: 60px;
+        gap: 4px;
+    }
+    
+    .gender-icon {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .gender-btn {
+        padding: 7px 10px;
+        font-size: 11px;
+        font-weight: 400;
+        min-height: 38px;
+    }
+    
+    .social-label {
+        font-size: 10px;
+        font-weight: 400;
+    }
+    
+    .social-icon {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .modal-actions {
+        gap: 6px;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+    
+    .btn-secondary,
+    .btn-primary,
+    .btn-danger {
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 400;
+        min-height: 38px;
+    }
+    
+    .crop-btn {
+        padding: 7px 12px;
+        font-size: 11px;
+        font-weight: 400;
+        min-height: 38px;
+    }
+    
+    .modal-close {
+        width: 26px;
+        height: 26px;
+        font-size: 16px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .social-label {
+        font-size: 11px;
+    }
+    
+    .social-icon {
+        width: 16px;
+        height: 16px;
     }
 }
 

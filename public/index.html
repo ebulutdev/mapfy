@@ -55,7 +55,19 @@
                         </svg>
                         <span class="github-stars">12.5K</span>
                     </a>
-                    <button class="btn-dashboard">Dashboard</button>
+                    <!-- User Profile Dropdown -->
+                    <div class="nav-item dropdown" id="user-profile-dropdown" style="display: none;">
+                        <a href="#" class="nav-link" id="user-profile-link">
+                            <img id="user-avatar" src="" alt="Profil" class="user-avatar">
+                            <span id="user-name">Profil</span>
+                            <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a href="#" class="dropdown-item" id="edit-profile-btn">Profil Ayarları</a>
+                            <a href="#" class="dropdown-item" id="logout-btn">Çıkış Yap</a>
+                        </div>
+                    </div>
+                    <button class="btn-dashboard" id="login-btn" style="display: none;">Giriş Yap</button>
                 </div>
             </div>
         </header>
@@ -202,16 +214,16 @@
                         <label class="form-label">Cinsiyet</label>
                         <div class="gender-toggle">
                             <button type="button" class="gender-btn" data-gender="male" id="profile-gender-male">
-                                <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="10" cy="14" r="8"></circle>
-                                    <path d="M20 10l-6-6M14 10h6v-6"></path>
+                                <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="10" cy="14" r="7"></circle>
+                                    <path d="M18 8l-5-5M13 8h5V3"></path>
                                 </svg>
                                 Erkek
                             </button>
                             <button type="button" class="gender-btn" data-gender="female" id="profile-gender-female">
-                                <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="8" r="7"></circle>
-                                    <path d="M12 15v7M8 19h8"></path>
+                                <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="8" r="6"></circle>
+                                    <path d="M12 14v6M9 17h6"></path>
                                 </svg>
                                 Kız
                             </button>
@@ -300,6 +312,165 @@
                         <h4 class="section-title">Sosyal Medya</h4>
                         <div class="social-links" id="detail-social"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Gmail ile Giriş) -->
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div class="modal-content auth-modal-content">
+            <button class="modal-close" id="close-auth-modal">×</button>
+            <h2 class="modal-title">Giriş Yap</h2>
+            <p class="auth-subtitle">Profil oluşturmak için Gmail hesabınızla giriş yapın</p>
+            
+            <div class="auth-options">
+                <button id="google-signin-btn" class="btn-google">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Google ile Giriş Yap
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="close-edit-modal">×</button>
+            <h2 class="modal-title">Profil Ayarları</h2>
+            
+            <div class="modal-body">
+                <!-- Profile Photo Upload -->
+                <div class="form-section">
+                    <label class="form-label">Profil Fotoğrafı</label>
+                    <div class="photo-upload-area" id="edit-photo-upload-area">
+                        <input type="file" id="edit-photo-input" accept="image/*" class="hidden-input">
+                        <div class="upload-preview" id="edit-upload-preview">
+                            <img id="edit-current-photo" src="" alt="Mevcut Fotoğraf" style="display: none;">
+                            <span class="upload-icon">📷</span>
+                            <span class="upload-text">Fotoğraf Değiştir</span>
+                        </div>
+                        <canvas id="edit-crop-canvas" class="hidden"></canvas>
+                    </div>
+                    <div class="crop-controls hidden" id="edit-crop-controls">
+                        <button type="button" class="crop-btn" id="edit-crop-apply">Kırp</button>
+                        <button type="button" class="crop-btn secondary" id="edit-crop-cancel">İptal</button>
+                    </div>
+                </div>
+
+                <!-- Username -->
+                <div class="form-section">
+                    <label class="form-label">Kullanıcı Adı</label>
+                    <input type="text" id="edit-username-input" class="form-input" placeholder="Adınızı girin" maxlength="50">
+                </div>
+
+                <!-- City Selection -->
+                <div class="form-section">
+                    <label class="form-label">Şehir</label>
+                    <input type="text" id="edit-city-input" class="form-input" placeholder="Şehir seçin..." autocomplete="off">
+                    <div id="edit-city-suggestions" class="suggestions-dropdown hidden"></div>
+                </div>
+
+                <!-- District -->
+                <div class="form-section">
+                    <label class="form-label">İlçe</label>
+                    <input type="text" id="edit-district-input" class="form-input" placeholder="İlçe..." maxlength="100">
+                </div>
+
+                <!-- Age -->
+                <div class="form-section">
+                    <label class="form-label">Yaş</label>
+                    <input type="number" id="edit-age-input" class="form-input" placeholder="Yaşınız" min="18" max="99">
+                </div>
+
+                <!-- Gender -->
+                <div class="form-section">
+                    <label class="form-label">Cinsiyet</label>
+                    <div class="gender-toggle">
+                        <button id="edit-gender-male" class="gender-btn">
+                            <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="10" cy="14" r="7"></circle>
+                                <path d="M18 8l-5-5M13 8h5V3"></path>
+                            </svg>
+                            Erkek
+                        </button>
+                        <button id="edit-gender-female" class="gender-btn">
+                            <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="8" r="6"></circle>
+                                <path d="M12 14v6M9 17h6"></path>
+                            </svg>
+                            Kadın
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Social Media -->
+                <div class="form-section">
+                    <label class="form-label">Sosyal Medya Hesapları</label>
+                    <div class="social-inputs">
+                        <div class="social-input-group">
+                            <label class="social-label">
+                                <svg class="social-icon snapchat-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.003 1.83c-2.628 0-4.962 1.487-5.592 4.417-.052.269-.536.538-.85.492-.472-.047-1.155.223-1.206.852-.053.539.367 1.032.577 1.301.21.27.105.763-.105 1.167-.314.583-.943 1.526-.943 2.536 0 1.256 1.048 2.019 1.415 2.243.052.045.157.09.157.224 0 .179-.157.673-.996.852-1.625.314-1.258 2.288-.367 2.602.472.18 1.573-.224 2.831-.224 1.258 0 1.94.942 5.035.942 3.094 0 3.777-.942 5.035-.942 1.258 0 2.306.404 2.831.224.891-.314 1.206-2.288-.367-2.602-.839-.179-.996-.673-.996-.852 0-.134.105-.179.157-.224.367-.224 1.415-.987 1.415-2.243 0-1.01-.629-1.953-.943-2.536-.21-.404-.315-.897-.105-1.167.21-.269.629-.762.577-1.301-.052-.629-.734-.899-1.206-.852-.315.046-.798-.223-.85-.492-.63-2.93-2.964-4.417-5.592-4.417z"/>
+                                </svg>
+                                Snapchat
+                            </label>
+                            <input type="text" id="edit-snapchat-input" class="form-input" placeholder="Kullanıcı adı" maxlength="255">
+                        </div>
+
+                        <div class="social-input-group">
+                            <label class="social-label">
+                                <svg class="social-icon instagram-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                </svg>
+                                Instagram
+                            </label>
+                            <input type="text" id="edit-instagram-input" class="form-input" placeholder="Kullanıcı adı" maxlength="255">
+                        </div>
+
+                        <div class="social-input-group">
+                            <label class="social-label">
+                                <svg class="social-icon x-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                                X (Twitter)
+                            </label>
+                            <input type="text" id="edit-twitter-input" class="form-input" placeholder="@kullaniciadi" maxlength="255">
+                        </div>
+
+                        <div class="social-input-group">
+                            <label class="social-label">
+                                <svg class="social-icon facebook-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036c-2.148 0-2.971.956-2.971 3.594v.376h3.428l-.582 3.667h-2.846l-.009 7.977c6.109-.586 10.798-5.835 10.798-12.028a12.335 12.335 0 0 0-12.336-12.333 12.335 12.335 0 0 0-12.336 12.334c0 6.192 4.688 11.44 10.798 12.028z"/>
+                                </svg>
+                                Facebook
+                            </label>
+                            <input type="text" id="edit-facebook-input" class="form-input" placeholder="Profil linki" maxlength="255">
+                        </div>
+
+                        <div class="social-input-group">
+                            <label class="social-label">
+                                <svg class="social-icon pinterest-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.399.165-1.495-.69-2.433-2.864-2.433-4.607 0-3.77 2.748-7.229 7.93-7.229 4.173 0 6.91 2.978 6.91 6.898 0 4.113-2.595 7.42-6.199 7.42-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.367 18.62 0 12.017 0z"/>
+                                </svg>
+                                Pinterest
+                            </label>
+                            <input type="text" id="edit-pinterest-input" class="form-input" placeholder="Kullanıcı adı" maxlength="255">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancel-edit-btn">İptal</button>
+                    <button type="button" class="btn-primary" id="save-edit-btn">Kaydet</button>
+                    <button type="button" class="btn-danger" id="delete-profile-btn">Profili Sil</button>
                 </div>
             </div>
         </div>

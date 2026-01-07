@@ -87,11 +87,51 @@ const filterToggleIcon = document.getElementById('filter-toggle-icon');
 const profileGenderMaleBtn = document.getElementById('profile-gender-male');
 const profileGenderFemaleBtn = document.getElementById('profile-gender-female');
 
+// Auth elements (lazy loading - DOMContentLoaded'da set edilecek)
+let authModal, closeAuthModalBtn, googleSignInBtn, loginBtn;
+let userProfileDropdown, userProfileLink, userAvatar, userName, editProfileBtn, logoutBtn;
+let editProfileModal, closeEditModalBtn, cancelEditBtn, saveEditBtn, deleteProfileBtn;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadMap();
     setupEventListeners();
     setupModalListeners();
+    
+    // Auth elements - DOM yüklendikten sonra seç
+    authModal = document.getElementById('auth-modal');
+    closeAuthModalBtn = document.getElementById('close-auth-modal');
+    googleSignInBtn = document.getElementById('google-signin-btn');
+    loginBtn = document.getElementById('login-btn');
+    userProfileDropdown = document.getElementById('user-profile-dropdown');
+    userProfileLink = document.getElementById('user-profile-link');
+    userAvatar = document.getElementById('user-avatar');
+    userName = document.getElementById('user-name');
+    editProfileBtn = document.getElementById('edit-profile-btn');
+    logoutBtn = document.getElementById('logout-btn');
+    
+    // Edit profile elements
+    editProfileModal = document.getElementById('edit-profile-modal');
+    closeEditModalBtn = document.getElementById('close-edit-modal');
+    cancelEditBtn = document.getElementById('cancel-edit-btn');
+    saveEditBtn = document.getElementById('save-edit-btn');
+    deleteProfileBtn = document.getElementById('delete-profile-btn');
+    
+    // Setup auth and edit profile listeners
+    setupAuthListeners();
+    setupEditProfileListeners();
+    
+    // Check auth state
+    checkAuthState();
+    
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+            checkAuthState();
+        } else if (event === 'SIGNED_OUT') {
+            checkAuthState();
+        }
+    });
     
     // Initialize filter icon state
     if (filterSidebar && filterToggleIcon) {
@@ -577,9 +617,23 @@ function setupEventListeners() {
 
 // Modal Event Listeners
 function setupModalListeners() {
-    // Add profile button
+    // Add profile button - önce auth kontrolü yap
     if (addProfileBtn) {
-        addProfileBtn.addEventListener('click', openAddProfileModal);
+        addProfileBtn.addEventListener('click', async () => {
+            const user = await getCurrentUser();
+            if (!user) {
+                openAuthModal();
+            } else {
+                // Kullanıcının zaten profili var mı kontrol et
+                const hasProfile = await checkUserHasProfile(user.id);
+                if (hasProfile) {
+                    alert('Zaten bir profiliniz var. Profil ayarlarından düzenleyebilirsiniz.');
+                    openEditProfileModal();
+                } else {
+                    openAddProfileModal();
+                }
+            }
+        });
     }
     
     // Close modal buttons
@@ -1302,7 +1356,7 @@ function calculateSpiralPosition(index, center, bbox, pathElement) {
             attempts++;
             continue;
         }
-
+        
         // 2. KONTROL: Nokta tam olarak şehrin harita şekli (Path) içinde mi?
         // Bu, profillerin denize veya komşu şehre taşmasını engeller.
         const point = svg.createSVGPoint();
@@ -1316,8 +1370,8 @@ function calculateSpiralPosition(index, center, bbox, pathElement) {
             } else {
                 // Şehir dışında kaldı, açıyı değiştirip tekrar dene
                 currentAngle += 1; 
-                attempts++;
-            }
+        attempts++;
+    }
         } else {
             // isPointInFill yoksa sadece bbox kontrolü ile devam et
             isValidPosition = true;
@@ -1327,10 +1381,10 @@ function calculateSpiralPosition(index, center, bbox, pathElement) {
     // Eğer uygun yer bulunamazsa merkeze yakın rastgele bir yer ver
     if (!isValidPosition) {
         console.warn(`⚠ Spiral pozisyon bulunamadı (index: ${index}), merkeze yakın nokta kullanılıyor`);
-        return { 
+    return {
             x: center.x + (Math.random() - 0.5) * 20, 
             y: center.y + (Math.random() - 0.5) * 20 
-        };
+    };
     }
 
     return { x: finalX, y: finalY };
@@ -1619,10 +1673,23 @@ async function loadProfilesFromSupabase() {
 // Profil ekle (Supabase'e kaydet) - Updated with platforms
 async function saveProfileToSupabase(profile) {
     try {
+        // Kullanıcı ID'sini al
+        const user = await getCurrentUser();
+        if (!user) {
+            throw new Error('Kullanıcı giriş yapmamış');
+        }
+        
+        // Kullanıcının zaten profili var mı kontrol et
+        const hasProfile = await checkUserHasProfile(user.id);
+        if (hasProfile) {
+            throw new Error('Zaten bir profiliniz var. Profil ayarlarından düzenleyebilirsiniz.');
+        }
+        
         const { data, error } = await supabase
             .from('profiles')
             .insert([
                 {
+                    user_id: user.id,
                     name: profile.name,
                     image_url: profile.imageUrl,
                     city_id: profile.cityId,
@@ -2636,4 +2703,420 @@ function clearAllFilters() {
     applyFilters();
 }
 
+// ==================== AUTH FUNCTIONS ====================
+
+// Get current user (Güvenli versiyon)
+async function getCurrentUser() {
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+            console.error('Session hatası:', error);
+            return null;
+        }
+        return session?.user || null;
+    } catch (error) {
+        console.error('Kullanıcı bilgisi alınamadı:', error);
+        return null;
+    }
+}
+
+// Check if user has a profile
+async function checkUserHasProfile(userId) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            console.error('Profil kontrolü hatası:', error);
+            return false;
+        }
+        
+        return !!data;
+    } catch (error) {
+        console.error('Profil kontrolü hatası:', error);
+        return false;
+    }
+}
+
+// Google ile giriş
+async function signInWithGoogle() {
+    try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}${window.location.pathname}`
+            }
+        });
+
+        if (error) {
+            console.error("Google giriş hatası:", error.message);
+            alert('Giriş yapılırken bir hata oluştu: ' + error.message);
+        }
+    } catch (error) {
+        console.error("Google giriş hatası:", error);
+        alert('Giriş yapılırken bir hata oluştu.');
+    }
+}
+
+// Çıkış yap
+async function signOut() {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Çıkış hatası:', error);
+            alert('Çıkış yapılırken bir hata oluştu.');
+        } else {
+            checkAuthState();
+            closeEditProfileModal();
+        }
+    } catch (error) {
+        console.error('Çıkış hatası:', error);
+    }
+}
+
+// Auth state kontrolü
+async function checkAuthState() {
+    const user = await getCurrentUser();
+    
+    if (user) {
+        // Kullanıcı giriş yapmış
+        if (userProfileDropdown) userProfileDropdown.style.display = 'block';
+        if (loginBtn) loginBtn.style.display = 'none';
+        
+        // Kullanıcı bilgilerini göster
+        if (userAvatar) {
+            userAvatar.src = user.user_metadata?.avatar_url || 'https://via.placeholder.com/32';
+            userAvatar.style.display = 'block';
+        }
+        if (userName) {
+            userName.textContent = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
+        }
+    } else {
+        // Kullanıcı giriş yapmamış
+        if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+        if (loginBtn) loginBtn.style.display = 'block';
+    }
+}
+
+// Auth modal aç
+function openAuthModal() {
+    if (authModal) {
+        authModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Auth modal kapat
+function closeAuthModal() {
+    if (authModal) {
+        authModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Setup auth listeners
+function setupAuthListeners() {
+    if (closeAuthModalBtn) {
+        closeAuthModalBtn.addEventListener('click', closeAuthModal);
+    }
+    
+    if (googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', signInWithGoogle);
+    }
+    
+    if (loginBtn) {
+        loginBtn.addEventListener('click', openAuthModal);
+    }
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', signOut);
+    }
+    
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeAuthModal();
+            openEditProfileModal();
+        });
+    }
+    
+    if (authModal) {
+        authModal.addEventListener('click', (e) => {
+            if (e.target === authModal) {
+                closeAuthModal();
+            }
+        });
+    }
+}
+
+// ==================== EDIT PROFILE FUNCTIONS ====================
+
+// Edit profile modal aç
+async function openEditProfileModal() {
+    const user = await getCurrentUser();
+    if (!user) {
+        openAuthModal();
+        return;
+    }
+    
+    // Kullanıcının profilini yükle
+    const profile = await loadUserProfile(user.id);
+    if (!profile) {
+        alert('Profil bulunamadı.');
+        return;
+    }
+    
+    // Form alanlarını doldur
+    if (document.getElementById('edit-username-input')) {
+        document.getElementById('edit-username-input').value = profile.name || '';
+    }
+    if (document.getElementById('edit-city-input')) {
+        document.getElementById('edit-city-input').value = profile.city_name || '';
+    }
+    if (document.getElementById('edit-district-input')) {
+        document.getElementById('edit-district-input').value = profile.district || '';
+    }
+    if (document.getElementById('edit-age-input')) {
+        document.getElementById('edit-age-input').value = profile.age || '';
+    }
+    if (document.getElementById('edit-snapchat-input')) {
+        document.getElementById('edit-snapchat-input').value = profile.snapchat_username || '';
+    }
+    if (document.getElementById('edit-instagram-input')) {
+        document.getElementById('edit-instagram-input').value = profile.instagram_username || '';
+    }
+    if (document.getElementById('edit-twitter-input')) {
+        document.getElementById('edit-twitter-input').value = profile.twitter_username || '';
+    }
+    if (document.getElementById('edit-facebook-input')) {
+        document.getElementById('edit-facebook-input').value = profile.facebook_username || '';
+    }
+    if (document.getElementById('edit-pinterest-input')) {
+        document.getElementById('edit-pinterest-input').value = profile.pinterest_username || '';
+    }
+    
+    // Cinsiyet seçimi
+    if (profile.gender === 'male' && document.getElementById('edit-gender-male')) {
+        document.getElementById('edit-gender-male').classList.add('active');
+        document.getElementById('edit-gender-female')?.classList.remove('active');
+    } else if (profile.gender === 'female' && document.getElementById('edit-gender-female')) {
+        document.getElementById('edit-gender-female').classList.add('active');
+        document.getElementById('edit-gender-male')?.classList.remove('active');
+    }
+    
+    // Mevcut fotoğrafı göster
+    if (profile.image_url && document.getElementById('edit-current-photo')) {
+        document.getElementById('edit-current-photo').src = profile.image_url;
+        document.getElementById('edit-current-photo').style.display = 'block';
+    }
+    
+    if (editProfileModal) {
+        editProfileModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Edit profile modal kapat
+function closeEditProfileModal() {
+    if (editProfileModal) {
+        editProfileModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Kullanıcının profilini yükle
+async function loadUserProfile(userId) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+        
+        if (error) {
+            console.error('Profil yükleme hatası:', error);
+            return null;
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Profil yükleme hatası:', error);
+        return null;
+    }
+}
+
+// Profil güncelle
+async function updateProfile() {
+    const user = await getCurrentUser();
+    if (!user) {
+        alert('Giriş yapmanız gerekiyor.');
+        return;
+    }
+    
+    const profile = await loadUserProfile(user.id);
+    if (!profile) {
+        alert('Profil bulunamadı.');
+        return;
+    }
+    
+    // Form verilerini al
+    const name = document.getElementById('edit-username-input')?.value.trim();
+    const city = document.getElementById('edit-city-input')?.value.trim();
+    const district = document.getElementById('edit-district-input')?.value.trim();
+    const age = document.getElementById('edit-age-input')?.value ? parseInt(document.getElementById('edit-age-input').value) : null;
+    const snapchat = document.getElementById('edit-snapchat-input')?.value.trim() || null;
+    const instagram = document.getElementById('edit-instagram-input')?.value.trim() || null;
+    const twitter = document.getElementById('edit-twitter-input')?.value.trim() || null;
+    const facebook = document.getElementById('edit-facebook-input')?.value.trim() || null;
+    const pinterest = document.getElementById('edit-pinterest-input')?.value.trim() || null;
+    
+    const genderMale = document.getElementById('edit-gender-male');
+    const gender = genderMale?.classList.contains('active') ? 'male' : 
+                  (document.getElementById('edit-gender-female')?.classList.contains('active') ? 'female' : null);
+    
+    // Fotoğraf güncelleme (eğer yeni fotoğraf seçildiyse)
+    let imageUrl = profile.image_url;
+    const editPhotoInput = document.getElementById('edit-photo-input');
+    if (editPhotoInput?.files && editPhotoInput.files.length > 0) {
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+        imageUrl = await uploadImageToSupabase(editPhotoInput.files[0], fileName);
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                name: name,
+                image_url: imageUrl,
+                city_name: city,
+                district: district,
+                age: age,
+                snapchat_username: snapchat,
+                instagram_username: instagram,
+                twitter_username: twitter,
+                facebook_username: facebook,
+                pinterest_username: pinterest,
+                gender: gender,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', profile.id);
+        
+        if (error) {
+            console.error('Profil güncelleme hatası:', error);
+            alert('Profil güncellenirken bir hata oluştu: ' + error.message);
+        } else {
+            alert('Profil başarıyla güncellendi!');
+            closeEditProfileModal();
+            // Profilleri yeniden yükle
+            loadProfilesFromSupabase();
+        }
+    } catch (error) {
+        console.error('Profil güncelleme hatası:', error);
+        alert('Profil güncellenirken bir hata oluştu.');
+    }
+}
+
+// Profil sil
+async function deleteProfile() {
+    if (!confirm('Profili silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+        return;
+    }
+    
+    const user = await getCurrentUser();
+    if (!user) {
+        alert('Giriş yapmanız gerekiyor.');
+        return;
+    }
+    
+    const profile = await loadUserProfile(user.id);
+    if (!profile) {
+        alert('Profil bulunamadı.');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', profile.id);
+        
+        if (error) {
+            console.error('Profil silme hatası:', error);
+            alert('Profil silinirken bir hata oluştu: ' + error.message);
+        } else {
+            alert('Profil başarıyla silindi!');
+            closeEditProfileModal();
+            // Profilleri yeniden yükle
+            loadProfilesFromSupabase();
+        }
+    } catch (error) {
+        console.error('Profil silme hatası:', error);
+        alert('Profil silinirken bir hata oluştu.');
+    }
+}
+
+// Setup edit profile listeners
+function setupEditProfileListeners() {
+    if (closeEditModalBtn) {
+        closeEditModalBtn.addEventListener('click', closeEditProfileModal);
+    }
+    
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', closeEditProfileModal);
+    }
+    
+    if (saveEditBtn) {
+        saveEditBtn.addEventListener('click', updateProfile);
+    }
+    
+    if (deleteProfileBtn) {
+        deleteProfileBtn.addEventListener('click', deleteProfile);
+    }
+    
+    if (editProfileModal) {
+        editProfileModal.addEventListener('click', (e) => {
+            if (e.target === editProfileModal) {
+                closeEditProfileModal();
+            }
+        });
+    }
+    
+    // Edit photo upload
+    const editPhotoInput = document.getElementById('edit-photo-input');
+    const editPhotoUploadArea = document.getElementById('edit-photo-upload-area');
+    if (editPhotoInput && editPhotoUploadArea) {
+        editPhotoUploadArea.addEventListener('click', () => editPhotoInput.click());
+        editPhotoInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const editUploadPreview = document.getElementById('edit-upload-preview');
+                    if (editUploadPreview) {
+                        editUploadPreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+                    }
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+    }
+    
+    // Edit gender selection
+    const editGenderMale = document.getElementById('edit-gender-male');
+    const editGenderFemale = document.getElementById('edit-gender-female');
+    if (editGenderMale) {
+        editGenderMale.addEventListener('click', () => {
+            editGenderMale.classList.add('active');
+            editGenderFemale?.classList.remove('active');
+        });
+    }
+    if (editGenderFemale) {
+        editGenderFemale.addEventListener('click', () => {
+            editGenderFemale.classList.add('active');
+            editGenderMale?.classList.remove('active');
+        });
+    }
+}
 
