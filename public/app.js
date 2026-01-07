@@ -1,3 +1,6 @@
+// Supabase Import
+import { supabase } from './supabase-client.js';
+
 // Map state
 let mapState = {
     scale: 1,
@@ -22,7 +25,9 @@ let mapState = {
     pinchCenterX: 0,
     pinchCenterY: 0,
     // Snapchat-style profiles
-    profiles: []
+    profiles: [],
+    // Cities from map
+    cities: []
 };
 
 // DOM elements
@@ -33,10 +38,30 @@ const zoomInBtn = document.getElementById('zoom-in');
 const zoomOutBtn = document.getElementById('zoom-out');
 const resetZoomBtn = document.getElementById('reset-zoom');
 
+// Modal elements
+const addProfileBtn = document.getElementById('add-profile-btn');
+const addProfileModal = document.getElementById('add-profile-modal');
+const closeModalBtn = document.getElementById('close-modal');
+const cancelBtn = document.getElementById('cancel-btn');
+const saveProfileBtn = document.getElementById('save-profile-btn');
+const photoInput = document.getElementById('photo-input');
+const photoUploadArea = document.getElementById('photo-upload-area');
+const uploadPreview = document.getElementById('upload-preview');
+const cropCanvas = document.getElementById('crop-canvas');
+const cropControls = document.getElementById('crop-controls');
+const cropApplyBtn = document.getElementById('crop-apply');
+const cropCancelBtn = document.getElementById('crop-cancel');
+const usernameInput = document.getElementById('username-input');
+const cityInput = document.getElementById('city-input');
+const citySuggestions = document.getElementById('city-suggestions');
+const profileDetailModal = document.getElementById('profile-detail-modal');
+const closeDetailModalBtn = document.getElementById('close-detail-modal');
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadMap();
     setupEventListeners();
+    setupModalListeners();
 });
 
 // Load SVG Map
@@ -146,10 +171,24 @@ async function loadMap() {
                 el.tagName === 'g' && el.hasAttribute('id')
             );
             
+            // Şehir listesini oluştur
+            mapState.cities = [];
+            
             cityGroups.forEach(cityGroup => {
                 // Her il grubunu kopyala
                 const clonedGroup = cityGroup.cloneNode(true);
-                clonedGroup.setAttributeNS(null, 'id', cityGroup.getAttribute('id'));
+                const cityId = cityGroup.getAttribute('id');
+                clonedGroup.setAttributeNS(null, 'id', cityId);
+                
+                // Şehir bilgilerini al
+                const cityName = cityGroup.getAttribute('data-city-name') || 
+                                cityId.charAt(0).toUpperCase() + cityId.slice(1);
+                
+                // Şehir listesine ekle
+                mapState.cities.push({
+                    id: cityId.toLowerCase(),
+                    name: cityName
+                });
                 
                 // Path'leri bul ve class ekle
                 const paths = clonedGroup.querySelectorAll('path');
@@ -162,12 +201,16 @@ async function loadMap() {
                     // 3D efekt için gradient fill
                     path.setAttribute('fill', 'url(#land-3d-gradient)');
                     
-                    const cityName = cityGroup.getAttribute('data-city-name') || cityGroup.id;
                     path.setAttribute('data-name', cityName);
                 });
                 
                 provincesGroup.appendChild(clonedGroup);
             });
+            
+            // Şehirleri isme göre sırala
+            mapState.cities.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+            
+            console.log(`${mapState.cities.length} şehir haritadan yüklendi`);
             
             svg.appendChild(provincesGroup);
             
@@ -180,9 +223,9 @@ async function loadMap() {
                 console.log(`${provinces.length} il yüklendi`);
             }, 100);
             
-            // Harita yüklendikten sonra örnek profilleri ekle
+            // Harita yüklendikten sonra Supabase'den profilleri yükle
             setTimeout(() => {
-                addSampleProfiles();
+                loadProfilesFromSupabase();
             }, 500);
         } else {
             throw new Error('Turkey grubu bulunamadı');
@@ -197,6 +240,27 @@ async function loadMap() {
         try {
             const svgContent = generateTurkeyMapSVG();
             svg.innerHTML = svgContent;
+            
+            // Fallback için şehir listesini oluştur
+            const fallbackProvinces = getAllProvincePaths();
+            mapState.cities = [
+                { id: 'istanbul', name: 'İstanbul' },
+                { id: 'ankara', name: 'Ankara' },
+                { id: 'izmir', name: 'İzmir' },
+                { id: 'antalya', name: 'Antalya' },
+                { id: 'bursa', name: 'Bursa' },
+                { id: 'adana', name: 'Adana' },
+                { id: 'gaziantep', name: 'Gaziantep' },
+                { id: 'konya', name: 'Konya' },
+                { id: 'trabzon', name: 'Trabzon' },
+                { id: 'samsun', name: 'Samsun' },
+                { id: 'eskisehir', name: 'Eskişehir' },
+                { id: 'kayseri', name: 'Kayseri' },
+                { id: 'mugla', name: 'Muğla' },
+                { id: 'denizli', name: 'Denizli' },
+                { id: 'mardin', name: 'Mardin' }
+            ];
+            mapState.cities.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
             
             const provinces = svg.querySelectorAll('.province');
             provinces.forEach(province => {
@@ -386,6 +450,69 @@ function setupEventListeners() {
 
     // Keyboard shortcuts (desktop only)
     document.addEventListener('keydown', handleKeyboard);
+}
+
+// Modal Event Listeners
+function setupModalListeners() {
+    // Add profile button
+    if (addProfileBtn) {
+        addProfileBtn.addEventListener('click', openAddProfileModal);
+    }
+    
+    // Close modal buttons
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeAddProfileModal);
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeAddProfileModal);
+    }
+    if (closeDetailModalBtn) {
+        closeDetailModalBtn.addEventListener('click', closeProfileDetailModal);
+    }
+    
+    // Modal overlay click to close
+    if (addProfileModal) {
+        addProfileModal.addEventListener('click', (e) => {
+            if (e.target === addProfileModal) {
+                closeAddProfileModal();
+            }
+        });
+    }
+    if (profileDetailModal) {
+        profileDetailModal.addEventListener('click', (e) => {
+            if (e.target === profileDetailModal) {
+                closeProfileDetailModal();
+            }
+        });
+    }
+    
+    // Photo upload
+    if (photoInput) {
+        photoInput.addEventListener('change', handlePhotoSelect);
+    }
+    if (photoUploadArea) {
+        photoUploadArea.addEventListener('click', () => photoInput?.click());
+    }
+    
+    // Crop controls
+    if (cropApplyBtn) {
+        cropApplyBtn.addEventListener('click', applyCrop);
+    }
+    if (cropCancelBtn) {
+        cropCancelBtn.addEventListener('click', cancelCrop);
+    }
+    
+    
+    // City autocomplete
+    if (cityInput) {
+        cityInput.addEventListener('input', handleCityInput);
+        cityInput.addEventListener('focus', handleCityInput);
+    }
+    
+    // Save profile
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', saveProfile);
+    }
 }
 
 // Touch handlers with momentum scrolling
@@ -699,23 +826,11 @@ function handleKeyboard(e) {
 }
 
 // Snapchat-style Profile Functions
-function addSampleProfiles() {
-    // Sadece profile-image.png ile yeni profil ekle
-    const profile = {
-        id: 'profile-1',
-        name: 'Profil',
-        imageUrl: '/profile-image.png',
-        cityId: 'istanbul'
-    };
-    
-    // Profili İstanbul şehri içinde şık şekilde ekle
-    const position = findPositionInCity(profile.cityId);
-    if (position) {
-        profile.x = position.x;
-        profile.y = position.y;
-        addProfileToMap(profile);
-        mapState.profiles.push(profile);
-    }
+// Not: Artık profiller Supabase'den yükleniyor, bu fonksiyon kullanılmıyor
+async function addSampleProfiles() {
+    // Örnek profil ekleme (test amaçlı)
+    // Gerçek kullanımda profiller Supabase'den yüklenecek
+    console.log('Profiller Supabase\'den yüklenecek...');
 }
 
 // Şehir sınırları içinde şık konum bul (mevcut profillerden uzakta)
@@ -944,8 +1059,35 @@ function addProfileToMap(profile) {
     borderCircle.setAttribute('stroke', '#333'); // Siyah çizgi
     borderCircle.setAttribute('stroke-width', '0.3'); // Çok ince çizgi
     
+    // Create invisible clickable circle for better click area
+    const clickArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    clickArea.setAttribute('cx', profile.x);
+    clickArea.setAttribute('cy', profile.y);
+    clickArea.setAttribute('r', baseSize * 1.5); // Slightly larger click area
+    clickArea.setAttribute('fill', 'transparent');
+    clickArea.setAttribute('class', 'profile-click-area');
+    clickArea.style.cursor = 'pointer';
+    
     profileGroup.appendChild(image);
-    profileGroup.appendChild(borderCircle); // Çizgi en üstte görünsün
+    profileGroup.appendChild(borderCircle);
+    profileGroup.appendChild(clickArea); // Click area en üstte
+    
+    // Add click handler to the entire group
+    profileGroup.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        console.log('Profil tıklandı:', profile.id, profile.name);
+        handleProfileClick(profile.id);
+    });
+    
+    // Also add to click area for better mobile support
+    clickArea.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        console.log('Profil tıklandı (click area):', profile.id, profile.name);
+        handleProfileClick(profile.id);
+    });
+    
     profilesGroup.appendChild(profileGroup);
     
     // İlk boyutlandırmayı yap
@@ -993,8 +1135,628 @@ function updateProfileSizes() {
             borderCircle.setAttribute('r', currentSize / 2); // Profil yarıçapı ile eşit
         }
         
+        // Click area güncelle
+        const clickArea = profileGroup.querySelector('.profile-click-area');
+        if (clickArea) {
+            clickArea.setAttribute('cx', baseX);
+            clickArea.setAttribute('cy', baseY);
+            // Click area boyutunu zoom'a göre ayarla (daha büyük tıklanabilir alan)
+            const clickAreaSize = Math.max(currentSize * 1.5, 20); // Minimum 20px
+            clickArea.setAttribute('r', clickAreaSize);
+        }
+        
         // Clip path güncelle (objectBoundingBox kullanıldığı için güncelleme gerekmez)
         // Clip path zaten 0-1 arası koordinatlarla tanımlı, otomatik ölçekleniyor
     });
 }
+
+// ==================== SUPABASE INTEGRATION ====================
+
+// Supabase'den tüm profilleri yükle
+async function loadProfilesFromSupabase() {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Supabase profil yükleme hatası:', error);
+            return;
+        }
+        
+        if (data && data.length > 0) {
+            // Mevcut profilleri temizle
+            mapState.profiles = [];
+            const profilesGroup = svg.querySelector('#profiles-group');
+            if (profilesGroup) {
+                profilesGroup.innerHTML = '';
+            }
+            
+            // Profilleri haritaya ekle
+            data.forEach(profileData => {
+                const profile = {
+                    id: profileData.id,
+                    name: profileData.name,
+                    imageUrl: profileData.image_url,
+                    cityId: profileData.city_id,
+                    city: profileData.city_name,
+                    x: parseFloat(profileData.position_x),
+                    y: parseFloat(profileData.position_y),
+                    snapchat_username: profileData.snapchat_username || profileData.name,
+                };
+                
+                mapState.profiles.push(profile);
+                addProfileToMap(profile);
+            });
+            
+            console.log(`${data.length} profil Supabase'den yüklendi`);
+        }
+    } catch (error) {
+        console.error('Profil yükleme hatası:', error);
+    }
+}
+
+// Profil ekle (Supabase'e kaydet) - Updated with platforms
+async function saveProfileToSupabase(profile) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert([
+                {
+                    name: profile.name,
+                    image_url: profile.imageUrl,
+                    city_id: profile.cityId,
+                    city_name: profile.city,
+                    position_x: profile.x,
+                    position_y: profile.y,
+                    snapchat_username: profile.snapchat_username || profile.name,
+                }
+            ])
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Supabase profil ekleme hatası:', error);
+            throw error;
+        }
+        
+        // Eklenen profil ID'sini güncelle
+        profile.id = data.id;
+        console.log('Profil Supabase\'e eklendi:', data);
+        return data;
+    } catch (error) {
+        console.error('Profil kaydetme hatası:', error);
+        throw error;
+    }
+}
+
+// Profil sil (Supabase'den sil)
+async function deleteProfileFromSupabase(profileId) {
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', profileId);
+        
+        if (error) {
+            console.error('Supabase profil silme hatası:', error);
+            throw error;
+        }
+        
+        console.log('Profil Supabase\'den silindi:', profileId);
+    } catch (error) {
+        console.error('Profil silme hatası:', error);
+        throw error;
+    }
+}
+
+// Görseli Supabase Storage'a yükle
+async function uploadImageToSupabase(file, fileName) {
+    try {
+        const fileExt = fileName.split('.').pop();
+        const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+            .from('profile-images')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+        
+        if (error) {
+            console.error('Supabase görsel yükleme hatası:', error);
+            throw error;
+        }
+        
+        // Public URL al
+        const { data: urlData } = supabase.storage
+            .from('profile-images')
+            .getPublicUrl(data.path);
+        
+        console.log('Görsel Supabase Storage\'a yüklendi:', urlData.publicUrl);
+        return urlData.publicUrl;
+    } catch (error) {
+        console.error('Görsel yükleme hatası:', error);
+        throw error;
+    }
+}
+
+// ==================== MODAL FUNCTIONS ====================
+
+// Modal state
+let modalState = {
+    selectedFile: null,
+    croppedImage: null,
+    selectedCity: null,
+    cropStartX: 0,
+    cropStartY: 0,
+    cropEndX: 0,
+    cropEndY: 0,
+    isCropping: false
+};
+
+// Open add profile modal
+function openAddProfileModal() {
+    if (addProfileModal) {
+        addProfileModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        resetModalForm();
+    }
+}
+
+// Close add profile modal
+function closeAddProfileModal() {
+    if (addProfileModal) {
+        addProfileModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        resetModalForm();
+    }
+}
+
+// Reset modal form
+function resetModalForm() {
+    modalState.selectedFile = null;
+    modalState.croppedImage = null;
+    modalState.selectedCity = null;
+    
+    if (photoInput) photoInput.value = '';
+    if (uploadPreview) {
+        uploadPreview.innerHTML = '<span class="upload-icon">📷</span><span class="upload-text">Fotoğraf Seç</span>';
+    }
+    if (cropControls) cropControls.classList.add('hidden');
+    if (cropCanvas) {
+        cropCanvas.classList.add('hidden');
+        const ctx = cropCanvas.getContext('2d');
+        ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+    }
+    if (usernameInput) usernameInput.value = '';
+    if (cityInput) cityInput.value = '';
+    if (citySuggestions) {
+        citySuggestions.classList.add('hidden');
+        citySuggestions.innerHTML = '';
+    }
+}
+
+// Handle photo selection
+function handlePhotoSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        alert('Lütfen bir resim dosyası seçin');
+        return;
+    }
+    
+    modalState.selectedFile = file;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            // Show preview
+            if (uploadPreview) {
+                uploadPreview.innerHTML = `<img src="${event.target.result}" alt="Preview" class="preview-image">`;
+            }
+            
+            // Setup crop canvas
+            setupCropCanvas(img, event.target.result);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Setup crop canvas
+function setupCropCanvas(img, imageSrc) {
+    if (!cropCanvas) return;
+    
+    const maxSize = 400;
+    let width = img.width;
+    let height = img.height;
+    
+    if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = width * ratio;
+        height = height * ratio;
+    }
+    
+    cropCanvas.width = width;
+    cropCanvas.height = height;
+    cropCanvas.classList.remove('hidden');
+    
+    const ctx = cropCanvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    // Show crop controls
+    if (cropControls) {
+        cropControls.classList.remove('hidden');
+    }
+    
+    // Simple crop: center square crop
+    const size = Math.min(width, height);
+    const x = (width - size) / 2;
+    const y = (height - size) / 2;
+    
+    // Draw crop overlay
+    drawCropOverlay(ctx, width, height, x, y, size);
+    
+    // Store crop coordinates
+    modalState.cropStartX = x;
+    modalState.cropStartY = y;
+    modalState.cropEndX = x + size;
+    modalState.cropEndY = y + size;
+}
+
+// Draw crop overlay
+function drawCropOverlay(ctx, canvasWidth, canvasHeight, x, y, size) {
+    // Darken outside area
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Clear crop area
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillRect(x, y, size, size);
+    ctx.restore();
+    
+    // Draw crop border
+    ctx.strokeStyle = '#FFFC00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, size, size);
+}
+
+// Apply crop
+function applyCrop() {
+    if (!cropCanvas || !modalState.selectedFile) return;
+    
+    const ctx = cropCanvas.getContext('2d');
+    const size = Math.min(cropCanvas.width, cropCanvas.height);
+    const x = (cropCanvas.width - size) / 2;
+    const y = (cropCanvas.height - size) / 2;
+    
+    // Get cropped image data
+    const imageData = ctx.getImageData(x, y, size, size);
+    
+    // Create new canvas for cropped image
+    const croppedCanvas = document.createElement('canvas');
+    croppedCanvas.width = size;
+    croppedCanvas.height = size;
+    const croppedCtx = croppedCanvas.getContext('2d');
+    croppedCtx.putImageData(imageData, 0, 0);
+    
+    // Convert to blob
+    croppedCanvas.toBlob((blob) => {
+        modalState.croppedImage = blob;
+        
+        // Update preview
+        if (uploadPreview) {
+            uploadPreview.innerHTML = `<img src="${croppedCanvas.toDataURL()}" alt="Cropped" class="preview-image">`;
+        }
+        
+        // Hide crop controls
+        if (cropControls) cropControls.classList.add('hidden');
+        if (cropCanvas) cropCanvas.classList.add('hidden');
+    }, 'image/png', 0.95);
+}
+
+// Cancel crop
+function cancelCrop() {
+    if (cropControls) cropControls.classList.add('hidden');
+    if (cropCanvas) {
+        cropCanvas.classList.add('hidden');
+        const ctx = cropCanvas.getContext('2d');
+        ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+    }
+    modalState.croppedImage = null;
+}
+
+// Handle city input (autocomplete) - Uses cities from the map
+function handleCityInput(e) {
+    const query = e.target.value.toLowerCase().trim();
+    
+    if (!citySuggestions) return;
+    
+    if (query.length < 1) {
+        citySuggestions.classList.add('hidden');
+        citySuggestions.innerHTML = '';
+        modalState.selectedCity = null;
+        return;
+    }
+    
+    // Normalize query for Turkish character matching
+    const normalizeQuery = (str) => {
+        return str.toLowerCase()
+            .replace(/ı/g, 'i')
+            .replace(/ğ/g, 'g')
+            .replace(/ü/g, 'u')
+            .replace(/ş/g, 's')
+            .replace(/ö/g, 'o')
+            .replace(/ç/g, 'c');
+    };
+    
+    const normalizedQuery = normalizeQuery(query);
+    
+    // Use cities from map (haritadaki şehirler)
+    const cities = mapState.cities || [];
+    
+    if (cities.length === 0) {
+        // Eğer harita henüz yüklenmediyse, fallback olarak cities.json kullan
+        fetch('/data/cities.json')
+            .then(res => res.json())
+            .then(jsonCities => {
+                const matches = jsonCities.filter(city => {
+                    const normalizedName = normalizeQuery(city.name);
+                    return normalizedName.includes(normalizedQuery);
+                }).slice(0, 8);
+                
+                showCitySuggestions(matches);
+            })
+            .catch(err => {
+                console.error('Şehir listesi yüklenemedi:', err);
+            });
+        return;
+    }
+    
+    // Haritadaki şehirlerden eşleşenleri bul
+    const matches = cities.filter(city => {
+        const normalizedName = normalizeQuery(city.name);
+        const normalizedId = normalizeQuery(city.id);
+        return normalizedName.includes(normalizedQuery) || 
+               normalizedId.includes(normalizedQuery);
+    }).slice(0, 8); // En fazla 8 öneri göster
+    
+    showCitySuggestions(matches);
+}
+
+// Show city suggestions
+function showCitySuggestions(matches) {
+    if (!citySuggestions) return;
+    
+    if (matches.length > 0) {
+        citySuggestions.innerHTML = matches.map(city => {
+            return `<div class="city-suggestion" data-city-id="${city.id}" data-city-name="${city.name}">
+                <span class="city-name">${city.name}</span>
+            </div>`;
+        }).join('');
+        citySuggestions.classList.remove('hidden');
+        
+        // Add click listeners
+        citySuggestions.querySelectorAll('.city-suggestion').forEach(item => {
+            item.addEventListener('click', () => {
+                const cityId = item.getAttribute('data-city-id');
+                const cityName = item.getAttribute('data-city-name');
+                if (cityInput) {
+                    cityInput.value = cityName;
+                }
+                modalState.selectedCity = { id: cityId, name: cityName };
+                citySuggestions.classList.add('hidden');
+            });
+        });
+    } else {
+        citySuggestions.classList.add('hidden');
+        citySuggestions.innerHTML = '';
+    }
+}
+
+// Save profile
+async function saveProfile() {
+    // Validate form
+    if (!modalState.croppedImage && !modalState.selectedFile) {
+        alert('Lütfen bir profil fotoğrafı seçin');
+        return;
+    }
+    
+    if (!usernameInput || !usernameInput.value.trim()) {
+        alert('Lütfen kullanıcı adınızı girin');
+        return;
+    }
+    
+    if (!modalState.selectedCity) {
+        alert('Lütfen bir şehir seçin');
+        return;
+    }
+    
+    // Disable save button
+    if (saveProfileBtn) {
+        saveProfileBtn.disabled = true;
+        saveProfileBtn.innerHTML = '<span>Kaydediliyor...</span>';
+    }
+    
+    try {
+        // Upload image
+        let imageUrl;
+        if (modalState.croppedImage) {
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+            imageUrl = await uploadImageToSupabase(modalState.croppedImage, fileName);
+        } else if (modalState.selectedFile) {
+            imageUrl = await uploadImageToSupabase(modalState.selectedFile, modalState.selectedFile.name);
+        }
+        
+        // Find position in city
+        const position = findPositionInCity(modalState.selectedCity.id);
+        if (!position) {
+            throw new Error('Şehir içinde uygun konum bulunamadı');
+        }
+        
+        // Create profile object
+        const profile = {
+            name: usernameInput.value.trim(),
+            imageUrl: imageUrl,
+            cityId: modalState.selectedCity.id,
+            city: modalState.selectedCity.name,
+            x: position.x,
+            y: position.y,
+            snapchat_username: usernameInput.value.trim(), // You can add separate input for this
+        };
+        
+        // Save to Supabase
+        const savedProfile = await saveProfileToSupabase(profile);
+        
+        // Add to map
+        profile.id = savedProfile.id;
+        mapState.profiles.push(profile);
+        addProfileToMap(profile);
+        
+        // Close modal
+        closeAddProfileModal();
+        
+        // Show success message
+        alert('Profil başarıyla eklendi!');
+        
+    } catch (error) {
+        console.error('Profil kaydetme hatası:', error);
+        alert('Profil kaydedilirken bir hata oluştu: ' + error.message);
+    } finally {
+        // Re-enable save button
+        if (saveProfileBtn) {
+            saveProfileBtn.disabled = false;
+            saveProfileBtn.innerHTML = '<span>Kaydet</span>';
+        }
+    }
+}
+
+// Profil ekle (Supabase'e kaydet) - Updated with platforms
+async function saveProfileToSupabase(profile) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert([
+                {
+                    name: profile.name,
+                    image_url: profile.imageUrl,
+                    city_id: profile.cityId,
+                    city_name: profile.city,
+                    position_x: profile.x,
+                    position_y: profile.y,
+                    snapchat_username: profile.snapchat_username || profile.name,
+                }
+            ])
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Supabase profil ekleme hatası:', error);
+            throw error;
+        }
+        
+        // Eklenen profil ID'sini güncelle
+        profile.id = data.id;
+        console.log('Profil Supabase\'e eklendi:', data);
+        return data;
+    } catch (error) {
+        console.error('Profil kaydetme hatası:', error);
+        throw error;
+    }
+}
+
+// Supabase'den tüm profilleri yükle - Updated with platforms
+async function loadProfilesFromSupabase() {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Supabase profil yükleme hatası:', error);
+            return;
+        }
+        
+        if (data && data.length > 0) {
+            // Mevcut profilleri temizle
+            mapState.profiles = [];
+            const profilesGroup = svg.querySelector('#profiles-group');
+            if (profilesGroup) {
+                profilesGroup.innerHTML = '';
+            }
+            
+            // Profilleri haritaya ekle
+            data.forEach(profileData => {
+                const profile = {
+                    id: profileData.id,
+                    name: profileData.name,
+                    imageUrl: profileData.image_url,
+                    cityId: profileData.city_id,
+                    city: profileData.city_name,
+                    x: parseFloat(profileData.position_x),
+                    y: parseFloat(profileData.position_y),
+                    snapchat_username: profileData.snapchat_username || profileData.name,
+                };
+                
+                mapState.profiles.push(profile);
+                addProfileToMap(profile);
+            });
+            
+            console.log(`${data.length} profil Supabase'den yüklendi`);
+        }
+    } catch (error) {
+        console.error('Profil yükleme hatası:', error);
+    }
+}
+
+// Profile click handler - show detail modal
+function handleProfileClick(profileId) {
+    const profile = mapState.profiles.find(p => p.id === profileId);
+    if (!profile) {
+        console.warn('Profil bulunamadı:', profileId);
+        return;
+    }
+    
+    // Show profile detail modal
+    if (profileDetailModal) {
+        const detailImage = document.getElementById('detail-image');
+        const detailName = document.getElementById('detail-name');
+        const detailCity = document.getElementById('detail-city');
+        const detailSnapchat = document.getElementById('detail-snapchat');
+        
+        if (detailImage) {
+            detailImage.innerHTML = `<img src="${profile.imageUrl}" alt="${profile.name}">`;
+        }
+        if (detailName) {
+            detailName.textContent = profile.name;
+        }
+        if (detailCity) {
+            detailCity.textContent = `📍 ${profile.city}`;
+        }
+        if (detailSnapchat) {
+            detailSnapchat.textContent = profile.snapchat_username ? `👻 ${profile.snapchat_username}` : '';
+        }
+        
+        profileDetailModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.warn('Profile detail modal bulunamadı');
+    }
+}
+
+// Close profile detail modal
+function closeProfileDetailModal() {
+    if (profileDetailModal) {
+        profileDetailModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
 

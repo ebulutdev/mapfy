@@ -41,10 +41,78 @@
 
             <!-- Loading -->
             <div id="loading" class="loading">Harita yükleniyor...</div>
+            
+            <!-- Add Profile Button -->
+            <button id="add-profile-btn" class="add-profile-btn" title="Profil Ekle">
+                <span class="plus-icon">+</span>
+            </button>
+        </div>
+
+        <!-- Add Profile Modal -->
+        <div id="add-profile-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button class="modal-close" id="close-modal">×</button>
+                <h2 class="modal-title">Yeni Profil Ekle</h2>
+                
+                <div class="modal-body">
+                    <!-- Profile Photo Upload -->
+                    <div class="form-section">
+                        <label class="form-label">Profil Fotoğrafı</label>
+                        <div class="photo-upload-area" id="photo-upload-area">
+                            <input type="file" id="photo-input" accept="image/*" class="hidden-input">
+                            <div class="upload-preview" id="upload-preview">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">Fotoğraf Seç</span>
+                            </div>
+                            <canvas id="crop-canvas" class="hidden"></canvas>
+                        </div>
+                        <div class="crop-controls hidden" id="crop-controls">
+                            <button type="button" class="crop-btn" id="crop-apply">Kırp</button>
+                            <button type="button" class="crop-btn secondary" id="crop-cancel">İptal</button>
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="form-section">
+                        <label class="form-label">Kullanıcı Adı</label>
+                        <input type="text" id="username-input" class="form-input" placeholder="Adınızı girin" maxlength="50">
+                    </div>
+
+                    <!-- City Selection -->
+                    <div class="form-section">
+                        <label class="form-label">Şehir</label>
+                        <input type="text" id="city-input" class="form-input" placeholder="Şehir adını yazın veya haritadan seçin" autocomplete="off">
+                        <div class="city-suggestions hidden" id="city-suggestions"></div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancel-btn">İptal</button>
+                    <button class="btn-primary" id="save-profile-btn">
+                        <span>Kaydet</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Detail Modal -->
+        <div id="profile-detail-modal" class="modal-overlay hidden">
+            <div class="modal-content profile-detail">
+                <button class="modal-close" id="close-detail-modal">×</button>
+                <div class="profile-detail-header">
+                    <div class="profile-detail-image" id="detail-image"></div>
+                    <div class="profile-detail-info">
+                        <h3 class="profile-detail-name" id="detail-name"></h3>
+                        <div class="profile-detail-city" id="detail-city"></div>
+                        <div class="profile-detail-snapchat" id="detail-snapchat"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="supabase-client.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
 

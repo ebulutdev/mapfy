@@ -1,10 +1,9 @@
 node_modules/
-__pycache__/
-*.pyc
-*.pyo
+npm-debug.log
 .env
-.DS_Store
+.env.local
+.env.production
+public/supabase-config.js
+.supabase-credentials
 *.log
-.vscode/
-.idea/
-
+.DS_Store
