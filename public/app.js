@@ -81,6 +81,7 @@ const filterSidebar = document.getElementById('filter-sidebar');
 const toggleFilterBtn = document.getElementById('toggle-filter-btn');
 const filterResultsArea = document.querySelector('.filter-results-area');
 const filterResizeHandle = document.getElementById('filter-resize-handle');
+const filterResizeHandleVertical = document.getElementById('filter-resize-handle-vertical');
 const filterToggleIcon = document.getElementById('filter-toggle-icon');
 
 // Profile gender buttons
@@ -97,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMap();
     setupEventListeners();
     setupModalListeners();
+    setupHeroListeners();
     
     // Auth elements - DOM yüklendikten sonra seç
     authModal = document.getElementById('auth-modal');
@@ -120,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup auth and edit profile listeners
     setupAuthListeners();
     setupEditProfileListeners();
+    setupHeroListeners();
     
     // Check auth state
     checkAuthState();
@@ -647,6 +650,30 @@ function setupModalListeners() {
         closeDetailModalBtn.addEventListener('click', closeProfileDetailModal);
     }
     
+    // Ana Sayfaya Git Butonu
+    const goToHomepageBtn = document.getElementById('go-to-homepage-btn');
+    if (goToHomepageBtn) {
+        goToHomepageBtn.addEventListener('click', () => {
+            // Modalı kapat
+            closeProfileDetailModal();
+            
+            // URL'i temizle
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Hero section'ı göster (eğer gizliyse)
+            const heroSection = document.getElementById('hero-section');
+            if (heroSection && heroSection.classList.contains('hidden')) {
+                showHeroSection();
+            }
+            
+            // Haritayı başlangıç konumuna getir
+            mapState.scale = 1;
+            mapState.translateX = 0;
+            mapState.translateY = 0;
+            updateTransform();
+        });
+    }
+    
     // Modal overlay click to close
     if (addProfileModal) {
         addProfileModal.addEventListener('click', (e) => {
@@ -721,18 +748,48 @@ function setupModalListeners() {
     
     // Filter toggle icon (open/close sidebar from map)
     if (filterToggleIcon) {
-        filterToggleIcon.addEventListener('click', () => {
+        filterToggleIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (filterSidebar) {
-                const isCollapsed = filterSidebar.classList.contains('collapsed');
-                if (isCollapsed) {
-                    filterSidebar.classList.remove('collapsed');
-                    filterSidebar.style.width = '380px';
-                    filterToggleIcon.classList.add('active');
-                    if (toggleFilterBtn) toggleFilterBtn.textContent = 'Gizle';
+                // Mobilde expanded class'ını kontrol et
+                if (window.innerWidth <= 768) {
+                    const isExpanded = filterSidebar.classList.contains('expanded');
+                    if (isExpanded) {
+                        // Kapat
+                        filterSidebar.classList.remove('expanded');
+                        filterSidebar.style.height = '0';
+                        filterToggleIcon.classList.remove('active');
+                        if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                        const mobileBtn = document.getElementById('mobile-filter-toggle');
+                        if (mobileBtn) {
+                            const span = mobileBtn.querySelector('span');
+                            if (span) span.textContent = 'Filtrele';
+                        }
+                    } else {
+                        // Aç
+                        filterSidebar.classList.add('expanded');
+                        filterSidebar.style.height = '45vh';
+                        filterToggleIcon.classList.add('active');
+                        if (toggleFilterBtn) toggleFilterBtn.textContent = 'Gizle';
+                        const mobileBtn = document.getElementById('mobile-filter-toggle');
+                        if (mobileBtn) {
+                            const span = mobileBtn.querySelector('span');
+                            if (span) span.textContent = 'Kapat';
+                        }
+                    }
                 } else {
-                    filterSidebar.classList.add('collapsed');
-                    filterToggleIcon.classList.remove('active');
-                    if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                    // Desktop'ta collapsed class'ını kontrol et
+                    const isCollapsed = filterSidebar.classList.contains('collapsed');
+                    if (isCollapsed) {
+                        filterSidebar.classList.remove('collapsed');
+                        filterSidebar.style.width = '380px';
+                        filterToggleIcon.classList.add('active');
+                        if (toggleFilterBtn) toggleFilterBtn.textContent = 'Gizle';
+                    } else {
+                        filterSidebar.classList.add('collapsed');
+                        filterToggleIcon.classList.remove('active');
+                        if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                    }
                 }
             }
         });
@@ -743,10 +800,21 @@ function setupModalListeners() {
     if (mobileFilterBtn && filterSidebar) {
         mobileFilterBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            filterSidebar.classList.toggle('expanded');
-            const span = mobileFilterBtn.querySelector('span');
-            if (span) {
-                span.textContent = filterSidebar.classList.contains('expanded') ? 'Kapat' : 'Filtrele';
+            const isExpanded = filterSidebar.classList.contains('expanded');
+            if (isExpanded) {
+                filterSidebar.classList.remove('expanded');
+                filterSidebar.style.height = '0';
+                const span = mobileFilterBtn.querySelector('span');
+                if (span) span.textContent = 'Filtrele';
+                if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+            } else {
+                filterSidebar.classList.add('expanded');
+                filterSidebar.style.height = '45vh';
+                const span = mobileFilterBtn.querySelector('span');
+                if (span) span.textContent = 'Kapat';
+                if (toggleFilterBtn) toggleFilterBtn.textContent = 'Gizle';
+                if (filterToggleIcon) filterToggleIcon.classList.add('active');
             }
         });
     }
@@ -760,29 +828,52 @@ function setupModalListeners() {
                 !e.target.closest('#filter-toggle-icon') &&
                 window.innerWidth <= 768) {
                 filterSidebar.classList.remove('expanded');
+                filterSidebar.style.height = '0';
                 const mobileBtn = document.getElementById('mobile-filter-toggle');
                 if (mobileBtn) {
                     const span = mobileBtn.querySelector('span');
                     if (span) span.textContent = 'Filtrele';
                 }
+                if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                if (filterToggleIcon) filterToggleIcon.classList.remove('active');
             }
         });
     }
     
     // Filter toggle button (collapse/expand from sidebar)
     if (toggleFilterBtn) {
-        toggleFilterBtn.addEventListener('click', () => {
+        toggleFilterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (filterSidebar) {
-                const isCollapsed = filterSidebar.classList.contains('collapsed');
-                if (isCollapsed) {
-                    filterSidebar.classList.remove('collapsed');
-                    filterSidebar.style.width = '380px';
-                    toggleFilterBtn.textContent = 'Gizle';
-                    if (filterToggleIcon) filterToggleIcon.classList.add('active');
+                // Mobilde expanded class'ını kontrol et
+                if (window.innerWidth <= 768) {
+                    const isExpanded = filterSidebar.classList.contains('expanded');
+                    if (isExpanded) {
+                        // Kapat
+                        filterSidebar.classList.remove('expanded');
+                        filterSidebar.style.height = '0';
+                        toggleFilterBtn.textContent = 'Göster';
+                        if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+                    } else {
+                        // Aç
+                        filterSidebar.classList.add('expanded');
+                        filterSidebar.style.height = '45vh'; // Varsayılan yükseklik
+                        toggleFilterBtn.textContent = 'Gizle';
+                        if (filterToggleIcon) filterToggleIcon.classList.add('active');
+                    }
                 } else {
-                    filterSidebar.classList.add('collapsed');
-                    toggleFilterBtn.textContent = 'Göster';
-                    if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+                    // Desktop'ta collapsed class'ını kontrol et
+                    const isCollapsed = filterSidebar.classList.contains('collapsed');
+                    if (isCollapsed) {
+                        filterSidebar.classList.remove('collapsed');
+                        filterSidebar.style.width = '380px';
+                        toggleFilterBtn.textContent = 'Gizle';
+                        if (filterToggleIcon) filterToggleIcon.classList.add('active');
+                    } else {
+                        filterSidebar.classList.add('collapsed');
+                        toggleFilterBtn.textContent = 'Göster';
+                        if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+                    }
                 }
             }
         });
@@ -855,6 +946,96 @@ function setupModalListeners() {
         document.addEventListener('touchend', () => {
             isResizing = false;
         });
+    }
+    
+    // Vertical Resize (Mobil için yukarı-aşağı sürükleme)
+    if (filterResizeHandleVertical && filterSidebar) {
+        let isVerticalResizing = false;
+        let startY = 0;
+        let startHeight = 0;
+        
+        const handleMouseMove = (e) => {
+            if (!isVerticalResizing || window.innerWidth > 768) return;
+            
+            const diff = startY - e.clientY; // Yukarı çekince yükseklik artar
+            const newHeight = startHeight + diff;
+            const minHeight = 300;
+            const maxHeight = window.innerHeight * 0.9; // Ekranın %90'ı
+            
+            if (newHeight >= minHeight && newHeight <= maxHeight) {
+                filterSidebar.style.height = newHeight + 'px';
+                filterSidebar.classList.add('expanded'); // Açık tut
+            } else if (newHeight < minHeight) {
+                // Minimum yüksekliğin altına düşerse kapat
+                filterSidebar.classList.remove('expanded');
+                filterSidebar.style.height = '0';
+                if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+            }
+        };
+        
+        const handleMouseUp = () => {
+            if (isVerticalResizing) {
+                isVerticalResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        };
+        
+        const handleTouchMove = (e) => {
+            if (!isVerticalResizing || window.innerWidth > 768) return;
+            
+            const diff = startY - e.touches[0].clientY; // Yukarı çekince yükseklik artar
+            const newHeight = startHeight + diff;
+            const minHeight = 300;
+            const maxHeight = window.innerHeight * 0.9;
+            
+            if (newHeight >= minHeight && newHeight <= maxHeight) {
+                filterSidebar.style.height = newHeight + 'px';
+                filterSidebar.classList.add('expanded'); // Açık tut
+            } else if (newHeight < minHeight) {
+                // Minimum yüksekliğin altına düşerse kapat
+                filterSidebar.classList.remove('expanded');
+                filterSidebar.style.height = '0';
+                if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+            }
+            
+            e.preventDefault();
+        };
+        
+        const handleTouchEnd = () => {
+            if (isVerticalResizing) {
+                isVerticalResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        };
+        
+        filterResizeHandleVertical.addEventListener('mousedown', (e) => {
+            if (window.innerWidth > 768) return;
+            isVerticalResizing = true;
+            startY = e.clientY;
+            startHeight = filterSidebar.offsetHeight;
+            document.body.style.cursor = 'ns-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        
+        filterResizeHandleVertical.addEventListener('touchstart', (e) => {
+            if (window.innerWidth > 768) return;
+            isVerticalResizing = true;
+            startY = e.touches[0].clientY;
+            startHeight = filterSidebar.offsetHeight;
+            e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
     }
     
     // Drag to scroll for filter results area
@@ -1664,6 +1845,9 @@ async function loadProfilesFromSupabase() {
             renderFilterResults(mapState.profiles);
             renderFilterResults(mapState.profiles);
             renderFilterResults(mapState.profiles);
+            
+            // [YENİ] Deep Link Kontrolü
+            checkUrlForDeepLink();
         }
     } catch (error) {
         console.error('Profil yükleme hatası:', error);
@@ -2412,6 +2596,19 @@ function handleProfileClick(profileId) {
             detailSocial.innerHTML = socialHTML || '<div class="no-social">Sosyal medya hesabı eklenmemiş</div>';
         }
         
+        // Paylaş Butonunu Bul ve Bağla
+        const shareBtn = document.getElementById('share-profile-btn');
+        if (shareBtn) {
+            // Önceki listener'ları temizlemek için klonlama yöntemi
+            const newShareBtn = shareBtn.cloneNode(true);
+            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+            
+            newShareBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Modalın kapanmasını engelle
+                shareProfile(profile.id);
+            });
+        }
+        
         profileDetailModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     } else {
@@ -2424,6 +2621,12 @@ function closeProfileDetailModal() {
     if (profileDetailModal) {
         profileDetailModal.classList.add('hidden');
         document.body.style.overflow = '';
+        
+        // URL'de deep link parametresi varsa temizle
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('u') || urlParams.get('id')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
 }
 
@@ -3118,5 +3321,131 @@ function setupEditProfileListeners() {
             editGenderMale?.classList.remove('active');
         });
     }
+}
+
+// ==================== HERO SECTION FUNCTIONS ====================
+
+// Setup hero section listeners
+function setupHeroListeners() {
+    const heroStartBtn = document.getElementById('hero-start-btn');
+    const heroLearnMoreBtn = document.getElementById('hero-learn-more-btn');
+    
+    if (heroStartBtn) {
+        heroStartBtn.addEventListener('click', () => {
+            hideHeroSection();
+        });
+    }
+    
+    if (heroLearnMoreBtn) {
+        heroLearnMoreBtn.addEventListener('click', () => {
+            // Scroll to map or show info
+            hideHeroSection();
+            // Optionally scroll to a specific section
+            setTimeout(() => {
+                const mapContainer = document.getElementById('map-container');
+                if (mapContainer) {
+                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 300);
+        });
+    }
+}
+
+// Hide hero section
+function hideHeroSection() {
+    const heroSection = document.getElementById('hero-section');
+    if (heroSection) {
+        heroSection.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Show hero section (if needed)
+function showHeroSection() {
+    const heroSection = document.getElementById('hero-section');
+    if (heroSection) {
+        heroSection.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// ==================== DEEP LINKING SYSTEM ====================
+
+// 1. URL'de Profil ID'si Var mı Kontrol Et (Karşılama)
+function checkUrlForDeepLink() {
+    // URL'den 'u' veya 'id' parametresini al
+    const urlParams = new URLSearchParams(window.location.search);
+    const profileId = urlParams.get('u') || urlParams.get('id');
+
+    if (profileId) {
+        console.log("🔗 Deep Link Tespit Edildi:", profileId);
+        // Hero bölümünü gizle ki modal üstte görünsün
+        hideHeroSection();
+        
+        // Profilin yüklenmesini bekle (kısa bir gecikme gerekebilir)
+        setTimeout(() => {
+            const profile = mapState.profiles.find(p => String(p.id) === String(profileId));
+            
+            if (profile) {
+                // Sadece detay modalını aç (zoom yok)
+                handleProfileClick(profile.id);
+                
+                // İsteğe bağlı: URL'yi temizle (kullanıcı gezinmeye devam ederse)
+                // window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                showToast("Aradığın profil bulunamadı veya silinmiş.");
+            }
+        }, 1000); // 1 saniye bekle ki harita ve veriler tam yüklensin
+    }
+}
+
+// 2. Profili Paylaş (Link Oluştur ve Kopyala)
+async function shareProfile(profileId) {
+    if (!profileId) return;
+
+    // Link formatı: https://mapfy.app/?u=PROFIL_ID
+    const shareUrl = `${window.location.origin}${window.location.pathname}?u=${profileId}`;
+
+    // Mobil Cihazlar İçin Native Paylaşım Menüsü
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Mapfy Profilim',
+                text: 'Beni haritada bul!',
+                url: shareUrl
+            });
+            return;
+        } catch (err) {
+            // Paylaşım iptal edilirse veya hata olursa panoya kopyalamayı dene
+        }
+    }
+
+    // Masaüstü İçin Panoya Kopyalama
+    try {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast("Profil linki kopyalandı! 🔗");
+    } catch (err) {
+        console.error('Link kopyalanamadı:', err);
+        prompt("Linki kopyala:", shareUrl);
+    }
+}
+
+// 3. Bildirim Göster (Toast)
+function showToast(message) {
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `<span>✅</span> ${message}`;
+    
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 

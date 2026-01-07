@@ -72,6 +72,68 @@
             </div>
         </header>
 
+        <!-- Hero Section / Landing -->
+        <div id="hero-section" class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span>Türkiye'nin Sosyal Haritası</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 2l4 4-4 4"/>
+                    </svg>
+                </div>
+                
+                <h1 class="hero-title">
+                    <span class="hero-title-line">Haritada buluş,</span>
+                    <span class="hero-title-line highlight">Türkiye'de keşfet</span>
+                </h1>
+                
+                <p class="hero-description">
+                    Mapfy, Türkiye haritası üzerinde kendini konumlandır, şehirlerdeki insanlarla tanış ve sosyal medya hesaplarını paylaş. 
+                    <br>81 ilde binlerce profil keşfet, yeni bağlantılar kur.
+                </p>
+                
+                <div class="hero-features">
+                    <div class="hero-feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <span>81 İlde Profil</span>
+                    </div>
+                    <div class="hero-feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Sosyal Bağlantılar</span>
+                    </div>
+                    <div class="hero-feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        <span>Güvenli Giriş</span>
+                    </div>
+                </div>
+                
+                <div class="hero-actions">
+                    <button id="hero-start-btn" class="hero-btn-primary">
+                        Haritayı Keşfet
+                    </button>
+                    <button id="hero-learn-more-btn" class="hero-btn-secondary">
+                        Daha Fazla Bilgi
+                    </button>
+                </div>
+            </div>
+            
+            <div class="hero-background">
+                <div class="hero-gradient"></div>
+            </div>
+        </div>
+
         <!-- Main Content Area -->
         <div class="main-content">
             <!-- Map Container -->
@@ -114,6 +176,7 @@
             <!-- Filter Sidebar -->
         <div class="filter-sidebar" id="filter-sidebar">
             <div class="filter-resize-handle" id="filter-resize-handle"></div>
+            <div class="filter-resize-handle-vertical" id="filter-resize-handle-vertical"></div>
             <div class="filter-header">
                 <h3>🔍 Filtrele & Ara</h3>
                 <button id="toggle-filter-btn" class="toggle-btn">Gizle</button>
@@ -306,12 +369,29 @@
                         <div class="profile-detail-district" id="detail-district"></div>
                         <div class="profile-detail-age" id="detail-age"></div>
                     </div>
+                    
+                    <button id="share-profile-btn" class="share-btn" title="Profili Paylaş">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                    </button>
                 </div>
                 <div class="profile-detail-body">
                     <div class="profile-detail-section">
                         <h4 class="section-title">Sosyal Medya</h4>
                         <div class="social-links" id="detail-social"></div>
                     </div>
+                </div>
+                <div class="profile-detail-footer">
+                    <button id="go-to-homepage-btn" class="btn-homepage">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Uygulamayı Keşfet
+                    </button>
                 </div>
             </div>
         </div>
