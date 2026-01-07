@@ -49,7 +49,8 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS twitter_username VARCHAR(255),
   ADD COLUMN IF NOT EXISTS pinterest_username VARCHAR(255),
   ADD COLUMN IF NOT EXISTS age INTEGER,
-  ADD COLUMN IF NOT EXISTS district VARCHAR(100);
+  ADD COLUMN IF NOT EXISTS district VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS gender VARCHAR(10);
 
 -- Index ekle (performans için) - eğer yoksa
 CREATE INDEX IF NOT EXISTS idx_profiles_city ON profiles(city_id);

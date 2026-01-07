@@ -60,26 +60,84 @@
             </div>
         </header>
 
-        <!-- Map Container -->
-        <div id="map-container" class="map-container">
-            <svg id="svg-turkey" viewBox="0 0 1005 490" xmlns="http://www.w3.org/2000/svg" version="1.1">
-                <!-- SVG içeriği JavaScript ile yüklenecek -->
-            </svg>
-            
-            <!-- Zoom Controls -->
-            <div class="zoom-controls">
-                <button class="zoom-btn" id="zoom-in" title="Yakınlaştır">+</button>
-                <button class="zoom-btn" id="zoom-out" title="Uzaklaştır">−</button>
-                <button class="zoom-btn" id="reset-zoom" title="Sıfırla">⌂</button>
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Map Container -->
+            <div id="map-container" class="map-container">
+                <svg id="svg-turkey" viewBox="0 0 1005 490" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <!-- SVG içeriği JavaScript ile yüklenecek -->
+                </svg>
+                
+                <!-- Zoom Controls -->
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoom-in" title="Yakınlaştır">+</button>
+                    <button class="zoom-btn" id="zoom-out" title="Uzaklaştır">−</button>
+                    <button class="zoom-btn" id="reset-zoom" title="Sıfırla">⌂</button>
+                </div>
+
+                <!-- Loading -->
+                <div id="loading" class="loading">Harita yükleniyor...</div>
+                
+                <!-- Add Profile Button -->
+                <button id="add-profile-btn" class="add-profile-btn" title="Profil Ekle">
+                    <span class="plus-icon">+</span>
+                </button>
+                
+                <!-- Filter Toggle Button -->
+                <button id="filter-toggle-icon" class="filter-toggle-icon" title="Filtrele">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                    </svg>
+                </button>
             </div>
 
-            <!-- Loading -->
-            <div id="loading" class="loading">Harita yükleniyor...</div>
+            <!-- Filter Sidebar -->
+        <div class="filter-sidebar" id="filter-sidebar">
+            <div class="filter-resize-handle" id="filter-resize-handle"></div>
+            <div class="filter-header">
+                <h3>🔍 Filtrele & Ara</h3>
+                <button id="toggle-filter-btn" class="toggle-btn">Gizle</button>
+            </div>
             
-            <!-- Add Profile Button -->
-            <button id="add-profile-btn" class="add-profile-btn" title="Profil Ekle">
-                <span class="plus-icon">+</span>
-            </button>
+            <div class="filter-content">
+                <div class="filter-row">
+                    <label>Cinsiyet</label>
+                    <div class="gender-toggle-group">
+                        <button id="gender-all" class="gender-btn active">Tümü</button>
+                        <button id="gender-male" class="gender-btn">Erkek</button>
+                        <button id="gender-female" class="gender-btn">Kadın</button>
+                    </div>
+                </div>
+
+                <div class="filter-row-grid">
+                    <div class="input-group">
+                        <input type="text" id="filter-city" placeholder="Şehir seçin..." autocomplete="off">
+                        <div id="city-suggestions-filter" class="suggestions-dropdown hidden"></div>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="filter-district" placeholder="İlçe...">
+                    </div>
+                </div>
+
+                <div class="filter-row-grid age-grid">
+                    <input type="number" id="age-min" placeholder="Min Yaş" min="18">
+                    <span class="separator">-</span>
+                    <input type="number" id="age-max" placeholder="Max Yaş" max="99">
+                </div>
+
+                <div class="filter-actions">
+                    <button id="clear-filters-btn" class="btn-text">Temizle</button>
+                    <button id="search-filter-btn" class="btn-primary">Sonuçları Göster</button>
+                </div>
+            </div>
+
+            <div class="filter-results-area">
+                <div class="results-header">
+                    <span id="results-count" class="count-badge">0</span> Kişi Bulundu
+                </div>
+                <div id="filter-results-list" class="results-grid">
+                </div>
+            </div>
         </div>
 
         <!-- Add Profile Modal -->
@@ -129,6 +187,27 @@
                     <div class="form-section">
                         <label class="form-label">Yaş</label>
                         <input type="number" id="age-input" class="form-input" placeholder="Yaşınızı girin" min="1" max="120">
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="form-section">
+                        <label class="form-label">Cinsiyet</label>
+                        <div class="gender-toggle">
+                            <button type="button" class="gender-btn" data-gender="male" id="profile-gender-male">
+                                <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="10" cy="14" r="8"></circle>
+                                    <path d="M20 10l-6-6M14 10h6v-6"></path>
+                                </svg>
+                                Erkek
+                            </button>
+                            <button type="button" class="gender-btn" data-gender="female" id="profile-gender-female">
+                                <svg class="gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="8" r="7"></circle>
+                                    <path d="M12 15v7M8 19h8"></path>
+                                </svg>
+                                Kız
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Social Media -->

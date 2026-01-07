@@ -64,11 +64,50 @@ const pinterestInput = document.getElementById('pinterest-input');
 const profileDetailModal = document.getElementById('profile-detail-modal');
 const closeDetailModalBtn = document.getElementById('close-detail-modal');
 
+// Filter elements
+const clearFiltersBtn = document.getElementById('clear-filters-btn');
+const genderAllBtn = document.getElementById('gender-all');
+const genderMaleBtn = document.getElementById('gender-male');
+const genderFemaleBtn = document.getElementById('gender-female');
+const ageMinInput = document.getElementById('age-min');
+const ageMaxInput = document.getElementById('age-max');
+const filterCityInput = document.getElementById('filter-city');
+const filterDistrictInput = document.getElementById('filter-district');
+const citySuggestionsFilter = document.getElementById('city-suggestions-filter');
+const filterResultsList = document.getElementById('filter-results-list');
+const resultsCount = document.getElementById('results-count');
+const searchFilterBtn = document.getElementById('search-filter-btn');
+const filterSidebar = document.getElementById('filter-sidebar');
+const toggleFilterBtn = document.getElementById('toggle-filter-btn');
+const filterResultsArea = document.querySelector('.filter-results-area');
+const filterResizeHandle = document.getElementById('filter-resize-handle');
+const filterToggleIcon = document.getElementById('filter-toggle-icon');
+
+// Profile gender buttons
+const profileGenderMaleBtn = document.getElementById('profile-gender-male');
+const profileGenderFemaleBtn = document.getElementById('profile-gender-female');
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadMap();
     setupEventListeners();
     setupModalListeners();
+    
+    // Initialize filter icon state
+    if (filterSidebar && filterToggleIcon) {
+        const isCollapsed = filterSidebar.classList.contains('collapsed');
+        if (!isCollapsed) {
+            filterToggleIcon.classList.add('active');
+        }
+    }
+    
+    // Initialize filter gender button state
+    if (genderAllBtn) {
+        genderAllBtn.classList.add('active');
+    }
+    
+    // Initialize filter visibility
+    updateFilterVisibility();
 });
 
 // Load SVG Map
@@ -586,6 +625,204 @@ function setupModalListeners() {
         cropCancelBtn.addEventListener('click', cancelCrop);
     }
     
+    // Profile gender selection
+    if (profileGenderMaleBtn) {
+        profileGenderMaleBtn.addEventListener('click', () => selectProfileGender('male'));
+    }
+    if (profileGenderFemaleBtn) {
+        profileGenderFemaleBtn.addEventListener('click', () => selectProfileGender('female'));
+    }
+    
+    // Filter listeners
+    if (genderAllBtn) {
+        genderAllBtn.addEventListener('click', () => selectFilterGender('all'));
+    }
+    if (genderMaleBtn) {
+        genderMaleBtn.addEventListener('click', () => selectFilterGender('male'));
+    }
+    if (genderFemaleBtn) {
+        genderFemaleBtn.addEventListener('click', () => selectFilterGender('female'));
+    }
+    
+    if (ageMinInput) {
+        ageMinInput.addEventListener('input', applyFilters);
+    }
+    if (ageMaxInput) {
+        ageMaxInput.addEventListener('input', applyFilters);
+    }
+    if (filterCityInput) {
+        filterCityInput.addEventListener('input', handleFilterCityInput);
+    }
+    if (filterDistrictInput) {
+        filterDistrictInput.addEventListener('input', applyFilters);
+    }
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearAllFilters);
+    }
+    
+    // Search filter button
+    if (searchFilterBtn) {
+        searchFilterBtn.addEventListener('click', applyFilters);
+    }
+    
+    // Filter toggle icon (open/close sidebar from map)
+    if (filterToggleIcon) {
+        filterToggleIcon.addEventListener('click', () => {
+            if (filterSidebar) {
+                const isCollapsed = filterSidebar.classList.contains('collapsed');
+                if (isCollapsed) {
+                    filterSidebar.classList.remove('collapsed');
+                    filterSidebar.style.width = '380px';
+                    filterToggleIcon.classList.add('active');
+                    if (toggleFilterBtn) toggleFilterBtn.textContent = 'Gizle';
+                } else {
+                    filterSidebar.classList.add('collapsed');
+                    filterToggleIcon.classList.remove('active');
+                    if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
+                }
+            }
+        });
+    }
+    
+    // Filter toggle button (collapse/expand from sidebar)
+    if (toggleFilterBtn) {
+        toggleFilterBtn.addEventListener('click', () => {
+            if (filterSidebar) {
+                const isCollapsed = filterSidebar.classList.contains('collapsed');
+                if (isCollapsed) {
+                    filterSidebar.classList.remove('collapsed');
+                    filterSidebar.style.width = '380px';
+                    toggleFilterBtn.textContent = 'Gizle';
+                    if (filterToggleIcon) filterToggleIcon.classList.add('active');
+                } else {
+                    filterSidebar.classList.add('collapsed');
+                    toggleFilterBtn.textContent = 'Göster';
+                    if (filterToggleIcon) filterToggleIcon.classList.remove('active');
+                }
+            }
+        });
+    }
+    
+    // Resize handle for dragging sidebar width
+    if (filterResizeHandle && filterSidebar) {
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+        
+        filterResizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = filterSidebar.offsetWidth;
+            document.body.style.cursor = 'ew-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const diff = startX - e.clientX; // Reverse because sidebar is on the right
+            const newWidth = startWidth + diff;
+            const minWidth = 250;
+            const maxWidth = 600;
+            
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                filterSidebar.style.width = newWidth + 'px';
+                filterSidebar.classList.remove('collapsed');
+            } else if (newWidth < minWidth) {
+                filterSidebar.classList.add('collapsed');
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+        
+        // Touch support for mobile
+        filterResizeHandle.addEventListener('touchstart', (e) => {
+            isResizing = true;
+            startX = e.touches[0].clientX;
+            startWidth = filterSidebar.offsetWidth;
+            e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isResizing) return;
+            
+            const diff = startX - e.touches[0].clientX;
+            const newWidth = startWidth + diff;
+            const minWidth = 250;
+            const maxWidth = 600;
+            
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                filterSidebar.style.width = newWidth + 'px';
+                filterSidebar.classList.remove('collapsed');
+            } else if (newWidth < minWidth) {
+                filterSidebar.classList.add('collapsed');
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', () => {
+            isResizing = false;
+        });
+    }
+    
+    // Drag to scroll for filter results area
+    const filterResultsArea = document.querySelector('.filter-results-area');
+    if (filterResultsArea) {
+        let isDragging = false;
+        let startY = 0;
+        let scrollTop = 0;
+        
+        filterResultsArea.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startY = e.pageY - filterResultsArea.offsetTop;
+            scrollTop = filterResultsArea.scrollTop;
+            filterResultsArea.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+        
+        filterResultsArea.addEventListener('mouseleave', () => {
+            isDragging = false;
+            filterResultsArea.style.cursor = 'grab';
+        });
+        
+        filterResultsArea.addEventListener('mouseup', () => {
+            isDragging = false;
+            filterResultsArea.style.cursor = 'grab';
+        });
+        
+        filterResultsArea.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const y = e.pageY - filterResultsArea.offsetTop;
+            const walk = (y - startY) * 2; // Scroll speed multiplier
+            filterResultsArea.scrollTop = scrollTop - walk;
+        });
+        
+        // Touch support for mobile
+        let touchStartY = 0;
+        let touchScrollTop = 0;
+        
+        filterResultsArea.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].pageY - filterResultsArea.offsetTop;
+            touchScrollTop = filterResultsArea.scrollTop;
+        }, { passive: true });
+        
+        filterResultsArea.addEventListener('touchmove', (e) => {
+            const touchY = e.touches[0].pageY - filterResultsArea.offsetTop;
+            const walk = (touchY - touchStartY) * 1.5;
+            filterResultsArea.scrollTop = touchScrollTop - walk;
+        }, { passive: true });
+        
+        // Set initial cursor
+        filterResultsArea.style.cursor = 'grab';
+    }
     
     // City autocomplete
     if (cityInput) {
@@ -829,6 +1066,7 @@ function resetView() {
             mapState.translateX = 0;
             mapState.translateY = 0;
             updateTransform();
+            updateFilterVisibility();
         }
     }
     
@@ -860,6 +1098,9 @@ function updateTransform() {
     
     // Profil boyutlarını zoom seviyesine göre güncelle
     updateProfileSizes();
+    
+    // Filtre görünürlüğünü zoom seviyesine göre güncelle
+    updateFilterVisibility();
 }
 
 // City click handler
@@ -1117,12 +1358,13 @@ function addProfileToMap(profile) {
     // Daha canlı ve net görünüm için filter efektleri eklendi
     image.setAttribute('style', 'image-rendering: -webkit-optimize-contrast; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: auto; filter: contrast(1.2) saturate(1.25) brightness(1.08); -webkit-filter: contrast(1.2) saturate(1.25) brightness(1.08);');
     
-    // Belirgin beyaz çizgi (daha görünür)
+    // Site temasına uyumlu çizgi (yeşil ton)
     const borderCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     borderCircle.setAttribute('class', 'profile-border');
     borderCircle.setAttribute('fill', 'none'); // İçi boş
-    borderCircle.setAttribute('stroke', '#FFFFFF'); // Belirgin beyaz çizgi
-    borderCircle.setAttribute('stroke-width', '0.5'); // Biraz daha kalın çizgi
+    borderCircle.setAttribute('stroke', '#3ECF8E'); // Site temasına uyumlu yeşil çizgi
+    borderCircle.setAttribute('stroke-width', '0.35'); // Daha ince çizgi
+    borderCircle.setAttribute('opacity', '0.8'); // Hafif şeffaflık
     
     // Create invisible clickable circle - sadece profil görselinin boyutu kadar
     // Etrafına basılınca profil açılmasın, sadece profil görseline basılınca açılsın
@@ -1316,6 +1558,7 @@ async function loadProfilesFromSupabase() {
                             pinterest_username: profileData.pinterest_username || null,
                             age: profileData.age || null,
                             district: profileData.district || null,
+                            gender: profileData.gender || null,
                 };
                 
                         // State'e ve haritaya ekle
@@ -1329,6 +1572,13 @@ async function loadProfilesFromSupabase() {
             }
             
             console.log(`✓ ${profilesAdded} profil başarıyla yüklendi ve spiral dağılım ile yerleştirildi (${profilesRepositioned} profil yeniden konumlandırıldı)`);
+            
+            // Apply filters after loading and show results
+            applyFilters();
+            updateFilterVisibility();
+            renderFilterResults(mapState.profiles);
+            renderFilterResults(mapState.profiles);
+            renderFilterResults(mapState.profiles);
         }
     } catch (error) {
         console.error('Profil yükleme hatası:', error);
@@ -1355,12 +1605,7 @@ async function saveProfileToSupabase(profile) {
                     pinterest_username: profile.pinterest_username || null,
                     age: profile.age || null,
                     district: profile.district || null,
-                    instagram_username: profile.instagram_username || null,
-                    facebook_username: profile.facebook_username || null,
-                    twitter_username: profile.twitter_username || null,
-                    pinterest_username: profile.pinterest_username || null,
-                    age: profile.age || null,
-                    district: profile.district || null,
+                    gender: profile.gender || null,
                 }
             ])
             .select()
@@ -1469,7 +1714,17 @@ let modalState = {
     cropEndX: 0,
     cropEndY: 0,
     isCropping: false,
-    cropImageSrc: null // Crop için kullanılan görsel kaynağı
+    cropImageSrc: null, // Crop için kullanılan görsel kaynağı
+    selectedGender: null
+};
+
+// Filter state
+let filterState = {
+    gender: 'all',
+    ageMin: null,
+    ageMax: null,
+    city: '',
+    district: ''
 };
 
 // Open add profile modal
@@ -1944,6 +2199,7 @@ async function saveProfile() {
             pinterest_username: pinterestInput ? pinterestInput.value.trim() : '',
             age: ageInput && ageInput.value ? parseInt(ageInput.value) : null,
             district: districtInput ? districtInput.value.trim() : '',
+            gender: modalState.selectedGender,
         };
         
         // 6. Supabase'e Kaydet
@@ -1960,9 +2216,8 @@ async function saveProfile() {
         // Başarı mesajı
         alert('Profil başarıyla eklendi!');
         
-        // Update city filter and profiles list
-        updateCityFilter();
-        renderProfilesList();
+        // Update filters and results
+        applyFilters();
         
     } catch (error) {
         console.error('Profil kaydetme hatası:', error);
@@ -2072,6 +2327,282 @@ function closeProfileDetailModal() {
         profileDetailModal.classList.add('hidden');
         document.body.style.overflow = '';
     }
+}
+
+// Update filter visibility based on zoom level - Artık kullanılmıyor, scroll ile kontrol ediliyor
+function updateFilterVisibility() {
+    // Filtre artık harita dışında ve scroll ile kontrol ediliyor
+    // Bu fonksiyon boş bırakıldı, eski kod uyumluluğu için
+}
+
+// Select profile gender (in add profile modal)
+function selectProfileGender(gender) {
+    modalState.selectedGender = gender;
+    
+    if (profileGenderMaleBtn && profileGenderFemaleBtn) {
+        if (gender === 'male') {
+            profileGenderMaleBtn.classList.add('active');
+            profileGenderFemaleBtn.classList.remove('active');
+        } else if (gender === 'female') {
+            profileGenderFemaleBtn.classList.add('active');
+            profileGenderMaleBtn.classList.remove('active');
+        }
+    }
+}
+
+// Select filter gender
+function selectFilterGender(gender) {
+    filterState.gender = gender;
+    
+    if (genderAllBtn) {
+        genderAllBtn.classList.toggle('active', gender === 'all');
+    }
+    if (genderMaleBtn) {
+        genderMaleBtn.classList.toggle('active', gender === 'male');
+    }
+    if (genderFemaleBtn) {
+        genderFemaleBtn.classList.toggle('active', gender === 'female');
+    }
+    
+    applyFilters();
+}
+
+// Get all 81 cities from cities.json
+async function getAllCities() {
+    try {
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+            throw new Error('Şehir listesi yüklenemedi');
+        }
+        const cities = await response.json();
+        return cities.map(city => ({
+            id: city.name.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c'),
+            name: city.name
+        }));
+    } catch (error) {
+        console.error('Şehir listesi yüklenirken hata:', error);
+        return [];
+    }
+}
+
+// Handle filter city input - 81 ilden autocomplete
+async function handleFilterCityInput(e) {
+    const query = e.target.value.toLowerCase().trim();
+    
+    if (!citySuggestionsFilter) return;
+    
+    if (query.length < 1) {
+        citySuggestionsFilter.classList.add('hidden');
+        citySuggestionsFilter.innerHTML = '';
+        filterState.city = '';
+        return;
+    }
+    
+    const normalizeQuery = (str) => {
+        return str.toLowerCase()
+            .replace(/ı/g, 'i')
+            .replace(/ğ/g, 'g')
+            .replace(/ü/g, 'u')
+            .replace(/ş/g, 's')
+            .replace(/ö/g, 'o')
+            .replace(/ç/g, 'c');
+    };
+    
+    const normalizedQuery = normalizeQuery(query);
+    
+    // 81 ilden şehirleri al
+    const allCities = await getAllCities();
+    
+    // Eşleşen şehirleri bul - en uygun olanı önce göster
+    const matches = allCities.filter(city => {
+        const normalizedName = normalizeQuery(city.name);
+        return normalizedName.includes(normalizedQuery);
+    }).sort((a, b) => {
+        // Tam eşleşme öncelikli
+        const aStarts = normalizeQuery(a.name).startsWith(normalizedQuery);
+        const bStarts = normalizeQuery(b.name).startsWith(normalizedQuery);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.name.localeCompare(b.name, 'tr');
+    }).slice(0, 8);
+    
+    if (matches.length > 0) {
+        citySuggestionsFilter.innerHTML = matches.map(city => {
+            return `<div class="city-suggestion" data-city-id="${city.id}" data-city-name="${city.name}">
+                ${city.name}
+            </div>`;
+        }).join('');
+        citySuggestionsFilter.classList.remove('hidden');
+        
+        // Add click listeners
+        citySuggestionsFilter.querySelectorAll('.city-suggestion').forEach(item => {
+            item.addEventListener('click', () => {
+                const cityId = item.getAttribute('data-city-id');
+                const cityName = item.getAttribute('data-city-name');
+                filterState.city = cityName;
+                if (filterCityInput) {
+                    filterCityInput.value = cityName;
+                }
+                citySuggestionsFilter.classList.add('hidden');
+            });
+        });
+    } else {
+        citySuggestionsFilter.classList.add('hidden');
+    }
+}
+
+
+// Apply filters
+function applyFilters() {
+    // Update filter state from inputs
+    if (ageMinInput) {
+        filterState.ageMin = ageMinInput.value ? parseInt(ageMinInput.value) : null;
+    }
+    if (ageMaxInput) {
+        filterState.ageMax = ageMaxInput.value ? parseInt(ageMaxInput.value) : null;
+    }
+    if (filterCityInput) {
+        filterState.city = filterCityInput.value.trim();
+    }
+    if (filterDistrictInput) {
+        filterState.district = filterDistrictInput.value.trim().toLowerCase();
+    }
+    
+    // Filter profiles
+    const filteredProfiles = mapState.profiles.filter(profile => {
+        // Gender filter
+        if (filterState.gender !== 'all' && profile.gender !== filterState.gender) {
+            return false;
+        }
+        
+        // Age filter
+        if (filterState.ageMin !== null && (!profile.age || profile.age < filterState.ageMin)) {
+            return false;
+        }
+        if (filterState.ageMax !== null && (!profile.age || profile.age > filterState.ageMax)) {
+            return false;
+        }
+        
+        // City filter
+        if (filterState.city && profile.city) {
+            const normalizeQuery = (str) => {
+                return str.toLowerCase()
+                    .replace(/ı/g, 'i')
+                    .replace(/ğ/g, 'g')
+                    .replace(/ü/g, 'u')
+                    .replace(/ş/g, 's')
+                    .replace(/ö/g, 'o')
+                    .replace(/ç/g, 'c');
+            };
+            const normalizedCity = normalizeQuery(profile.city);
+            const normalizedFilter = normalizeQuery(filterState.city);
+            if (!normalizedCity.includes(normalizedFilter)) {
+                return false;
+            }
+        }
+        
+        // District filter
+        if (filterState.district && profile.district) {
+            const normalizedDistrict = profile.district.toLowerCase();
+            const normalizedFilter = filterState.district.toLowerCase();
+            if (!normalizedDistrict.includes(normalizedFilter)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    // Update map visibility
+    mapState.profiles.forEach(profile => {
+        const profileElement = document.getElementById(profile.id);
+        if (profileElement) {
+            const isVisible = filteredProfiles.some(p => p.id === profile.id);
+            profileElement.style.display = isVisible ? 'block' : 'none';
+        }
+    });
+    
+    // Render filter results list
+    renderFilterResults(filteredProfiles);
+}
+
+// Render filter results - Yeni Grid Tasarım
+function renderFilterResults(profiles) {
+    if (!filterResultsList || !resultsCount) return;
+
+    resultsCount.textContent = profiles.length;
+    filterResultsList.innerHTML = '';
+
+    if (profiles.length === 0) {
+        filterResultsList.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 30px; color: #666;">
+                <p>😞</p>
+                <p>Sonuç bulunamadı.</p>
+            </div>`;
+        return;
+    }
+
+    profiles.forEach(profile => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.onclick = () => {
+            // Haritada profile git
+            zoomToProfile(profile);
+            // Detayı aç
+            handleProfileClick(profile.id);
+        };
+
+        // Eğer resim yoksa varsayılan avatar
+        const imgUrl = profile.imageUrl || 'https://via.placeholder.com/150';
+
+        card.innerHTML = `
+            <img src="${imgUrl}" alt="${profile.name}" class="result-avatar">
+            <div class="result-name">${profile.name || ''}</div>
+            <div class="result-city">${profile.city || ''}</div>
+        `;
+        
+        filterResultsList.appendChild(card);
+    });
+}
+
+// Profile Zoom Fonksiyonu
+function zoomToProfile(profile) {
+    if(!profile.x || !profile.y) return;
+
+    // Haritayı profilin konumuna kaydır
+    const containerWidth = mapContainer.clientWidth;
+    const containerHeight = mapContainer.clientHeight;
+    
+    // Zoom seviyesini artır
+    mapState.scale = 2.5; 
+    
+    // Merkezleme hesabı: (EkranMerkezi - (ProfilKonumu * Scale))
+    mapState.translateX = (containerWidth / 2) - (profile.x * mapState.scale);
+    mapState.translateY = (containerHeight / 2) - (profile.y * mapState.scale);
+    
+    updateTransform();
+}
+
+// Clear all filters
+function clearAllFilters() {
+    filterState = {
+        gender: 'all',
+        ageMin: null,
+        ageMax: null,
+        city: '',
+        district: ''
+    };
+    
+    if (genderAllBtn) genderAllBtn.classList.add('active');
+    if (genderMaleBtn) genderMaleBtn.classList.remove('active');
+    if (genderFemaleBtn) genderFemaleBtn.classList.remove('active');
+    
+    if (ageMinInput) ageMinInput.value = '';
+    if (ageMaxInput) ageMaxInput.value = '';
+    if (filterCityInput) filterCityInput.value = '';
+    if (filterDistrictInput) filterDistrictInput.value = '';
+    
+    applyFilters();
 }
 
 
