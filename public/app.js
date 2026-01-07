@@ -68,18 +68,67 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadMap() {
     try {
         // Gerçek SVG dosyasını yükle - önce turk.svg, sonra turkey.svg dene
-        let response = await fetch('/turk.svg');
-        if (!response.ok) {
-            response = await fetch('/turkey.svg');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        // Opera uyumluluğu için try-catch ile
+        let response;
+        let svgText;
+        
+        try {
+            response = await fetch('/turk.svg', {
+                method: 'GET',
+                cache: 'no-cache',
+                headers: {
+                    'Accept': 'image/svg+xml'
+                }
+            });
+            if (response && response.ok) {
+                svgText = await response.text();
+            } else {
+                throw new Error('turk.svg yüklenemedi: ' + (response ? response.status : 'No response'));
+            }
+        } catch (e) {
+            console.log('turk.svg yüklenemedi, turkey.svg deneniyor...', e);
+            try {
+                response = await fetch('/turkey.svg', {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'image/svg+xml'
+                    }
+                });
+                if (response && response.ok) {
+                    svgText = await response.text();
+                } else {
+                    throw new Error('turkey.svg yüklenemedi: ' + (response ? response.status : 'No response'));
+                }
+            } catch (e2) {
+                console.error('Her iki SVG dosyası da yüklenemedi:', e2);
+                throw new Error('SVG dosyası yüklenemedi: ' + (e2.message || 'Bilinmeyen hata'));
             }
         }
-        const svgText = await response.text();
         
-        // SVG içeriğini parse et
+        if (!svgText || svgText.trim().length === 0) {
+            throw new Error('SVG dosyası boş');
+        }
+        
+        // SVG içeriğini parse et - Opera uyumluluğu için
         const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+        let svgDoc;
+        try {
+            svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+        } catch (parseError) {
+            // Opera için alternatif parse yöntemi
+            console.warn('DOMParser hatası, alternatif yöntem deneniyor:', parseError);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = svgText;
+            const svgElement = tempDiv.querySelector('svg');
+            if (!svgElement) {
+                throw new Error('SVG elementi bulunamadı');
+            }
+            // SVG'yi manuel olarak parse et
+            svgDoc = document.implementation.createDocument('http://www.w3.org/2000/svg', 'svg', null);
+            svgDoc.documentElement.innerHTML = svgElement.innerHTML;
+            svgDoc.documentElement.setAttribute('viewBox', svgElement.getAttribute('viewBox') || '0 0 1005 490');
+        }
         
         // Parse hatası kontrolü
         const parserError = svgDoc.querySelector('parsererror');
@@ -231,10 +280,22 @@ async function loadMap() {
             throw new Error('Turkey grubu bulunamadı');
         }
         
-        loading.classList.add('hidden');
+        // Loading'i gizle - Opera uyumluluğu için hem class hem style
+        if (loading) {
+            loading.classList.add('hidden');
+            loading.style.display = 'none';
+        }
     } catch (error) {
         console.error('SVG yükleme hatası:', error);
-        loading.textContent = 'Harita yüklenirken hata oluştu: ' + error.message;
+        console.error('Hata detayları:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        if (loading) {
+            loading.textContent = 'Harita yüklenirken hata oluştu: ' + error.message;
+        }
         
         // Fallback: eski yöntemi kullan
         try {
@@ -267,9 +328,25 @@ async function loadMap() {
                 province.addEventListener('click', handleCityClick);
             });
             
-            loading.classList.add('hidden');
+            // Loading'i gizle - fallback başarılı sonrası
+            if (loading) {
+                loading.classList.add('hidden');
+                loading.style.display = 'none';
+            }
         } catch (fallbackError) {
             console.error('Fallback de başarısız:', fallbackError);
+            // Son çare: Loading'i gizle ve hata mesajı göster
+            if (loading) {
+                loading.textContent = 'Harita yüklenemedi. Lütfen sayfayı yenileyin.';
+                loading.style.color = '#ff4444';
+                // 5 saniye sonra gizle
+                setTimeout(() => {
+                    if (loading) {
+                        loading.classList.add('hidden');
+                        loading.style.display = 'none';
+                    }
+                }, 5000);
+            }
         }
     }
 }
@@ -682,6 +759,7 @@ function endDrag() {
 function zoom(factor, centerX = null, centerY = null) {
     const minScale = 0.7; // Minimum zoom - harita çok küçültülemez
     const maxScale = 8;
+    const oldScale = mapState.scale;
     const newScale = Math.max(minScale, Math.min(maxScale, mapState.scale * factor));
     
     // Zoom merkezine göre yapılırsa
@@ -690,11 +768,12 @@ function zoom(factor, centerX = null, centerY = null) {
         const mouseX = centerX - rect.left;
         const mouseY = centerY - rect.top;
         
+        // SVG koordinat sisteminde mouse pozisyonunu hesapla
         const svgPoint = svg.createSVGPoint();
-        svgPoint.x = (mouseX - mapState.translateX) / mapState.scale;
-        svgPoint.y = (mouseY - mapState.translateY) / mapState.scale;
+        svgPoint.x = (mouseX - mapState.translateX) / oldScale;
+        svgPoint.y = (mouseY - mapState.translateY) / oldScale;
         
-        const scaleFactor = newScale / mapState.scale;
+        // Yeni scale ile translate'i ayarla (zoom merkezi sabit kalmalı)
         mapState.translateX = mouseX - svgPoint.x * newScale;
         mapState.translateY = mouseY - svgPoint.y * newScale;
     }
@@ -761,8 +840,13 @@ function updateTransform() {
             `translate(${mapState.translateX}, ${mapState.translateY}) scale(${mapState.scale})`);
     }
     
-    // Update profiles group transform - Şehirlerle birlikte scale edilmeli (şehirler üzerinde sabit kalması için)
+    // Update profiles group transform - Profillerin şehirlerle birlikte scale edilmesi için
+    // Profiller şehirlerle aynı transform'u almalı ki zoom'da yerinden oynamasınlar
     if (profilesGroup) {
+        // CSS transform ile SVG transform'u senkronize et
+        const transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
+        profilesGroup.style.transform = transform;
+        // SVG transform attribute'u da ekle (fallback için)
         profilesGroup.setAttribute('transform', 
             `translate(${mapState.translateX}, ${mapState.translateY}) scale(${mapState.scale})`);
     }
@@ -775,6 +859,19 @@ function updateTransform() {
 function handleCityClick(e) {
     // Prevent click if user was dragging
     if (mapState.touchMoved || mapState.isDragging) {
+        return;
+    }
+    
+    // Eğer tıklanan element bir profil veya profil içindeyse, şehir tıklamasını iptal et
+    const clickedElement = e.target;
+    const isProfileClick = clickedElement.closest('.snap-profile') || 
+                          clickedElement.classList.contains('snap-profile') ||
+                          clickedElement.classList.contains('profile-click-area') ||
+                          clickedElement.classList.contains('profile-image') ||
+                          clickedElement.classList.contains('profile-border');
+    
+    if (isProfileClick) {
+        // Bu bir profil tıklaması, şehir tıklamasını iptal et
         return;
     }
     
@@ -856,7 +953,8 @@ function findPositionInCity(cityId) {
         return null;
     }
     
-    // Bounding box al
+    // Bounding box al - transform edilmemiş koordinat sisteminde
+    // Not: getBBox() transform edilmemiş koordinatları verir
     const bbox = path.getBBox();
     // Profil boyutunu hesaba katarak padding hesapla (profil + border + güvenlik mesafesi)
     const profileRadius = 12; // Base size / 2 + border
@@ -1012,6 +1110,8 @@ function addProfileToMap(profile) {
     if (!profilesGroup) {
         profilesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         profilesGroup.id = 'profiles-group';
+        // Profillerin harita efektlerinden bağımsız olması için
+        profilesGroup.setAttribute('style', 'transform-style: flat; isolation: isolate;');
         svg.appendChild(profilesGroup);
     }
     
@@ -1050,7 +1150,12 @@ function addProfileToMap(profile) {
     image.setAttribute('href', profile.imageUrl);
     image.setAttribute('clip-path', `url(#clip-${profile.id})`); // Yuvarlak clip path uygula
     image.setAttribute('class', 'profile-image');
+    // Yüksek kalite için preserveAspectRatio optimize edildi
     image.setAttribute('preserveAspectRatio', 'xMidYMid slice'); // Görseli yuvarlak içine tam oturt
+    // Yüksek kalite için image-rendering optimize edildi
+    // SVG image için kalite ayarları - pixelated kaldırıldı (kaliteyi düşürüyor)
+    // Daha canlı ve net görünüm için filter efektleri eklendi
+    image.setAttribute('style', 'image-rendering: -webkit-optimize-contrast; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: auto; filter: contrast(1.2) saturate(1.25) brightness(1.08); -webkit-filter: contrast(1.2) saturate(1.25) brightness(1.08);');
     
     // Create ince siyah çizgi (şık görünüm için)
     const borderCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -1059,11 +1164,12 @@ function addProfileToMap(profile) {
     borderCircle.setAttribute('stroke', '#333'); // Siyah çizgi
     borderCircle.setAttribute('stroke-width', '0.3'); // Çok ince çizgi
     
-    // Create invisible clickable circle for better click area
+    // Create invisible clickable circle - sadece profil görselinin boyutu kadar
+    // Etrafına basılınca profil açılmasın, sadece profil görseline basılınca açılsın
     const clickArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     clickArea.setAttribute('cx', profile.x);
     clickArea.setAttribute('cy', profile.y);
-    clickArea.setAttribute('r', baseSize * 1.5); // Slightly larger click area
+    clickArea.setAttribute('r', baseSize / 2); // Sadece profil görselinin yarıçapı kadar - etrafına basılınca açılmasın
     clickArea.setAttribute('fill', 'transparent');
     clickArea.setAttribute('class', 'profile-click-area');
     clickArea.style.cursor = 'pointer';
@@ -1072,15 +1178,27 @@ function addProfileToMap(profile) {
     profileGroup.appendChild(borderCircle);
     profileGroup.appendChild(clickArea); // Click area en üstte
     
-    // Add click handler to the entire group
-    profileGroup.addEventListener('click', (e) => {
+    // Sadece profil görseline (image, border, click area) tıklanınca açılsın
+    // Profile group'a click handler ekleme - sadece direkt elementlere tıklanınca çalışsın
+    
+    // Image için click handler - sadece profil görseline basılınca
+    image.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log('Profil tıklandı:', profile.id, profile.name);
+        console.log('Profil tıklandı (image):', profile.id, profile.name);
         handleProfileClick(profile.id);
     });
     
-    // Also add to click area for better mobile support
+    // Border için click handler - sadece profil border'ına basılınca
+    borderCircle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        console.log('Profil tıklandı (border):', profile.id, profile.name);
+        handleProfileClick(profile.id);
+    });
+    
+    // Click area için handler - sadece profil görselinin içine basılınca (etrafına değil)
+    // Click area boyutu sadece profil görselinin yarıçapı kadar, zoom'da da aynı
     clickArea.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -1102,6 +1220,9 @@ function updateProfileSizes() {
     const profiles = profilesGroup.querySelectorAll('.snap-profile');
     
     profiles.forEach(profileGroup => {
+        // Base koordinatlar SVG viewBox koordinat sisteminde
+        // Bu koordinatlar scale edilmiş profiles-group içinde olduğu için
+        // zaten doğru pozisyonda olmalılar (transform ile scale ediliyorlar)
         const baseX = parseFloat(profileGroup.getAttribute('data-base-x')) || 0;
         const baseY = parseFloat(profileGroup.getAttribute('data-base-y')) || 0;
         const baseSize = parseFloat(profileGroup.getAttribute('data-base-size')) || 12;
@@ -1118,7 +1239,8 @@ function updateProfileSizes() {
         const calculatedSize = baseSize / scaleFactor;
         const currentSize = Math.max(minSize, Math.min(maxSize, calculatedSize));
         
-        // Image güncelle
+        // Image güncelle - baseX ve baseY zaten scale edilmiş koordinat sisteminde
+        // çünkü profiles-group transform ile scale ediliyor
         const image = profileGroup.querySelector('.profile-image');
         if (image) {
             image.setAttribute('x', baseX - currentSize / 2);
@@ -1135,13 +1257,14 @@ function updateProfileSizes() {
             borderCircle.setAttribute('r', currentSize / 2); // Profil yarıçapı ile eşit
         }
         
-        // Click area güncelle
+        // Click area güncelle - sadece profil görselinin boyutu kadar
+        // Zoom'da da etrafına basılınca açılmasın, sadece profil görseline basılınca açılsın
         const clickArea = profileGroup.querySelector('.profile-click-area');
         if (clickArea) {
             clickArea.setAttribute('cx', baseX);
             clickArea.setAttribute('cy', baseY);
-            // Click area boyutunu zoom'a göre ayarla (daha büyük tıklanabilir alan)
-            const clickAreaSize = Math.max(currentSize * 1.5, 20); // Minimum 20px
+            // Click area boyutu sadece profil görselinin yarıçapı kadar - zoom'da da aynı
+            const clickAreaSize = currentSize / 2; // Profil görselinin tam yarıçapı - etrafına basılınca açılmasın
             clickArea.setAttribute('r', clickAreaSize);
         }
         
@@ -1293,7 +1416,8 @@ let modalState = {
     cropStartY: 0,
     cropEndX: 0,
     cropEndY: 0,
-    isCropping: false
+    isCropping: false,
+    cropImageSrc: null // Crop için kullanılan görsel kaynağı
 };
 
 // Open add profile modal
@@ -1384,8 +1508,14 @@ function setupCropCanvas(img, imageSrc) {
     cropCanvas.width = width;
     cropCanvas.height = height;
     cropCanvas.classList.remove('hidden');
+    cropCanvas.style.cursor = 'crosshair'; // Tıklama için cursor
+    
+    // Görsel kaynağını sakla (handleCropClick için)
+    modalState.cropImageSrc = imageSrc;
     
     const ctx = cropCanvas.getContext('2d');
+    
+    // Önce fotoğrafı çiz (karartma yok)
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(img, 0, 0, width, height);
     
@@ -1394,8 +1524,8 @@ function setupCropCanvas(img, imageSrc) {
         cropControls.classList.remove('hidden');
     }
     
-    // Simple crop: center square crop
-    const size = Math.min(width, height);
+    // Başlangıçta merkez kare (biraz küçük)
+    const size = Math.min(width, height) * 0.8;
     const x = (width - size) / 2;
     const y = (height - size) / 2;
     
@@ -1407,58 +1537,160 @@ function setupCropCanvas(img, imageSrc) {
     modalState.cropStartY = y;
     modalState.cropEndX = x + size;
     modalState.cropEndY = y + size;
+    
+    // Fotoğraf üzerine tıklanınca kareyi oraya taşı
+    cropCanvas.removeEventListener('click', handleCropClick); // Önceki listener'ı temizle
+    cropCanvas.removeEventListener('mousemove', handleCropHover); // Önceki listener'ı temizle
+    cropCanvas.addEventListener('click', handleCropClick);
+    cropCanvas.addEventListener('mousemove', handleCropHover);
 }
 
-// Draw crop overlay
+// Draw crop overlay - karartma kaldırıldı, sadece kare çizgisi gösteriliyor
 function drawCropOverlay(ctx, canvasWidth, canvasHeight, x, y, size) {
-    // Darken outside area
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    // Karartma kaldırıldı - fotoğraf net görünsün
+    // Sadece kare çizgisi çiziliyor
     
-    // Clear crop area
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillRect(x, y, size, size);
-    ctx.restore();
-    
-    // Draw crop border
-    ctx.strokeStyle = '#FFFC00';
-    ctx.lineWidth = 2;
+    // Draw crop border - yeşil renk (Supabase teması)
+    ctx.strokeStyle = '#3ECF8E';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
     ctx.strokeRect(x, y, size, size);
+    
+    // Köşelerde küçük kareler (daha profesyonel görünüm)
+    const cornerSize = 15;
+    ctx.fillStyle = '#3ECF8E';
+    
+    // Sol üst
+    ctx.fillRect(x - 2, y - 2, cornerSize, 3);
+    ctx.fillRect(x - 2, y - 2, 3, cornerSize);
+    
+    // Sağ üst
+    ctx.fillRect(x + size - cornerSize + 2, y - 2, cornerSize, 3);
+    ctx.fillRect(x + size - 1, y - 2, 3, cornerSize);
+    
+    // Sol alt
+    ctx.fillRect(x - 2, y + size - 1, cornerSize, 3);
+    ctx.fillRect(x - 2, y + size - cornerSize + 2, 3, cornerSize);
+    
+    // Sağ alt
+    ctx.fillRect(x + size - cornerSize + 2, y + size - 1, cornerSize, 3);
+    ctx.fillRect(x + size - 1, y + size - cornerSize + 2, 3, cornerSize);
+}
+
+// Crop canvas'a tıklanınca - fotoğraf üzerine tıklanınca kareyi oraya taşı
+function handleCropClick(e) {
+    if (!cropCanvas || !modalState.selectedFile) return;
+    
+    const rect = cropCanvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    // Canvas koordinatlarını hesapla (scale dikkate alınarak)
+    const scaleX = cropCanvas.width / rect.width;
+    const scaleY = cropCanvas.height / rect.height;
+    const canvasX = clickX * scaleX;
+    const canvasY = clickY * scaleY;
+    
+    // Kare boyutunu hesapla
+    const size = Math.min(cropCanvas.width, cropCanvas.height) * 0.8;
+    const x = Math.max(0, Math.min(canvasX - size / 2, cropCanvas.width - size));
+    const y = Math.max(0, Math.min(canvasY - size / 2, cropCanvas.height - size));
+    
+    // Fotoğrafı yeniden çiz
+    const img = new Image();
+    img.onload = () => {
+        const ctx = cropCanvas.getContext('2d');
+        ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+        ctx.drawImage(img, 0, 0, cropCanvas.width, cropCanvas.height);
+        
+        // Yeni kareyi çiz
+        drawCropOverlay(ctx, cropCanvas.width, cropCanvas.height, x, y, size);
+        
+        // Store crop coordinates
+        modalState.cropStartX = x;
+        modalState.cropStartY = y;
+        modalState.cropEndX = x + size;
+        modalState.cropEndY = y + size;
+    };
+    // Görsel kaynağını kullan
+    if (modalState.cropImageSrc) {
+        img.src = modalState.cropImageSrc;
+    } else {
+        const previewImg = uploadPreview.querySelector('img');
+        if (previewImg) {
+            img.src = previewImg.src;
+        } else {
+            img.src = modalState.selectedFile ? URL.createObjectURL(modalState.selectedFile) : '';
+        }
+    }
+}
+
+// Hover efekti - kareyi göstermek için
+function handleCropHover(e) {
+    if (!cropCanvas) return;
+    cropCanvas.style.cursor = 'crosshair';
 }
 
 // Apply crop
 function applyCrop() {
     if (!cropCanvas || !modalState.selectedFile) return;
     
-    const ctx = cropCanvas.getContext('2d');
-    const size = Math.min(cropCanvas.width, cropCanvas.height);
-    const x = (cropCanvas.width - size) / 2;
-    const y = (cropCanvas.height - size) / 2;
+    // Kullanıcının seçtiği kareyi kullan
+    const size = modalState.cropEndX - modalState.cropStartX;
+    const x = modalState.cropStartX;
+    const y = modalState.cropStartY;
     
-    // Get cropped image data
-    const imageData = ctx.getImageData(x, y, size, size);
-    
-    // Create new canvas for cropped image
-    const croppedCanvas = document.createElement('canvas');
-    croppedCanvas.width = size;
-    croppedCanvas.height = size;
-    const croppedCtx = croppedCanvas.getContext('2d');
-    croppedCtx.putImageData(imageData, 0, 0);
-    
-    // Convert to blob
-    croppedCanvas.toBlob((blob) => {
-        modalState.croppedImage = blob;
+    // Orijinal görseli yükle ve crop uygula
+    const img = new Image();
+    img.onload = () => {
+        // Orijinal görseli canvas'a çiz (overlay olmadan)
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = cropCanvas.width;
+        tempCanvas.height = cropCanvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(img, 0, 0, cropCanvas.width, cropCanvas.height);
         
-        // Update preview
-        if (uploadPreview) {
-            uploadPreview.innerHTML = `<img src="${croppedCanvas.toDataURL()}" alt="Cropped" class="preview-image">`;
+        // Get cropped image data from temp canvas
+        const imageData = tempCtx.getImageData(x, y, size, size);
+        
+        // Create new canvas for cropped image
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = size;
+        croppedCanvas.height = size;
+        const croppedCtx = croppedCanvas.getContext('2d');
+        croppedCtx.putImageData(imageData, 0, 0);
+        
+        // Convert to blob
+        croppedCanvas.toBlob((blob) => {
+            modalState.croppedImage = blob;
+            
+            // Update preview
+            if (uploadPreview) {
+                uploadPreview.innerHTML = `<img src="${croppedCanvas.toDataURL()}" alt="Cropped" class="preview-image">`;
+            }
+            
+            // Hide crop controls
+            if (cropControls) cropControls.classList.add('hidden');
+            if (cropCanvas) {
+                cropCanvas.classList.add('hidden');
+                // Event listener'ları temizle
+                cropCanvas.removeEventListener('click', handleCropClick);
+                cropCanvas.removeEventListener('mousemove', handleCropHover);
+            }
+        }, 'image/png', 0.95);
+    };
+    
+    // Görsel kaynağını kullan
+    if (modalState.cropImageSrc) {
+        img.src = modalState.cropImageSrc;
+    } else {
+        const previewImg = uploadPreview.querySelector('img');
+        if (previewImg) {
+            img.src = previewImg.src;
+        } else {
+            img.src = modalState.selectedFile ? URL.createObjectURL(modalState.selectedFile) : '';
         }
-        
-        // Hide crop controls
-        if (cropControls) cropControls.classList.add('hidden');
-        if (cropCanvas) cropCanvas.classList.add('hidden');
-    }, 'image/png', 0.95);
+    }
 }
 
 // Cancel crop
@@ -1468,8 +1700,12 @@ function cancelCrop() {
         cropCanvas.classList.add('hidden');
         const ctx = cropCanvas.getContext('2d');
         ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+        // Event listener'ları temizle
+        cropCanvas.removeEventListener('click', handleCropClick);
+        cropCanvas.removeEventListener('mousemove', handleCropHover);
     }
     modalState.croppedImage = null;
+    modalState.cropImageSrc = null;
 }
 
 // Handle city input (autocomplete) - Uses cities from the map
@@ -1637,84 +1873,9 @@ async function saveProfile() {
     }
 }
 
-// Profil ekle (Supabase'e kaydet) - Updated with platforms
-async function saveProfileToSupabase(profile) {
-    try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .insert([
-                {
-                    name: profile.name,
-                    image_url: profile.imageUrl,
-                    city_id: profile.cityId,
-                    city_name: profile.city,
-                    position_x: profile.x,
-                    position_y: profile.y,
-                    snapchat_username: profile.snapchat_username || profile.name,
-                }
-            ])
-            .select()
-            .single();
-        
-        if (error) {
-            console.error('Supabase profil ekleme hatası:', error);
-            throw error;
-        }
-        
-        // Eklenen profil ID'sini güncelle
-        profile.id = data.id;
-        console.log('Profil Supabase\'e eklendi:', data);
-        return data;
-    } catch (error) {
-        console.error('Profil kaydetme hatası:', error);
-        throw error;
-    }
-}
-
-// Supabase'den tüm profilleri yükle - Updated with platforms
-async function loadProfilesFromSupabase() {
-    try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error) {
-            console.error('Supabase profil yükleme hatası:', error);
-            return;
-        }
-        
-        if (data && data.length > 0) {
-            // Mevcut profilleri temizle
-            mapState.profiles = [];
-            const profilesGroup = svg.querySelector('#profiles-group');
-            if (profilesGroup) {
-                profilesGroup.innerHTML = '';
-            }
-            
-            // Profilleri haritaya ekle
-            data.forEach(profileData => {
-                const profile = {
-                    id: profileData.id,
-                    name: profileData.name,
-                    imageUrl: profileData.image_url,
-                    cityId: profileData.city_id,
-                    city: profileData.city_name,
-                    x: parseFloat(profileData.position_x),
-                    y: parseFloat(profileData.position_y),
-                    snapchat_username: profileData.snapchat_username || profileData.name,
-                };
-                
-                mapState.profiles.push(profile);
-                addProfileToMap(profile);
-            });
-            
-            console.log(`${data.length} profil Supabase'den yüklendi`);
-        }
-    } catch (error) {
-        console.error('Profil yükleme hatası:', error);
-    }
-}
+// Duplicate functions removed:
+// - saveProfileToSupabase already defined at line 1317
+// - loadProfilesFromSupabase already defined at line 1272
 
 // Profile click handler - show detail modal
 function handleProfileClick(profileId) {
