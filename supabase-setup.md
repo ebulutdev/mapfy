@@ -43,7 +43,13 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 -- Eğer tablo zaten varsa, yeni sütunları ekle
 ALTER TABLE profiles 
-  ADD COLUMN IF NOT EXISTS snapchat_username VARCHAR(255);
+  ADD COLUMN IF NOT EXISTS snapchat_username VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS instagram_username VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS facebook_username VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS twitter_username VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS pinterest_username VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS age INTEGER,
+  ADD COLUMN IF NOT EXISTS district VARCHAR(100);
 
 -- Index ekle (performans için) - eğer yoksa
 CREATE INDEX IF NOT EXISTS idx_profiles_city ON profiles(city_id);

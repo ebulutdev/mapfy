@@ -54,6 +54,13 @@ const cropCancelBtn = document.getElementById('crop-cancel');
 const usernameInput = document.getElementById('username-input');
 const cityInput = document.getElementById('city-input');
 const citySuggestions = document.getElementById('city-suggestions');
+const districtInput = document.getElementById('district-input');
+const ageInput = document.getElementById('age-input');
+const snapchatInput = document.getElementById('snapchat-input');
+const instagramInput = document.getElementById('instagram-input');
+const facebookInput = document.getElementById('facebook-input');
+const twitterInput = document.getElementById('twitter-input');
+const pinterestInput = document.getElementById('pinterest-input');
 const profileDetailModal = document.getElementById('profile-detail-modal');
 const closeDetailModalBtn = document.getElementById('close-detail-modal');
 
@@ -282,7 +289,7 @@ async function loadMap() {
         
         // Loading'i gizle - Opera uyumluluğu için hem class hem style
         if (loading) {
-            loading.classList.add('hidden');
+        loading.classList.add('hidden');
             loading.style.display = 'none';
         }
     } catch (error) {
@@ -294,7 +301,7 @@ async function loadMap() {
         });
         
         if (loading) {
-            loading.textContent = 'Harita yüklenirken hata oluştu: ' + error.message;
+        loading.textContent = 'Harita yüklenirken hata oluştu: ' + error.message;
         }
         
         // Fallback: eski yöntemi kullan
@@ -330,7 +337,7 @@ async function loadMap() {
             
             // Loading'i gizle - fallback başarılı sonrası
             if (loading) {
-                loading.classList.add('hidden');
+            loading.classList.add('hidden');
                 loading.style.display = 'none';
             }
         } catch (fallbackError) {
@@ -931,8 +938,13 @@ async function addSampleProfiles() {
 }
 
 // Şehir sınırları içinde şık konum bul (mevcut profillerden uzakta)
-function findPositionInCity(cityId) {
-    // Şehir grubunu bul (farklı ID formatlarını dene)
+// ==================== SPIRAL (SUNFLOWER) DISTRIBUTION ALGORITHM ====================
+// Eski findPositionInCity ve findPositionInCityWithSeed fonksiyonları kaldırıldı
+// Artık sadece spiral algoritması kullanılıyor
+
+// Şehrin merkezini ve sınırlarını bulur
+function getCityGeometry(cityId) {
+    // Şehri bul (ID eşleşmesi ile)
     let cityGroup = svg.querySelector(`g[id*="${cityId}" i]`);
     if (!cityGroup) {
         const allGroups = svg.querySelectorAll('g[id]');
@@ -953,155 +965,103 @@ function findPositionInCity(cityId) {
         return null;
     }
     
-    // Bounding box al - transform edilmemiş koordinat sisteminde
-    // Not: getBBox() transform edilmemiş koordinatları verir
     const bbox = path.getBBox();
-    // Profil boyutunu hesaba katarak padding hesapla (profil + border + güvenlik mesafesi)
-    const profileRadius = 12; // Base size / 2 + border
-    const padding = profileRadius + 8; // Profil yarıçapı + ekstra güvenlik mesafesi (artırıldı)
     
-    // TÜM mevcut profilleri al (sadece aynı şehirdekiler değil, taşma kontrolü için)
-    const allExistingProfiles = Array.from(mapState.profiles);
-    // Aynı şehirdeki profiller (üst üste gelme kontrolü için)
-    const sameCityProfiles = allExistingProfiles.filter(p => p.cityId === cityId);
-    // Diğer şehirlerdeki profiller (taşma kontrolü için)
-    const otherCityProfiles = allExistingProfiles.filter(p => p.cityId !== cityId);
-    
-    const minDistance = 40; // Aynı şehirdeki profiller arası minimum mesafe
-    const minDistanceOtherCities = 25; // Diğer şehirlerdeki profillerden minimum mesafe (taşmaması için)
-    
-    // Şehir içinde geçerli ve diğer profillerden uzak bir nokta bul
+    return {
+        pathElement: path,
+        bbox: bbox,
+        center: {
+        x: bbox.x + bbox.width / 2,
+        y: bbox.y + bbox.height / 2
+        }
+    };
+}
+
+// Spiral (Salyangoz) Dağılım Hesaplayıcı
+// index arttıkça merkezden dışarı doğru döner
+function calculateSpiralPosition(index, center, bbox, pathElement) {
+    // Eğer ilk kişi ise ve çakışma riski yoksa merkeze koy
+    // Ama index 0 olsa bile hafif bir sapma (jitter) ekleyelim ki 
+    // iki kişi aynı anda eklerse tam üst üste binmesin.
+    if (index === 0) {
+        const jitterX = (Math.random() - 0.5) * 5; 
+        const jitterY = (Math.random() - 0.5) * 5;
+        const testX = center.x + jitterX;
+        const testY = center.y + jitterY;
+        
+        // Şehir içinde mi kontrol et
+        if (pathElement && typeof pathElement.isPointInFill === 'function') {
+            const point = svg.createSVGPoint();
+            point.x = testX;
+            point.y = testY;
+            if (pathElement.isPointInFill(point)) {
+                return { x: testX, y: testY };
+            }
+        }
+        return { x: center.x + jitterX, y: center.y + jitterY };
+    }
+
+    // Spiral Ayarları
+    let currentAngle = index * 2.4; // Altın oran açısı (~137.5 derece)
+    let currentRadius = 12 + (index * 5); // Merkezden uzaklık (her kişi için artar)
+
+    let finalX = center.x;
+    let finalY = center.y;
+    let isValidPosition = false;
     let attempts = 0;
-    const maxAttempts = 300; // Daha fazla deneme hakkı
-    
-    while (attempts < maxAttempts) {
-        // Merkeze yakın alanlarda daha fazla arama yap (daha şık görünüm)
-        // Ama şehir büyüklüğüne göre daha esnek dağılım
-        const centerX = bbox.x + bbox.width / 2;
-        const centerY = bbox.y + bbox.height / 2;
-        
-        // Şehir boyutuna göre arama alanını ayarla
-        const citySize = Math.min(bbox.width, bbox.height);
-        const maxDist = citySize * (0.3 + Math.random() * 0.2); // %30-50 arası (daha geniş dağılım)
-        
-        // Merkeze yakın rastgele nokta
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * maxDist;
-        const randomX = centerX + Math.cos(angle) * distance;
-        const randomY = centerY + Math.sin(angle) * distance;
-        
-        // Bounding box sınırları içinde mi kontrol et (profil boyutunu hesaba katarak)
-        if (randomX < bbox.x + padding || randomX > bbox.x + bbox.width - padding ||
-            randomY < bbox.y + padding || randomY > bbox.y + bbox.height - padding) {
+    const maxAttempts = 100;
+
+    while (!isValidPosition && attempts < maxAttempts) {
+        // Polar -> Kartezyen dönüşümü
+        const dx = Math.cos(currentAngle) * currentRadius;
+        const dy = Math.sin(currentAngle) * currentRadius;
+
+        finalX = center.x + dx;
+        finalY = center.y + dy;
+
+        // 1. KONTROL: Şehir sınırları (Bounding Box) içinde mi?
+        const padding = 10;
+        if (finalX < bbox.x + padding || finalX > bbox.x + bbox.width - padding ||
+            finalY < bbox.y + padding || finalY > bbox.y + bbox.height - padding) {
+            
+            // Sınıra çarptıysa açıyı değiştir ve yarıçapı biraz kıs
+            currentAngle += 0.5;
+            currentRadius *= 0.95; 
             attempts++;
             continue;
         }
-        
+
+        // 2. KONTROL: Nokta tam olarak şehrin harita şekli (Path) içinde mi?
+        // Bu, profillerin denize veya komşu şehre taşmasını engeller.
         const point = svg.createSVGPoint();
-        point.x = randomX;
-        point.y = randomY;
-        
-        try {
-            // SVG path içinde olup olmadığını kontrol et (şehir sınırları)
-            if (typeof path.isPointInFill === 'function' && path.isPointInFill(point)) {
-                // Profil çemberinin tüm noktaları şehir içinde mi kontrol et
-                let allPointsInCity = true;
-                const checkPoints = [
-                    { x: randomX, y: randomY }, // Merkez
-                    { x: randomX + profileRadius, y: randomY }, // Sağ
-                    { x: randomX - profileRadius, y: randomY }, // Sol
-                    { x: randomX, y: randomY + profileRadius }, // Alt
-                    { x: randomX, y: randomY - profileRadius }, // Üst
-                    { x: randomX + profileRadius * 0.7, y: randomY + profileRadius * 0.7 }, // Sağ-alt
-                    { x: randomX - profileRadius * 0.7, y: randomY - profileRadius * 0.7 }, // Sol-üst
-                ];
-                
-                for (const checkPoint of checkPoints) {
-                    const checkPointSVG = svg.createSVGPoint();
-                    checkPointSVG.x = checkPoint.x;
-                    checkPointSVG.y = checkPoint.y;
-                    if (!path.isPointInFill(checkPointSVG)) {
-                        allPointsInCity = false;
-                        break;
-                    }
-                }
-                
-                if (allPointsInCity) {
-                    // 1. Aynı şehirdeki profillerden yeterince uzak mı kontrol et (üst üste gelmesin)
-                    let isFarEnoughFromSameCity = true;
-                    for (const existingProfile of sameCityProfiles) {
-                        const distance = Math.sqrt(
-                            Math.pow(randomX - existingProfile.x, 2) + 
-                            Math.pow(randomY - existingProfile.y, 2)
-                        );
-                        if (distance < minDistance) {
-                            isFarEnoughFromSameCity = false;
-                            break;
-                        }
-                    }
-                    
-                    // 2. Diğer şehirlerdeki profillerden uzak mı kontrol et (başka şehire taşmasın)
-                    let isFarEnoughFromOtherCities = true;
-                    for (const otherProfile of otherCityProfiles) {
-                        const distance = Math.sqrt(
-                            Math.pow(randomX - otherProfile.x, 2) + 
-                            Math.pow(randomY - otherProfile.y, 2)
-                        );
-                        // Diğer şehirlerdeki profillere çok yakınsa, o şehir sınırları içinde olabilir
-                        if (distance < minDistanceOtherCities) {
-                            // Diğer şehir sınırları içinde mi kontrol et
-                            try {
-                                const otherCityGroup = svg.querySelector(`g[id*="${otherProfile.cityId}" i]`);
-                                if (otherCityGroup) {
-                                    const otherPath = otherCityGroup.querySelector('path');
-                                    if (otherPath && typeof otherPath.isPointInFill === 'function') {
-                                        const checkPoint = svg.createSVGPoint();
-                                        checkPoint.x = randomX;
-                                        checkPoint.y = randomY;
-                                        // Eğer diğer şehir sınırları içindeyse, çok yakın
-                                        if (otherPath.isPointInFill(checkPoint)) {
-                                            isFarEnoughFromOtherCities = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            } catch (e) {
-                                // Hata durumunda güvenli tarafta kal
-                                isFarEnoughFromOtherCities = false;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (isFarEnoughFromSameCity && isFarEnoughFromOtherCities) {
-                        return { x: randomX, y: randomY };
-                    }
-                }
+        point.x = finalX;
+        point.y = finalY;
+
+        // isPointInFill metodu tarayıcıda destekleniyorsa kullan
+        if (pathElement && typeof pathElement.isPointInFill === 'function') {
+            if (pathElement.isPointInFill(point)) {
+                isValidPosition = true;
+            } else {
+                // Şehir dışında kaldı, açıyı değiştirip tekrar dene
+                currentAngle += 1; 
+                attempts++;
             }
-        } catch (e) {
-            // Hata durumunda devam et
+        } else {
+            // isPointInFill yoksa sadece bbox kontrolü ile devam et
+            isValidPosition = true;
         }
-        
-        attempts++;
     }
-    
-    // Eğer geçerli nokta bulunamazsa, merkezi kullan (ama şehir içinde olduğundan emin ol)
-    const centerPoint = svg.createSVGPoint();
-    centerPoint.x = bbox.x + bbox.width / 2;
-    centerPoint.y = bbox.y + bbox.height / 2;
-    
-    try {
-        if (typeof path.isPointInFill === 'function' && path.isPointInFill(centerPoint)) {
-            return { x: centerPoint.x, y: centerPoint.y };
-        }
-    } catch (e) {
-        // Merkez de çalışmazsa, bbox merkezini kullan
+
+    // Eğer uygun yer bulunamazsa merkeze yakın rastgele bir yer ver
+    if (!isValidPosition) {
+        console.warn(`⚠ Spiral pozisyon bulunamadı (index: ${index}), merkeze yakın nokta kullanılıyor`);
+        return { 
+            x: center.x + (Math.random() - 0.5) * 20, 
+            y: center.y + (Math.random() - 0.5) * 20 
+        };
     }
-    
-    return {
-        x: bbox.x + bbox.width / 2,
-        y: bbox.y + bbox.height / 2
-    };
+
+    return { x: finalX, y: finalY };
 }
 
 function addProfileToMap(profile) {
@@ -1157,12 +1117,12 @@ function addProfileToMap(profile) {
     // Daha canlı ve net görünüm için filter efektleri eklendi
     image.setAttribute('style', 'image-rendering: -webkit-optimize-contrast; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: auto; filter: contrast(1.2) saturate(1.25) brightness(1.08); -webkit-filter: contrast(1.2) saturate(1.25) brightness(1.08);');
     
-    // Create ince siyah çizgi (şık görünüm için)
+    // Belirgin beyaz çizgi (daha görünür)
     const borderCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     borderCircle.setAttribute('class', 'profile-border');
     borderCircle.setAttribute('fill', 'none'); // İçi boş
-    borderCircle.setAttribute('stroke', '#333'); // Siyah çizgi
-    borderCircle.setAttribute('stroke-width', '0.3'); // Çok ince çizgi
+    borderCircle.setAttribute('stroke', '#FFFFFF'); // Belirgin beyaz çizgi
+    borderCircle.setAttribute('stroke-width', '0.5'); // Biraz daha kalın çizgi
     
     // Create invisible clickable circle - sadece profil görselinin boyutu kadar
     // Etrafına basılınca profil açılmasın, sadece profil görseline basılınca açılsın
@@ -1275,7 +1235,7 @@ function updateProfileSizes() {
 
 // ==================== SUPABASE INTEGRATION ====================
 
-// Supabase'den tüm profilleri yükle
+// Supabase'den tüm profilleri yükle ve Spiral Dağıt
 async function loadProfilesFromSupabase() {
     try {
         const { data, error } = await supabase
@@ -1296,24 +1256,79 @@ async function loadProfilesFromSupabase() {
                 profilesGroup.innerHTML = '';
             }
             
-            // Profilleri haritaya ekle
+            // 1. Profilleri şehirlere göre grupla
+            const profilesByCity = {};
             data.forEach(profileData => {
+                const cityId = String(profileData.city_id || '').toLowerCase().trim();
+                if (!profilesByCity[cityId]) {
+                    profilesByCity[cityId] = [];
+                }
+                profilesByCity[cityId].push(profileData);
+            });
+            
+            let profilesAdded = 0;
+            let profilesRepositioned = 0;
+            
+            // 2. Her şehir grubunu işle
+            for (const cityId in profilesByCity) {
+                const cityProfiles = profilesByCity[cityId];
+                
+                // Şehrin merkezini ve sınırlarını bul
+                const cityInfo = getCityGeometry(cityId);
+                
+                if (cityInfo) {
+                    // Bu şehirdeki profilleri spiral dağılım ile ekle
+                    cityProfiles.forEach((profileData, index) => {
+                        // Spiral konum hesapla
+                        const pos = calculateSpiralPosition(
+                            index,              // Kaçıncı kişi olduğu
+                            cityInfo.center,    // Şehir merkezi
+                            cityInfo.bbox,      // Şehir sınırları
+                            cityInfo.pathElement // SVG path'i (içeride mi kontrolü için)
+                        );
+                        
+                        // Eğer veritabanındaki pozisyon farklıysa güncelle
+                        const originalX = parseFloat(profileData.position_x);
+                        const originalY = parseFloat(profileData.position_y);
+                        const needsUpdate = Math.abs(pos.x - originalX) > 1 || Math.abs(pos.y - originalY) > 1;
+                        
+                        if (needsUpdate) {
+                            profilesRepositioned++;
+                            // Veritabanını güncelle
+                            updateProfilePositionInSupabase(profileData.id, pos.x, pos.y).catch(err => {
+                                console.error(`Profil pozisyonu güncellenemedi (${profileData.id}):`, err);
+                            });
+                        }
+                        
+                        // Profil nesnesini oluştur
                 const profile = {
                     id: profileData.id,
                     name: profileData.name,
                     imageUrl: profileData.image_url,
                     cityId: profileData.city_id,
                     city: profileData.city_name,
-                    x: parseFloat(profileData.position_x),
-                    y: parseFloat(profileData.position_y),
-                    snapchat_username: profileData.snapchat_username || profileData.name,
+                            x: pos.x,
+                            y: pos.y,
+                            snapchat_username: profileData.snapchat_username || null,
+                            instagram_username: profileData.instagram_username || null,
+                            facebook_username: profileData.facebook_username || null,
+                            twitter_username: profileData.twitter_username || null,
+                            pinterest_username: profileData.pinterest_username || null,
+                            age: profileData.age || null,
+                            district: profileData.district || null,
                 };
                 
+                        // State'e ve haritaya ekle
                 mapState.profiles.push(profile);
                 addProfileToMap(profile);
+                        profilesAdded++;
             });
+                } else {
+                    console.warn(`⚠ Şehir geometrisi bulunamadı: ${cityId}, ${cityProfiles.length} profil atlanıyor`);
+                }
+            }
             
-            console.log(`${data.length} profil Supabase'den yüklendi`);
+            console.log(`✓ ${profilesAdded} profil başarıyla yüklendi ve spiral dağılım ile yerleştirildi (${profilesRepositioned} profil yeniden konumlandırıldı)`);
         }
     } catch (error) {
         console.error('Profil yükleme hatası:', error);
@@ -1333,7 +1348,19 @@ async function saveProfileToSupabase(profile) {
                     city_name: profile.city,
                     position_x: profile.x,
                     position_y: profile.y,
-                    snapchat_username: profile.snapchat_username || profile.name,
+                    snapchat_username: profile.snapchat_username || null,
+                    instagram_username: profile.instagram_username || null,
+                    facebook_username: profile.facebook_username || null,
+                    twitter_username: profile.twitter_username || null,
+                    pinterest_username: profile.pinterest_username || null,
+                    age: profile.age || null,
+                    district: profile.district || null,
+                    instagram_username: profile.instagram_username || null,
+                    facebook_username: profile.facebook_username || null,
+                    twitter_username: profile.twitter_username || null,
+                    pinterest_username: profile.pinterest_username || null,
+                    age: profile.age || null,
+                    district: profile.district || null,
                 }
             ])
             .select()
@@ -1350,6 +1377,31 @@ async function saveProfileToSupabase(profile) {
         return data;
     } catch (error) {
         console.error('Profil kaydetme hatası:', error);
+        throw error;
+    }
+}
+
+// Profil pozisyonunu güncelle (Supabase'de)
+async function updateProfilePositionInSupabase(profileId, x, y) {
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                position_x: x,
+                position_y: y,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', profileId);
+        
+        if (error) {
+            console.error('Profil pozisyonu güncelleme hatası:', error);
+            throw error;
+        }
+        
+        console.log(`Profil pozisyonu güncellendi: ${profileId} -> (${x.toFixed(2)}, ${y.toFixed(2)})`);
+        return true;
+    } catch (error) {
+        console.error('Pozisyon güncelleme hatası:', error);
         throw error;
     }
 }
@@ -1596,31 +1648,43 @@ function handleCropClick(e) {
     const x = Math.max(0, Math.min(canvasX - size / 2, cropCanvas.width - size));
     const y = Math.max(0, Math.min(canvasY - size / 2, cropCanvas.height - size));
     
-    // Fotoğrafı yeniden çiz
-    const img = new Image();
-    img.onload = () => {
-        const ctx = cropCanvas.getContext('2d');
-        ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
-        ctx.drawImage(img, 0, 0, cropCanvas.width, cropCanvas.height);
-        
-        // Yeni kareyi çiz
-        drawCropOverlay(ctx, cropCanvas.width, cropCanvas.height, x, y, size);
-        
-        // Store crop coordinates
-        modalState.cropStartX = x;
-        modalState.cropStartY = y;
-        modalState.cropEndX = x + size;
-        modalState.cropEndY = y + size;
-    };
-    // Görsel kaynağını kullan
+    // Fotoğrafı yeniden çiz - görsel yüklenmesini engellemek için mevcut canvas'tan kullan
+    const ctx = cropCanvas.getContext('2d');
+    
+    // Mevcut görseli yeniden çiz (overlay'i kaldırmak için)
+    // cropImageSrc data URL olduğu için yeni yükleme yapmaz
     if (modalState.cropImageSrc) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            ctx.drawImage(img, 0, 0, cropCanvas.width, cropCanvas.height);
+            
+            // Yeni kareyi çiz
+            drawCropOverlay(ctx, cropCanvas.width, cropCanvas.height, x, y, size);
+            
+            // Store crop coordinates
+            modalState.cropStartX = x;
+            modalState.cropStartY = y;
+            modalState.cropEndX = x + size;
+            modalState.cropEndY = y + size;
+        };
+        // Data URL kullan (yeni yükleme yapmaz, tarayıcı görseli açmaz)
         img.src = modalState.cropImageSrc;
     } else {
+        // Fallback: preview img'den kullan (zaten yüklenmiş)
         const previewImg = uploadPreview.querySelector('img');
-        if (previewImg) {
-            img.src = previewImg.src;
-        } else {
-            img.src = modalState.selectedFile ? URL.createObjectURL(modalState.selectedFile) : '';
+        if (previewImg && previewImg.complete) {
+            ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            ctx.drawImage(previewImg, 0, 0, cropCanvas.width, cropCanvas.height);
+            
+            // Yeni kareyi çiz
+            drawCropOverlay(ctx, cropCanvas.width, cropCanvas.height, x, y, size);
+            
+            // Store crop coordinates
+            modalState.cropStartX = x;
+            modalState.cropStartY = y;
+            modalState.cropEndX = x + size;
+            modalState.cropEndY = y + size;
         }
     }
 }
@@ -1664,12 +1728,12 @@ function applyCrop() {
         croppedCanvas.toBlob((blob) => {
             modalState.croppedImage = blob;
             
-            // Update preview
+            // Update preview - kırpılmış görseli göster, fotoğraf yükleme alanını tekrar gösterme
             if (uploadPreview) {
                 uploadPreview.innerHTML = `<img src="${croppedCanvas.toDataURL()}" alt="Cropped" class="preview-image">`;
             }
             
-            // Hide crop controls
+            // Hide crop controls ve canvas
             if (cropControls) cropControls.classList.add('hidden');
             if (cropCanvas) {
                 cropCanvas.classList.add('hidden');
@@ -1677,6 +1741,9 @@ function applyCrop() {
                 cropCanvas.removeEventListener('click', handleCropClick);
                 cropCanvas.removeEventListener('mousemove', handleCropHover);
             }
+            
+            // photo-upload-area'yı gizleme - preview zaten gösteriliyor
+            // Kullanıcı kırpılmış görseli görebilir, tekrar fotoğraf yükleme alanı çıkmaz
         }, 'image/png', 0.95);
     };
     
@@ -1706,6 +1773,8 @@ function cancelCrop() {
     }
     modalState.croppedImage = null;
     modalState.cropImageSrc = null;
+    // Fotoğraf yükleme alanını tekrar gösterme - mevcut preview'ı koru
+    // uploadPreview'ı sıfırlamıyoruz, kullanıcı zaten fotoğraf seçmiş
 }
 
 // Handle city input (autocomplete) - Uses cities from the map
@@ -1797,8 +1866,9 @@ function showCitySuggestions(matches) {
 }
 
 // Save profile
+// Profil ekle (Supabase'e kaydet ve Haritaya Ekle)
 async function saveProfile() {
-    // Validate form
+    // 1. Validasyonlar
     if (!modalState.croppedImage && !modalState.selectedFile) {
         alert('Lütfen bir profil fotoğrafı seçin');
         return;
@@ -1814,14 +1884,14 @@ async function saveProfile() {
         return;
     }
     
-    // Disable save button
+    // Kaydet butonunu kilitle
     if (saveProfileBtn) {
         saveProfileBtn.disabled = true;
         saveProfileBtn.innerHTML = '<span>Kaydediliyor...</span>';
     }
     
     try {
-        // Upload image
+        // 2. Görseli Yükle
         let imageUrl;
         if (modalState.croppedImage) {
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
@@ -1830,40 +1900,73 @@ async function saveProfile() {
             imageUrl = await uploadImageToSupabase(modalState.selectedFile, modalState.selectedFile.name);
         }
         
-        // Find position in city
-        const position = findPositionInCity(modalState.selectedCity.id);
+        // 3. Şehir Geometrisini Al
+        const cityId = modalState.selectedCity.id;
+        const cityInfo = getCityGeometry(cityId);
+        
+        if (!cityInfo) {
+            throw new Error('Şehir geometrisi bulunamadı');
+        }
+
+        // 4. KONUM HESAPLAMA (Kritik Nokta)
+        // O şehirdeki mevcut profilleri say (Böylece sıradaki index'i buluruz)
+        const existingProfilesInCity = mapState.profiles.filter(p => 
+            String(p.cityId).toLowerCase().trim() === String(cityId).toLowerCase().trim()
+        );
+
+        // Yeni profilin index'i (Örn: 5 kişi varsa, yeni kişi 6. olacak)
+        const nextIndex = existingProfilesInCity.length;
+
+        // Spiraldeki konumu hesapla
+        const position = calculateSpiralPosition(
+            nextIndex, 
+            cityInfo.center, 
+            cityInfo.bbox, 
+            cityInfo.pathElement
+        );
+        
         if (!position) {
-            throw new Error('Şehir içinde uygun konum bulunamadı');
+            throw new Error('Konum hesaplanamadı');
         }
         
-        // Create profile object
+        // 5. Profil Objesini Oluştur
         const profile = {
             name: usernameInput.value.trim(),
             imageUrl: imageUrl,
-            cityId: modalState.selectedCity.id,
+            cityId: cityId,
             city: modalState.selectedCity.name,
             x: position.x,
             y: position.y,
-            snapchat_username: usernameInput.value.trim(), // You can add separate input for this
+            snapchat_username: snapchatInput ? snapchatInput.value.trim() : '',
+            instagram_username: instagramInput ? instagramInput.value.trim() : '',
+            facebook_username: facebookInput ? facebookInput.value.trim() : '',
+            twitter_username: twitterInput ? twitterInput.value.trim() : '',
+            pinterest_username: pinterestInput ? pinterestInput.value.trim() : '',
+            age: ageInput && ageInput.value ? parseInt(ageInput.value) : null,
+            district: districtInput ? districtInput.value.trim() : '',
         };
         
-        // Save to Supabase
+        // 6. Supabase'e Kaydet
         const savedProfile = await saveProfileToSupabase(profile);
         
-        // Add to map
+        // 7. Haritaya Ekle (State güncelle)
         profile.id = savedProfile.id;
-        mapState.profiles.push(profile);
-        addProfileToMap(profile);
+        mapState.profiles.push(profile); // Listeye ekle
+        addProfileToMap(profile); // Görsel olarak ekle
         
-        // Close modal
+        // Modalı kapat
         closeAddProfileModal();
         
-        // Show success message
+        // Başarı mesajı
         alert('Profil başarıyla eklendi!');
+        
+        // Update city filter and profiles list
+        updateCityFilter();
+        renderProfilesList();
         
     } catch (error) {
         console.error('Profil kaydetme hatası:', error);
-        alert('Profil kaydedilirken bir hata oluştu: ' + error.message);
+        alert('Hata: ' + error.message);
     } finally {
         // Re-enable save button
         if (saveProfileBtn) {
@@ -1890,7 +1993,9 @@ function handleProfileClick(profileId) {
         const detailImage = document.getElementById('detail-image');
         const detailName = document.getElementById('detail-name');
         const detailCity = document.getElementById('detail-city');
-        const detailSnapchat = document.getElementById('detail-snapchat');
+        const detailDistrict = document.getElementById('detail-district');
+        const detailAge = document.getElementById('detail-age');
+        const detailSocial = document.getElementById('detail-social');
         
         if (detailImage) {
             detailImage.innerHTML = `<img src="${profile.imageUrl}" alt="${profile.name}">`;
@@ -1901,8 +2006,57 @@ function handleProfileClick(profileId) {
         if (detailCity) {
             detailCity.textContent = `📍 ${profile.city}`;
         }
-        if (detailSnapchat) {
-            detailSnapchat.textContent = profile.snapchat_username ? `👻 ${profile.snapchat_username}` : '';
+        if (detailDistrict) {
+            detailDistrict.textContent = profile.district ? `🏘️ ${profile.district}` : '';
+        }
+        if (detailAge) {
+            detailAge.textContent = profile.age ? `🎂 ${profile.age} yaşında` : '';
+        }
+        if (detailSocial) {
+            let socialHTML = '';
+            if (profile.snapchat_username) {
+                socialHTML += `<div class="social-link-item">
+                    <svg class="social-icon snapchat-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.003 1.83c-2.628 0-4.962 1.487-5.592 4.417-.052.269-.536.538-.85.492-.472-.047-1.155.223-1.206.852-.053.539.367 1.032.577 1.301.21.27.105.763-.105 1.167-.314.583-.943 1.526-.943 2.536 0 1.256 1.048 2.019 1.415 2.243.052.045.157.09.157.224 0 .179-.157.673-.996.852-1.625.314-1.258 2.288-.367 2.602.472.18 1.573-.224 2.831-.224 1.258 0 1.94.942 5.035.942 3.094 0 3.777-.942 5.035-.942 1.258 0 2.306.404 2.831.224.891-.314 1.206-2.288-.367-2.602-.839-.179-.996-.673-.996-.852 0-.134.105-.179.157-.224.367-.224 1.415-.987 1.415-2.243 0-1.01-.629-1.953-.943-2.536-.21-.404-.315-.897-.105-1.167.21-.269.629-.762.577-1.301-.052-.629-.734-.899-1.206-.852-.315.046-.798-.223-.85-.492-.63-2.93-2.964-4.417-5.592-4.417z"/>
+                    </svg>
+                    <span class="social-text">${profile.snapchat_username}</span>
+                </div>`;
+            }
+            if (profile.instagram_username) {
+                socialHTML += `<div class="social-link-item">
+                    <svg class="social-icon instagram-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                    <span class="social-text">${profile.instagram_username}</span>
+                </div>`;
+            }
+            if (profile.facebook_username) {
+                socialHTML += `<div class="social-link-item">
+                    <svg class="social-icon facebook-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036c-2.148 0-2.971.956-2.971 3.594v.376h3.428l-.582 3.667h-2.846l-.009 7.977c6.109-.586 10.798-5.835 10.798-12.028a12.335 12.335 0 0 0-12.336-12.333 12.335 12.335 0 0 0-12.336 12.334c0 6.192 4.688 11.44 10.798 12.028z"/>
+                    </svg>
+                    <span class="social-text">${profile.facebook_username}</span>
+                </div>`;
+            }
+            if (profile.twitter_username) {
+                socialHTML += `<div class="social-link-item">
+                    <svg class="social-icon x-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span class="social-text">${profile.twitter_username}</span>
+                </div>`;
+            }
+            if (profile.pinterest_username) {
+                socialHTML += `<div class="social-link-item">
+                    <svg class="social-icon pinterest-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.399.165-1.495-.69-2.433-2.864-2.433-4.607 0-3.77 2.748-7.229 7.93-7.229 4.173 0 6.91 2.978 6.91 6.898 0 4.113-2.595 7.42-6.199 7.42-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.367 18.62 0 12.017 0z"/>
+                    </svg>
+                    <span class="social-text">${profile.pinterest_username}</span>
+                </div>`;
+            }
+            detailSocial.innerHTML = socialHTML || '<div class="no-social">Sosyal medya hesabı eklenmemiş</div>';
         }
         
         profileDetailModal.classList.remove('hidden');
