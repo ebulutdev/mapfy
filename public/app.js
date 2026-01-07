@@ -684,6 +684,37 @@ function setupModalListeners() {
         });
     }
     
+    // Mobil Filtre Toggle
+    const mobileFilterBtn = document.getElementById('mobile-filter-toggle');
+    if (mobileFilterBtn && filterSidebar) {
+        mobileFilterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterSidebar.classList.toggle('expanded');
+            const span = mobileFilterBtn.querySelector('span');
+            if (span) {
+                span.textContent = filterSidebar.classList.contains('expanded') ? 'Kapat' : 'Filtrele';
+            }
+        });
+    }
+    
+    // Haritaya tıklayınca filtreyi kapat (Mobilde)
+    if (mapContainer && filterSidebar) {
+        mapContainer.addEventListener('click', (e) => {
+            // Tıklanan yer filtre butonu veya filtre paneli değilse kapat
+            if (!e.target.closest('.filter-sidebar') && 
+                !e.target.closest('#mobile-filter-toggle') && 
+                !e.target.closest('#filter-toggle-icon') &&
+                window.innerWidth <= 768) {
+                filterSidebar.classList.remove('expanded');
+                const mobileBtn = document.getElementById('mobile-filter-toggle');
+                if (mobileBtn) {
+                    const span = mobileBtn.querySelector('span');
+                    if (span) span.textContent = 'Filtrele';
+                }
+            }
+        });
+    }
+    
     // Filter toggle button (collapse/expand from sidebar)
     if (toggleFilterBtn) {
         toggleFilterBtn.addEventListener('click', () => {

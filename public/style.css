@@ -388,9 +388,29 @@ body {
         -webkit-tap-highlight-color: transparent;
     }
 
+    .header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
     .navbar {
-        padding: 0 12px;
-        height: 56px;
+        padding: 0 10px;
+        height: 44px;
+        gap: 10px;
+    }
+    
+    .navbar-brand {
+        gap: 5px;
+    }
+    
+    .logo-icon {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .logo-text {
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: -0.01em;
     }
     
     .navbar-nav {
@@ -398,11 +418,16 @@ body {
     }
     
     .navbar-actions {
-        gap: 8px;
+        gap: 5px;
     }
     
     .github-link {
-        padding: 6px 8px;
+        padding: 4px 5px;
+    }
+    
+    .github-link svg {
+        width: 14px;
+        height: 14px;
     }
     
     .github-link span {
@@ -410,12 +435,11 @@ body {
     }
     
     .btn-dashboard {
-        padding: 8px 16px;
-        font-size: 13px;
-    }
-
-    .logo-text {
-        font-size: 16px;
+        padding: 5px 10px;
+        font-size: 10px;
+        font-weight: 400;
+        border-radius: 5px;
+        letter-spacing: -0.01em;
     }
 
     .zoom-controls {
@@ -456,12 +480,33 @@ body {
 
 /* Small Mobile */
 @media (max-width: 480px) {
-    .header {
-        padding: 10px 12px;
+    .navbar {
+        padding: 0 8px;
+        height: 40px;
+        gap: 8px;
     }
-
-    .header h1 {
-        font-size: 16px;
+    
+    .logo-icon {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .logo-text {
+        font-size: 12px;
+    }
+    
+    .btn-dashboard {
+        padding: 4px 8px;
+        font-size: 9px;
+    }
+    
+    .github-link {
+        padding: 3px 4px;
+    }
+    
+    .github-link svg {
+        width: 12px;
+        height: 12px;
     }
 
     .controls-info {
