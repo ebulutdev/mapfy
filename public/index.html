@@ -963,6 +963,83 @@
         </div>
     </div>
 
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-consent-banner" class="cookie-consent-banner hidden">
+        <div class="cookie-consent-content">
+            <div class="cookie-consent-text">
+                <h4>🍪 Çerezler Hakkında</h4>
+                <p>MapHypee, deneyiminizi iyileştirmek ve platformu çalıştırmak için çerezler kullanır. Platformu kullanmaya devam ederek <a href="#" id="cookie-policy-link" style="color: #3ECF8E; text-decoration: underline;">çerez politikamızı</a> kabul etmiş olursunuz.</p>
+            </div>
+            <div class="cookie-consent-buttons">
+                <button id="cookie-accept-all" class="btn-primary cookie-btn">Tümünü Kabul Et</button>
+                <button id="cookie-reject-all" class="btn-secondary cookie-btn">Reddet</button>
+                <button id="cookie-settings" class="btn-secondary cookie-btn">Ayarlar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Settings Modal -->
+    <div id="cookie-settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="back-btn" id="back-cookie-settings-modal" title="Geri">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="modal-close" id="close-cookie-settings-modal">×</button>
+            <h2 class="modal-title">Çerez Tercihleri</h2>
+            
+            <div class="modal-body">
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px;">Çerez türlerini seçerek deneyiminizi özelleştirebilirsiniz.</p>
+                
+                <div class="cookie-settings-section">
+                    <div class="cookie-setting-item">
+                        <div class="cookie-setting-header">
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">Zorunlu Çerezler</h3>
+                                <p style="font-size: 13px; color: rgba(255,255,255,0.6);">Platformun çalışması için gerekli çerezler. Bu çerezler devre dışı bırakılamaz.</p>
+                            </div>
+                            <label class="cookie-toggle">
+                                <input type="checkbox" id="cookie-necessary" checked disabled>
+                                <span class="cookie-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cookie-setting-item">
+                        <div class="cookie-setting-header">
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">Analitik Çerezler</h3>
+                                <p style="font-size: 13px; color: rgba(255,255,255,0.6);">Platform kullanımını analiz etmek için kullanılan çerezler.</p>
+                            </div>
+                            <label class="cookie-toggle">
+                                <input type="checkbox" id="cookie-analytics">
+                                <span class="cookie-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cookie-setting-item">
+                        <div class="cookie-setting-header">
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">Fonksiyonel Çerezler</h3>
+                                <p style="font-size: 13px; color: rgba(255,255,255,0.6);">Tercihlerinizi hatırlamak için kullanılan çerezler.</p>
+                            </div>
+                            <label class="cookie-toggle">
+                                <input type="checkbox" id="cookie-functional">
+                                <span class="cookie-toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <button id="save-cookie-settings" class="btn-primary" style="width: 100%;">Tercihleri Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Alert/Confirm Modal -->
     <div id="custom-alert-modal" class="modal-overlay hidden">
         <div class="modal-content custom-alert-modal">

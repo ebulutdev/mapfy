@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModalListeners();
     setupHeroListeners();
     setupNavbarListeners();
+    setupCookieConsent();
     
     // Auth elements - DOM yüklendikten sonra seç
     authModal = document.getElementById('auth-modal');
@@ -5558,6 +5559,229 @@ async function submitReport() {
             submitBtn.disabled = false;
             submitBtn.textContent = "Şikayet Et";
         }
+    }
+}
+
+// ==================== COOKIE CONSENT SYSTEM ====================
+
+// Cookie consent kontrolü ve kurulumu
+function setupCookieConsent() {
+    // Daha önce onay verilmiş mi kontrol et
+    const cookieConsent = localStorage.getItem('cookieConsent');
+    
+    if (!cookieConsent) {
+        // Onay verilmemişse banner'ı göster
+        showCookieBanner();
+    } else {
+        // Onay verilmişse çerez ayarlarını yükle
+        loadCookieSettings();
+    }
+    
+    // Cookie banner butonları
+    const acceptAllBtn = document.getElementById('cookie-accept-all');
+    const rejectAllBtn = document.getElementById('cookie-reject-all');
+    const settingsBtn = document.getElementById('cookie-settings');
+    const cookiePolicyLink = document.getElementById('cookie-policy-link');
+    
+    if (acceptAllBtn) {
+        acceptAllBtn.addEventListener('click', () => {
+            acceptAllCookies();
+        });
+    }
+    
+    if (rejectAllBtn) {
+        rejectAllBtn.addEventListener('click', () => {
+            rejectAllCookies();
+        });
+    }
+    
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            openCookieSettingsModal();
+        });
+    }
+    
+    if (cookiePolicyLink) {
+        cookiePolicyLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideCookieBanner();
+            openLegalModal('cookies');
+        });
+    }
+    
+    // Cookie settings modal
+    const cookieSettingsModal = document.getElementById('cookie-settings-modal');
+    const closeCookieSettingsBtn = document.getElementById('close-cookie-settings-modal');
+    const backCookieSettingsBtn = document.getElementById('back-cookie-settings-modal');
+    const saveCookieSettingsBtn = document.getElementById('save-cookie-settings');
+    
+    if (closeCookieSettingsBtn) {
+        closeCookieSettingsBtn.addEventListener('click', closeCookieSettingsModal);
+    }
+    
+    if (backCookieSettingsBtn) {
+        backCookieSettingsBtn.addEventListener('click', closeCookieSettingsModal);
+    }
+    
+    if (saveCookieSettingsBtn) {
+        saveCookieSettingsBtn.addEventListener('click', saveCookieSettings);
+    }
+    
+    if (cookieSettingsModal) {
+        cookieSettingsModal.addEventListener('click', (e) => {
+            if (e.target === cookieSettingsModal) {
+                closeCookieSettingsModal();
+            }
+        });
+    }
+}
+
+// Cookie banner'ı göster
+function showCookieBanner() {
+    const banner = document.getElementById('cookie-consent-banner');
+    if (banner) {
+        banner.classList.remove('hidden');
+    }
+}
+
+// Cookie banner'ı gizle
+function hideCookieBanner() {
+    const banner = document.getElementById('cookie-consent-banner');
+    if (banner) {
+        banner.classList.add('hidden');
+    }
+}
+
+// Tüm çerezleri kabul et
+function acceptAllCookies() {
+    const settings = {
+        necessary: true,
+        analytics: true,
+        functional: true,
+        consentGiven: true,
+        timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('cookieConsent', JSON.stringify(settings));
+    localStorage.setItem('cookieConsentDate', new Date().toISOString());
+    
+    hideCookieBanner();
+    
+    // Çerezleri aktif et
+    enableCookies(settings);
+    
+    showAlert('Çerez tercihleriniz kaydedildi. Teşekkür ederiz!', 'Başarılı', 'success');
+}
+
+// Tüm çerezleri reddet
+function rejectAllCookies() {
+    const settings = {
+        necessary: true, // Zorunlu çerezler her zaman aktif
+        analytics: false,
+        functional: false,
+        consentGiven: true,
+        timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('cookieConsent', JSON.stringify(settings));
+    localStorage.setItem('cookieConsentDate', new Date().toISOString());
+    
+    hideCookieBanner();
+    
+    // Çerezleri devre dışı bırak (zorunlu hariç)
+    enableCookies(settings);
+    
+    showAlert('Çerez tercihleriniz kaydedildi.', 'Bilgi', 'info');
+}
+
+// Cookie settings modal aç
+function openCookieSettingsModal() {
+    const modal = document.getElementById('cookie-settings-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Mevcut ayarları yükle
+        const cookieConsent = localStorage.getItem('cookieConsent');
+        if (cookieConsent) {
+            const settings = JSON.parse(cookieConsent);
+            const analyticsCheckbox = document.getElementById('cookie-analytics');
+            const functionalCheckbox = document.getElementById('cookie-functional');
+            
+            if (analyticsCheckbox) analyticsCheckbox.checked = settings.analytics || false;
+            if (functionalCheckbox) functionalCheckbox.checked = settings.functional || false;
+        }
+    }
+}
+
+// Cookie settings modal kapat
+function closeCookieSettingsModal() {
+    const modal = document.getElementById('cookie-settings-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Cookie ayarlarını kaydet
+function saveCookieSettings() {
+    const analyticsCheckbox = document.getElementById('cookie-analytics');
+    const functionalCheckbox = document.getElementById('cookie-functional');
+    
+    const settings = {
+        necessary: true, // Zorunlu çerezler her zaman aktif
+        analytics: analyticsCheckbox ? analyticsCheckbox.checked : false,
+        functional: functionalCheckbox ? functionalCheckbox.checked : false,
+        consentGiven: true,
+        timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('cookieConsent', JSON.stringify(settings));
+    localStorage.setItem('cookieConsentDate', new Date().toISOString());
+    
+    hideCookieBanner();
+    closeCookieSettingsModal();
+    
+    // Çerezleri aktif/devre dışı bırak
+    enableCookies(settings);
+    
+    showAlert('Çerez tercihleriniz kaydedildi!', 'Başarılı', 'success');
+}
+
+// Çerez ayarlarını yükle
+function loadCookieSettings() {
+    const cookieConsent = localStorage.getItem('cookieConsent');
+    if (cookieConsent) {
+        try {
+            const settings = JSON.parse(cookieConsent);
+            enableCookies(settings);
+        } catch (e) {
+            console.error('Cookie settings yükleme hatası:', e);
+        }
+    }
+}
+
+// Çerezleri aktif/devre dışı bırak
+function enableCookies(settings) {
+    // Zorunlu çerezler her zaman aktif (Supabase session, vb.)
+    
+    // Analitik çerezler
+    if (settings.analytics) {
+        // Analytics çerezlerini aktif et
+        // Örnek: Google Analytics, vb.
+        console.log('Analytics cookies enabled');
+    } else {
+        // Analytics çerezlerini devre dışı bırak
+        console.log('Analytics cookies disabled');
+    }
+    
+    // Fonksiyonel çerezler
+    if (settings.functional) {
+        // Fonksiyonel çerezlerini aktif et
+        console.log('Functional cookies enabled');
+    } else {
+        // Fonksiyonel çerezlerini devre dışı bırak
+        console.log('Functional cookies disabled');
     }
 }
 
