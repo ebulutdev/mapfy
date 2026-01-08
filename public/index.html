@@ -112,84 +112,23 @@
         <!-- Hero Section / Landing -->
         <div id="hero-section" class="hero-section">
             <div class="hero-content">
-                <div class="hero-badge">
-                    <span>Türkiye'nin Yeni Nesil Sosyal Haritası</span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 2l4 4-4 4"/>
-                    </svg>
+                <div class="hero-badge hero-badge-updated">
+                    <span>Türkiye'nin Yeni Nesil Sosyal Ağı</span>
                 </div>
                 
                 <h1 class="hero-title">
-                    <span class="hero-title-line">Türkiye'nin İlk</span>
-                    <span class="hero-title-line highlight">Sosyal Harita Platformu</span>
+                    <span class="hero-title-line">Sosyal Çevreni</span>
+                    <span class="hero-title-line highlight">Haritada Genişlet</span>
                 </h1>
                 
                 <p class="hero-description">
                     MapHypee ile 81 ilde profilini parlat! Şehir bazlı keşif yap, sosyal medya hesaplarını tek bir noktadan paylaş ve çevrendeki hype'ı yakala. Tamamen KVKK uyumlu ve onaylı altyapımızla, güvenli ve premium bir sosyal deneyim seni bekliyor.
                 </p>
                 
-                <div class="hero-features">
-                    <div class="hero-feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                        <span>81 İlde Konumlandırma</span>
-                    </div>
-                    <div class="hero-feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                        <span>Sosyal Medya Entegrasyonu</span>
-                    </div>
-                    <div class="hero-feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                            <line x1="8" y1="21" x2="16" y2="21"></line>
-                            <line x1="12" y1="17" x2="12" y2="21"></line>
-                        </svg>
-                        <span>Doğrulanmış Güvenli Hesaplar</span>
-                    </div>
-                    <div class="hero-feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        </svg>
-                        <span>Gizlilik Odaklı Altyapı</span>
-                    </div>
-                </div>
-                
                 <div class="hero-actions">
-                    <button id="hero-start-btn" class="hero-btn-primary">
-                        Haritayı Keşfet
+                    <button id="hero-start-btn" class="hero-btn-primary pulse-animation">
+                        Hemen Başla
                     </button>
-                </div>
-                
-                <!-- Trust Badges -->
-                <div class="hero-trust-badges">
-                    <div class="trust-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                        <span>256-bit SSL Koruması</span>
-                    </div>
-                    <div class="trust-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        </svg>
-                        <span>KVKK Uyumlu</span>
-                    </div>
-                    <div class="trust-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                            <path d="M2 12h20"></path>
-                        </svg>
-                        <span>Resmi Google Girişi</span>
-                    </div>
                 </div>
                 
                 <!-- Abonelik Paketleri -->
@@ -927,6 +866,85 @@
                 <textarea id="report-description" class="form-input mt-10" placeholder="Ek açıklama (isteğe bağlı)..." rows="3" maxlength="500"></textarea>
                 
                 <button id="submit-report-btn" class="btn-danger mt-15">Şikayet Et</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Complaint Modal -->
+    <div id="general-complaint-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="back-btn" id="back-general-complaint-modal" title="Geri">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="modal-close" id="close-general-complaint-modal">×</button>
+            <h2 class="modal-title text-red">Şikayet Formu</h2>
+            
+            <div class="modal-body">
+                <p class="report-desc">MapHypee hakkında şikayet, öneri veya geri bildirimlerinizi buradan iletebilirsiniz.</p>
+                
+                <div class="form-section" style="margin-top: 20px;">
+                    <label class="form-label">Şikayet Tipi <span style="color: #ff4444;">*</span></label>
+                    <div class="report-options">
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="technical" checked>
+                            <span>Teknik Sorun</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="content">
+                            <span>İçerik Şikayeti</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="user">
+                            <span>Kullanıcı Şikayeti</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="payment">
+                            <span>Ödeme Sorunu</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="privacy">
+                            <span>Gizlilik / KVKK</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="suggestion">
+                            <span>Öneri</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="complaint-type" value="other">
+                            <span>Diğer</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section" style="margin-top: 20px;">
+                    <label class="form-label">Konu <span style="color: #ff4444;">*</span></label>
+                    <input type="text" id="complaint-subject" class="form-input" placeholder="Şikayetinizin konusu nedir?" maxlength="200" required>
+                </div>
+
+                <div class="form-section" style="margin-top: 20px;">
+                    <label class="form-label">Açıklama <span style="color: #ff4444;">*</span></label>
+                    <textarea id="complaint-description" class="form-input" placeholder="Lütfen şikayetinizi detaylı bir şekilde açıklayın..." rows="6" maxlength="2000" required></textarea>
+                    <div style="text-align: right; margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.5);">
+                        <span id="complaint-description-count">0</span>/2000 karakter
+                    </div>
+                </div>
+
+                <div class="form-section" style="margin-top: 20px;">
+                    <label class="form-label">E-posta Adresiniz</label>
+                    <input type="email" id="complaint-email" class="form-input" placeholder="yanit@example.com" maxlength="255">
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">Yanıt almak istiyorsanız e-posta adresinizi girin (isteğe bağlı)</p>
+                </div>
+
+                <div class="form-section" style="margin-top: 20px;">
+                    <label class="radio-option" style="display: flex; align-items: flex-start; gap: 8px;">
+                        <input type="checkbox" id="complaint-consent" style="margin-top: 4px;" required>
+                        <span style="font-size: 13px; line-height: 1.5;">KVKK Aydınlatma Metni'ni okudum ve şikayet formunu göndermekle kişisel verilerimin işlenmesini kabul ediyorum. <span style="color: #ff4444;">*</span></span>
+                    </label>
+                </div>
+                
+                <button id="submit-complaint-btn" class="btn-danger mt-15" style="width: 100%; margin-top: 24px;">Şikayeti Gönder</button>
             </div>
         </div>
     </div>

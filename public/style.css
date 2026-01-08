@@ -3866,7 +3866,7 @@ body {
 }
 
 .hero-title-line.highlight {
-    background: linear-gradient(135deg, #3ECF8E 0%, #2ebd7a 100%);
+    background: linear-gradient(to right, #3ECF8E, #3498db);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -3906,6 +3906,62 @@ body {
     flex-shrink: 0;
 }
 
+/* Hero Roadmap - Nasıl Kullanılır */
+.hero-roadmap {
+    display: inline-block;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 24px 32px;
+    border-radius: 16px;
+    border-left: 4px solid #3ECF8E;
+    margin-bottom: 40px;
+    backdrop-filter: blur(10px);
+    animation: heroFadeIn 1s ease-out 0.7s both;
+    max-width: 500px;
+    width: 100%;
+}
+
+.hero-roadmap-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.hero-roadmap-item:last-child {
+    margin-bottom: 0;
+}
+
+.hero-roadmap-number {
+    color: #3ECF8E;
+    font-weight: 700;
+    font-size: 16px;
+    margin-right: 12px;
+    min-width: 32px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.hero-roadmap-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Hero Badge Updated */
+.hero-badge-updated span {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ECF8E;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(62, 207, 142, 0.3);
+    display: inline-block;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 .hero-actions {
     display: flex;
     justify-content: center;
@@ -3926,6 +3982,8 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(62, 207, 142, 0.3);
+    position: relative;
+    overflow: hidden;
 }
 
 .hero-btn-primary:hover {
@@ -3935,6 +3993,19 @@ body {
 
 .hero-btn-primary:active {
     transform: translateY(0);
+}
+
+.hero-btn-primary.pulse-animation {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 20px rgba(62, 207, 142, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 30px rgba(62, 207, 142, 0.6), 0 0 0 10px rgba(62, 207, 142, 0.1);
+    }
 }
 
 .hero-btn-secondary {
@@ -4033,6 +4104,11 @@ body {
         margin-bottom: 20px;
     }
     
+    .hero-badge-updated span {
+        font-size: 11px;
+        padding: 6px 14px;
+    }
+    
     .hero-title {
         font-size: 36px;
         margin-bottom: 20px;
@@ -4042,6 +4118,27 @@ body {
         font-size: 15px;
         margin-bottom: 32px;
         padding: 0 10px;
+    }
+    
+    .hero-roadmap {
+        padding: 20px 24px;
+        margin-bottom: 32px;
+        max-width: 100%;
+        border-left-width: 3px;
+    }
+    
+    .hero-roadmap-item {
+        margin-bottom: 10px;
+    }
+    
+    .hero-roadmap-number {
+        font-size: 14px;
+        margin-right: 10px;
+        min-width: 28px;
+    }
+    
+    .hero-roadmap-text {
+        font-size: 14px;
     }
     
     .hero-features {
@@ -4106,6 +4203,28 @@ body {
     
     .hero-description {
         font-size: 14px;
+    }
+    
+    .hero-roadmap {
+        padding: 16px 20px;
+        margin-bottom: 28px;
+        border-left-width: 3px;
+        border-radius: 12px;
+    }
+    
+    .hero-roadmap-item {
+        margin-bottom: 8px;
+    }
+    
+    .hero-roadmap-number {
+        font-size: 13px;
+        margin-right: 8px;
+        min-width: 24px;
+    }
+    
+    .hero-roadmap-text {
+        font-size: 13px;
+        line-height: 1.4;
     }
     
     .hero-features {

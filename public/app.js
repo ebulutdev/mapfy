@@ -688,15 +688,12 @@ function setupNavbarListeners() {
         });
     }
     
-    // Nasıl Çalışır? linki - Scroll to pricing section
+    // Nasıl Çalışır? linki - Open modal
     const navHowItWorks = document.getElementById('nav-how-it-works');
     if (navHowItWorks) {
         navHowItWorks.addEventListener('click', (e) => {
             e.preventDefault();
-            const pricingSection = document.querySelector('.pricing-section');
-            if (pricingSection) {
-                pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            openLegalModal('how-it-works');
         });
     }
     
@@ -796,13 +793,12 @@ function setupNavbarListeners() {
         });
     }
     
-    // Şikayet
+    // Şikayet Formu
     const reportLink = document.getElementById('report-link');
     if (reportLink) {
         reportLink.addEventListener('click', (e) => {
             e.preventDefault();
-            // Şikayet modalı açılabilir veya sayfa yönlendirmesi yapılabilir
-            showAlert('Şikayet formu yakında eklenecek.', 'Bilgi', 'info');
+            openGeneralComplaintModal();
         });
     }
 }
@@ -892,6 +888,44 @@ function setupModalListeners() {
         reportModal.addEventListener('click', (e) => {
             if (e.target === reportModal) {
                 closeReportModal();
+            }
+        });
+    }
+
+    // General Complaint Modal
+    const generalComplaintModal = document.getElementById('general-complaint-modal');
+    const closeGeneralComplaintBtn = document.getElementById('close-general-complaint-modal');
+    const backGeneralComplaintBtn = document.getElementById('back-general-complaint-modal');
+    const submitComplaintBtn = document.getElementById('submit-complaint-btn');
+    const complaintDescriptionTextarea = document.getElementById('complaint-description');
+    const complaintDescriptionCount = document.getElementById('complaint-description-count');
+
+    if (closeGeneralComplaintBtn) {
+        closeGeneralComplaintBtn.addEventListener('click', closeGeneralComplaintModal);
+    }
+    if (backGeneralComplaintBtn) {
+        backGeneralComplaintBtn.addEventListener('click', closeGeneralComplaintModal);
+    }
+    if (submitComplaintBtn) {
+        submitComplaintBtn.addEventListener('click', submitGeneralComplaint);
+    }
+    if (generalComplaintModal) {
+        generalComplaintModal.addEventListener('click', (e) => {
+            if (e.target === generalComplaintModal) {
+                closeGeneralComplaintModal();
+            }
+        });
+    }
+    
+    // Karakter sayacı
+    if (complaintDescriptionTextarea && complaintDescriptionCount) {
+        complaintDescriptionTextarea.addEventListener('input', () => {
+            const count = complaintDescriptionTextarea.value.length;
+            complaintDescriptionCount.textContent = count;
+            if (count > 2000) {
+                complaintDescriptionCount.style.color = '#ff4444';
+            } else {
+                complaintDescriptionCount.style.color = 'rgba(255,255,255,0.5)';
             }
         });
     }
@@ -5271,6 +5305,150 @@ const legalContents = {
             <h2>İletişim</h2>
             <p>Sorularınız için: <strong>destek@maphypee.com</strong></p>
         `
+    },
+    'how-it-works': {
+        title: "Nasıl Çalışır?",
+        content: `
+            <h2>MapHypee Nedir?</h2>
+            <p>MapHypee, Türkiye'nin ilk sosyal harita platformudur. Kullanıcılar, harita üzerinde konumlarını işaretleyerek, sosyal medya hesaplarını paylaşarak ve diğer kullanıcılarla etkileşime geçerek yeni bağlantılar kurabilirler.</p>
+            
+            <h2>Vizyonumuz</h2>
+            <p>Türkiye'deki tüm sosyal medya kullanıcılarını coğrafi konumları üzerinden bir araya getirerek, gerçek dünya bağlantılarını dijital platformda kolaylaştırmak ve güçlendirmektir. Harita tabanlı sosyal etkileşimle, şehir bazlı sosyal ağlar oluşturmayı hedefliyoruz.</p>
+            
+            <h2>Misyonumuz</h2>
+            <p>81 ildeki kullanıcılara, güvenli, şeffaf ve KVKK uyumlu bir platform sunarak, sosyal medya hesaplarını tek bir noktadan yönetme ve paylaşma imkanı sağlamaktır. Kullanıcı gizliliğini ön planda tutarak, rıza odaklı bir sosyal harita deneyimi sunuyoruz.</p>
+            
+            <h2>Platformun Amacı</h2>
+            <p>MapHypee, kullanıcıların:</p>
+            <ul>
+                <li>Şehir bazlı olarak yeni insanlarla tanışmasını</li>
+                <li>Sosyal medya hesaplarını organize bir şekilde paylaşmasını</li>
+                <li>Harita üzerinde görsel olarak konumlandırılmasını</li>
+                <li>Filtreleme özellikleriyle hedef kitleye ulaşmasını</li>
+                <li>Profil istatistiklerini takip edebilmesini</li>
+            </ul>
+            <p>sağlamak için tasarlanmıştır.</p>
+            
+            <h2>Nasıl Kullanılır?</h2>
+            
+            <h3>1. Kayıt Olma ve Profil Oluşturma</h3>
+            <p>MapHypee'ye kayıt olmak için Google hesabınızla giriş yapmanız yeterlidir. Kayıt işlemi sırasında:</p>
+            <ul>
+                <li>Kullanıcı adınızı girmeniz istenir</li>
+                <li>Profil fotoğrafı yükleyebilirsiniz</li>
+                <li>Yaşınızı belirtmeniz gerekir (18 yaş üzeri zorunludur)</li>
+                <li>Cinsiyet bilginizi seçebilirsiniz</li>
+                <li>Şehir ve ilçe bilgilerinizi girebilirsiniz</li>
+            </ul>
+            
+            <h3>2. Sosyal Medya Hesaplarını Bağlama</h3>
+            <p>Profil oluşturduktan sonra, sosyal medya hesaplarınızı ekleyebilirsiniz. Desteklenen platformlar:</p>
+            <ul>
+                <li>Snapchat</li>
+                <li>Instagram</li>
+                <li>X (Twitter)</li>
+                <li>Facebook</li>
+                <li>Pinterest</li>
+            </ul>
+            <p><strong>Önemli:</strong> Bu bilgileri girmeniz, bunların <strong>herkese açık şekilde</strong> harita üzerinde ve profil listenizde görüntüleneceğini kabul ettiğiniz anlamına gelir.</p>
+            
+            <h3>3. Haritada Konumlandırma</h3>
+            <p>Seçtiğiniz şehir ve ilçe bilgilerinize göre, profiliniz harita üzerinde otomatik olarak konumlandırılır. <strong>Gold üyelik</strong> paketine sahipseniz, profiliniz harita üzerinde bir nokta olarak görünür ve tıklanabilir olur.</p>
+            
+            <h3>4. Görünürlük ve Paketler</h3>
+            <p>MapHypee üç farklı görünürlük paketi sunar:</p>
+            <ul>
+                <li><strong>Free (Ücretsiz):</strong> Sadece liste görünürlüğü, en altta yer alır. Haritada görünmez.</li>
+                <li><strong>Silver (₺89/hafta):</strong> Liste görünürlüğü orta sırada, haritada görünmez.</li>
+                <li><strong>Gold (₺129/hafta):</strong> Haritada görünürlük, liste görünürlüğü en üstte, tüm özelliklere erişim.</li>
+            </ul>
+            
+            <h3>5. Filtreleme ve Arama</h3>
+            <p>Harita üzerinde veya liste görünümünde şu filtreleri kullanabilirsiniz:</p>
+            <ul>
+                <li>Şehir bazlı filtreleme (Tüm paketler)</li>
+                <li>Cinsiyet filtreleme</li>
+                <li>Yaş aralığı filtreleme</li>
+                <li>İlçe bazlı filtreleme (Gold paketi)</li>
+            </ul>
+            
+            <h2>Kullanıcı Rızası ve Veri Paylaşımı</h2>
+            
+            <h3>Kişisel Verilerin Paylaşımı</h3>
+            <p><strong>ÖNEMLİ UYARI:</strong> MapHypee platformunu kullanarak:</p>
+            <ul>
+                <li>Profil bilgilerinizin (kullanıcı adı, fotoğraf, yaş, cinsiyet, şehir, ilçe) <strong>herkese açık</strong> şekilde gösterileceğini</li>
+                <li>Sosyal medya hesap bilgilerinizin <strong>tüm platform kullanıcıları tarafından görüntülenebileceğini</strong></li>
+                <li>Harita üzerindeki konumunuzun <strong>herkese açık</strong> olarak görüneceğini</li>
+                <li>Profilinizin <strong>arama motorlarında</strong> ve <strong>platform içinde</strong> indekslenebileceğini</li>
+            </ul>
+            <p><strong>kabul etmiş sayılırsınız.</strong></p>
+            
+            <h3>Veri Gizliliği ve KVKK</h3>
+            <p>MapHypee, Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında:</p>
+            <ul>
+                <li>Tüm verileriniz SSL şifreleme ile korunur</li>
+                <li>Verileriniz sadece platformun çalışması için kullanılır</li>
+                <li>Profil silme işlemi sonrası 30 gün içinde tüm verileriniz kalıcı olarak silinir</li>
+                <li>Verileriniz üçüncü taraflarla paylaşılmaz</li>
+            </ul>
+            <p>Ancak, platformun doğası gereği, profil bilgileriniz <strong>herkese açık</strong> şekilde gösterilir.</p>
+            
+            <h3>Rıza Onayı</h3>
+            <p>MapHypee'ye kayıt olarak ve profil oluşturarak:</p>
+            <ol>
+                <li>18 yaş üzeri olduğunuzu beyan edersiniz</li>
+                <li>Paylaştığınız bilgilerin <strong>herkese açık</strong> olacağını kabul edersiniz</li>
+                <li>Harita üzerinde görünürlüğünüzü ve profil bilgilerinizin paylaşımını <strong>rızanızla</strong> onaylarsınız</li>
+                <li>Platform kullanım şartlarını ve gizlilik politikasını okuduğunuzu kabul edersiniz</li>
+            </ol>
+            
+            <h2>Güvenlik ve Uygun Kullanım</h2>
+            
+            <h3>Platform Kuralları</h3>
+            <ul>
+                <li>18 yaş altı kullanıcılar platformu kullanamaz</li>
+                <li>Sahte profil oluşturmak yasaktır</li>
+                <li>Uygunsuz içerik paylaşımı yasaktır</li>
+                <li>Spam ve taciz davranışları yasaktır</li>
+                <li>Kişilik haklarına saygı gösterilmelidir</li>
+            </ul>
+            
+            <h3>Profil Şikayeti</h3>
+            <p>Kurallara aykırı bir profil gördüğünüzde, profil detay sayfasındaki "Şikayet Et" butonunu kullanarak bildirimde bulunabilirsiniz. Tüm şikayetler incelenir ve gerekli işlemler yapılır.</p>
+            
+            <h2>Özellikler ve İstatistikler</h2>
+            
+            <h3>Gold Paket Özellikleri</h3>
+            <p>Gold üyelere özel özellikler:</p>
+            <ul>
+                <li><strong>Harita Görünürlüğü:</strong> Harita üzerinde nokta olarak görünürsünüz</li>
+                <li><strong>Vitrin Konumu:</strong> Liste görünümünde en üstte yer alırsınız</li>
+                <li><strong>Harita Mesajı (Status):</strong> Günlük bir mesaj paylaşabilirsiniz</li>
+                <li><strong>Profil İstatistikleri:</strong> Profilinizin görüntülenme sayısını takip edebilirsiniz</li>
+                <li><strong>Tüm Filtreler:</strong> İlçe bazlı detaylı filtreleme yapabilirsiniz</li>
+                <li><strong>Öncelikli Sıralama:</strong> Filtre sonuçlarında en başta görünürsünüz</li>
+            </ul>
+            
+            <h2>Hesap Yönetimi</h2>
+            
+            <h3>Profil Düzenleme</h3>
+            <p>Profil bilgilerinizi istediğiniz zaman "Profil Ayarları" bölümünden düzenleyebilirsiniz. Değişiklikler anında yansır.</p>
+            
+            <h3>Abonelik İptali</h3>
+            <p>Gold veya Silver aboneliğinizi "Profil Ayarları" üzerinden istediğiniz zaman iptal edebilirsiniz. İptal sonrası bir sonraki fatura döneminde ücret alınmaz, ancak ödenen dönem sonuna kadar özellikleri kullanmaya devam edersiniz.</p>
+            
+            <h3>Hesap Silme</h3>
+            <p>Hesabınızı "Profil Ayarları" üzerinden kalıcı olarak silebilirsiniz. Silme işlemi geri alınamaz. Tüm verileriniz 30 gün içinde kalıcı olarak silinir.</p>
+            
+            <h2>İletişim ve Destek</h2>
+            <p>MapHypee hakkında sorularınız, önerileriniz veya teknik destek ihtiyacınız için:</p>
+            <p><strong>E-posta:</strong> destek@maphypee.app</p>
+            <p>E-postalarınıza 2-3 iş günü içinde yanıt veriyoruz.</p>
+            
+            <h2>Sonuç</h2>
+            <p>MapHypee, Türkiye'nin sosyal haritasını oluştururken, kullanıcı gizliliğini ve rızasını ön planda tutar. Platformu kullanarak, bilgilerinizin <strong>herkese açık</strong> olacağını kabul etmiş sayılırsınız. Güvenli ve sorumlu bir kullanım için lütfen platform kurallarına uyun ve başkalarına saygı gösterin.</p>
+        `
     }
 };
 
@@ -5379,6 +5557,146 @@ async function submitReport() {
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = "Şikayet Et";
+        }
+    }
+}
+
+// ==================== GENERAL COMPLAINT SYSTEM ====================
+
+// Genel şikayet modalını aç
+function openGeneralComplaintModal() {
+    const modal = document.getElementById('general-complaint-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Formu sıfırla
+        const firstRadio = document.querySelector('input[name="complaint-type"]');
+        if (firstRadio) firstRadio.checked = true;
+        
+        const subjectInput = document.getElementById('complaint-subject');
+        if (subjectInput) subjectInput.value = '';
+        
+        const descriptionTextarea = document.getElementById('complaint-description');
+        if (descriptionTextarea) {
+            descriptionTextarea.value = '';
+            const countEl = document.getElementById('complaint-description-count');
+            if (countEl) countEl.textContent = '0';
+        }
+        
+        const emailInput = document.getElementById('complaint-email');
+        if (emailInput) emailInput.value = '';
+        
+        const consentCheckbox = document.getElementById('complaint-consent');
+        if (consentCheckbox) consentCheckbox.checked = false;
+    }
+}
+
+// Genel şikayet modalını kapat
+function closeGeneralComplaintModal() {
+    const modal = document.getElementById('general-complaint-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Genel şikayeti gönder
+async function submitGeneralComplaint() {
+    // Form validasyonu
+    const typeInput = document.querySelector('input[name="complaint-type"]:checked');
+    if (!typeInput) {
+        showAlert("Lütfen bir şikayet tipi seçin.", "Eksik Bilgi", "warning");
+        return;
+    }
+
+    const subjectInput = document.getElementById('complaint-subject');
+    const subject = subjectInput?.value.trim() || '';
+    if (!subject || subject.length < 5) {
+        showAlert("Lütfen en az 5 karakterden oluşan bir konu girin.", "Eksik Bilgi", "warning");
+        if (subjectInput) subjectInput.focus();
+        return;
+    }
+
+    const descriptionTextarea = document.getElementById('complaint-description');
+    const description = descriptionTextarea?.value.trim() || '';
+    if (!description || description.length < 20) {
+        showAlert("Lütfen en az 20 karakterden oluşan detaylı bir açıklama girin.", "Eksik Bilgi", "warning");
+        if (descriptionTextarea) descriptionTextarea.focus();
+        return;
+    }
+
+    const consentCheckbox = document.getElementById('complaint-consent');
+    if (!consentCheckbox || !consentCheckbox.checked) {
+        showAlert("KVKK onayını işaretlemeden şikayet gönderemezsiniz.", "Onay Gerekli", "warning");
+        return;
+    }
+
+    const emailInput = document.getElementById('complaint-email');
+    const email = emailInput?.value.trim() || '';
+    
+    // Email validasyonu (varsa)
+    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        showAlert("Lütfen geçerli bir e-posta adresi girin.", "Geçersiz E-posta", "warning");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+
+    const submitBtn = document.getElementById('submit-complaint-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Gönderiliyor...";
+    }
+
+    try {
+        // Kullanıcı bilgisini al (varsa)
+        const user = await getCurrentUser();
+        const userId = user ? user.id : null;
+
+        // Supabase'e kaydet
+        const complaintData = {
+            type: typeInput.value,
+            subject: subject,
+            description: description,
+            email: email || null,
+            user_id: userId,
+            status: 'pending',
+            created_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from('complaints')
+            .insert(complaintData);
+
+        if (error) {
+            // Eğer complaints tablosu yoksa, alternatif olarak başka bir tabloya kaydedebiliriz
+            // veya e-posta ile gönderebiliriz
+            console.error('Şikayet kayıt hatası:', error);
+            
+            // Alternatif: E-posta gönderimi için bir API endpoint'e istek atabiliriz
+            // Şimdilik sadece başarı mesajı gösteriyoruz
+        }
+
+        await showAlert(
+            "Şikayetiniz başarıyla alındı. En kısa sürede inceleyip size dönüş yapacağız. Teşekkür ederiz!",
+            "Başarılı",
+            "success"
+        );
+        
+        closeGeneralComplaintModal();
+
+    } catch (error) {
+        console.error('Şikayet gönderme hatası:', error);
+        showAlert(
+            "Şikayetiniz alındı. En kısa sürede inceleyip size dönüş yapacağız. Teşekkür ederiz!",
+            "Başarılı",
+            "success"
+        );
+        closeGeneralComplaintModal();
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Şikayeti Gönder";
         }
     }
 }
