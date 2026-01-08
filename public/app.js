@@ -641,11 +641,11 @@ function setupEventListeners() {
     const resetViewBtn = document.getElementById('reset-view-btn');
     if (resetViewBtn) {
         resetViewBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
             
             // 1. Haritayı varsayılan konuma ve zoom'a getir (Mevcut fonksiyon)
-            resetView(); 
+        resetView();
             
             // 2. Sayfayı en üste kaydır (Navbar yukarıda kaldıysa düzelir)
             window.scrollTo({
@@ -784,6 +784,15 @@ function setupNavbarListeners() {
         refundLink.addEventListener('click', (e) => {
             e.preventDefault();
             openLegalModal('refund');
+        });
+    }
+    
+    // Mesafeli Satış Sözleşmesi
+    const distanceSaleLink = document.getElementById('distance-sale-link');
+    if (distanceSaleLink) {
+        distanceSaleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('distanceSale');
         });
     }
     
@@ -4823,162 +4832,184 @@ function cancelEditCrop() {
 // Legal modal içerikleri
 const legalContents = {
     terms: {
-        title: "Kullanıcı Sözleşmesi",
+        title: "Kullanıcı Sözleşmesi ve Hizmet Koşulları",
         content: `
-            <h2>1. Genel Hükümler</h2>
-            <p>Bu Kullanıcı Sözleşmesi ("Sözleşme"), MapHypee platformunu ("Platform", "Servis", "Site") kullanımınızı düzenler. Platformu kullanarak bu sözleşmenin tüm koşullarını kabul etmiş sayılırsınız.</p>
-            
-            <h3>1.1. Tanımlar</h3>
-            <ul>
-                <li><strong>MapHypee:</strong> Sosyal harita platformu</li>
-                <li><strong>Kullanıcı:</strong> Platformu kullanan kişi</li>
-                <li><strong>Profil:</strong> Kullanıcının oluşturduğu harita üzerindeki görünümü</li>
-                <li><strong>İçerik:</strong> Platforma yüklenen tüm veri, fotoğraf ve bilgiler</li>
-            </ul>
-            
-            <h2>2. Yaş Sınırı ve Kullanım Koşulları</h2>
-            <p>Platformu kullanmak için <strong>18 yaş ve üzeri</strong> olmanız gerekmektedir. 18 yaş altındaki kişilerin platformu kullanması kesinlikle yasaktır.</p>
-            
-            <h2>3. Kullanıcı Yükümlülükleri</h2>
-            <h3>3.1. Doğru Bilgi Verme</h3>
-            <p>Kullanıcılar, Platformda paylaştıkları tüm bilgilerin doğru, güncel ve eksiksiz olduğunu taahhüt eder.</p>
-            
-            <h3>3.2. Yasaklanmış İçerikler</h3>
-            <ul>
-                <li>Çıplaklık, pornografik veya müstehcen içerikler</li>
-                <li>Şiddet, nefret söylemi veya ayrımcılık içeren içerikler</li>
-                <li>Sahte profil veya kimlik bilgileri</li>
-                <li>Spam, dolandırıcılık veya yanıltıcı bilgiler</li>
-                <li>Telif hakkı ihlali yapan içerikler</li>
-                <li>18 yaş altı kişilerin profilleri</li>
-            </ul>
-            
-            <h2>4. Sorumluluk Reddi</h2>
-            <p>MapHypee, kullanıcılar arasındaki etkileşimlerden, paylaşılan içeriklerden veya harita üzerindeki konumlandırmalardan kaynaklanan hiçbir zarardan sorumlu değildir. Kullanıcılar kendi riskleriyle platformu kullanırlar.</p>
-            
-            <h2>5. Fikri Mülkiyet</h2>
-            <p>Platformdaki tüm içerikler, tasarımlar ve yazılımlar MapHypee'ye aittir. Kullanıcılar kendi yükledikleri içeriklerin telif haklarını MapHypee'ye devrederler.</p>
-            
-            <h2>6. Hesap Kapatma</h2>
-            <p>MapHypee, sözleşme ihlali, yasa dışı aktivite veya platformun güvenliğini tehdit eden durumlarda, önceden haber vermeksizin kullanıcı hesaplarını kapatabilir.</p>
-            
-            <h2>7. Değişiklikler</h2>
-            <p>Bu sözleşme her zaman değiştirilebilir. Değişiklikler Platform üzerinde yayınlandıktan sonra yürürlüğe girer.</p>
-            
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            
+            <h2>1. TARAFLAR VE KONU</h2>
+            <p>Bu Kullanıcı Sözleşmesi ("Sözleşme"), MapHypee ("Platform", "Biz") ile Platforma üye olan, erişen veya hizmetleri kullanan kişi ("Kullanıcı", "Siz") arasında akdedilmiştir. Platforma üye olarak veya kullanarak bu koşulları, <a href="#" onclick="event.preventDefault(); openLegalModal('privacy'); return false;">Gizlilik Politikası</a>'nı ve <a href="#" onclick="event.preventDefault(); openLegalModal('community'); return false;">Topluluk Kuralları</a>'nı kabul etmiş sayılırsınız.</p>
+            
+            <h2>2. ÜYELİK ŞARTLARI (UYGUNLUK)</h2>
+            <p>Hizmetlerimizi kullanabilmek için aşağıdaki şartları taşıdığınızı beyan ve taahhüt edersiniz:</p>
+            
+            <h3>2.1. Yaş Sınırı</h3>
+            <p>En az <strong>18 yaşında</strong> olmalısınız. 18 yaşın altındaki bireylerin platformu kullanması yasaktır. Tespiti halinde hesap derhal kapatılır.</p>
+            
+            <h3>2.2. Yasal Ehliyet</h3>
+            <p>Yasal olarak sözleşme yapma ehliyetine sahip olmalısınız.</p>
+            
+            <h3>2.3. Sicil</h3>
+            <p>Cinsel suçlardan, şiddet içeren suçlardan veya tacizden hüküm giymemiş olmalısınız.</p>
+            
+            <h3>2.4. Tek Hesap</h3>
+            <p>Platformda birden fazla aktif hesabınız bulunmamalıdır.</p>
+            
+            <h2>3. HESAP GÜVENLİĞİ VE KULLANIM KURALLARI</h2>
+            
+            <h3>3.1. Hesap Güvenliği</h3>
+            <p>Hesabınızın güvenliğinden ve şifrenizden siz sorumlusunuz.</p>
+            
+            <h3>3.2. Yasaklanmış Eylemler</h3>
+            <p>Aşağıdaki eylemler kesinlikle <strong>YASAKTIR</strong> ve hesabın kalıcı olarak kapatılmasına (ban) neden olur:</p>
+            <ul>
+                <li><strong>Sahte Profil:</strong> Başkasının fotoğraflarını veya bilgilerini kullanmak.</li>
+                <li><strong>Taciz ve Zorbalık:</strong> Diğer kullanıcıları rahatsız etmek, tehdit etmek, nefret söyleminde bulunmak.</li>
+                <li><strong>Yasa Dışı İçerik:</strong> Çıplaklık, pornografi, şiddet, terör veya yasa dışı faaliyetleri teşvik eden içerikler paylaşmak.</li>
+                <li><strong>Ticari Kullanım:</strong> Diğer kullanıcılara ürün satmaya çalışmak, spam mesajlar göndermek veya dolandırıcılık faaliyetleri.</li>
+                <li><strong>Veri Madenciliği:</strong> Platformu "scrape" etmek, bot kullanmak veya kullanıcı verilerini toplamak.</li>
+            </ul>
+            
+            <h2>4. İÇERİK VE LİSANS HAKLARI</h2>
+            
+            <h3>4.1. Sizin İçeriğiniz</h3>
+            <p>Profilinize yüklediğiniz fotoğraflar, bilgiler ve konum verileri ("İçerik") size aittir. Ancak, Platforma üye olarak MapHypee'ye bu içeriği hizmetin sunulması amacıyla (haritada gösterme, diğer kullanıcılara sunma vb.) kullanma, kopyalama ve görüntüleme hakkı (lisans) vermiş olursunuz.</p>
+            
+            <h3>4.2. Diğer Kullanıcıların İçeriği</h3>
+            <p>Platformdaki diğer kullanıcıların profilleri sadece kişisel ve sosyal amaçlarla görüntülenebilir. Bu bilgileri kopyalamak, ekran görüntüsü alıp izinsiz paylaşmak yasaktır.</p>
+            
+            <h3>4.3. MapHypee'nin Hakları</h3>
+            <p>Platformun tasarımı, logosu, yazılımı ve veritabanı MapHypee'nin mülkiyetindedir.</p>
+            
+            <h2>5. KONUM VERİLERİ VE GÜVENLİK</h2>
+            
+            <h3>5.1. Konum Paylaşımı</h3>
+            <p>MapHypee, bir harita tabanlı sosyal ağdır. Profilinizde belirttiğiniz veya GPS ile paylaştığınız konumunuzun, diğer kullanıcılar tarafından yaklaşık olarak (Şehir/İlçe bazında veya harita üzerindeki pin olarak) görülebileceğini kabul edersiniz.</p>
+            
+            <h3>5.2. Güvenlik Uyarısı</h3>
+            <p><strong>Tam adresinizi</strong> (ev kapı numarası, iş yeri detay adresi vb.) asla profilinizde açıkça paylaşmamanızı öneririz. Bu tür paylaşımlardan doğacak güvenlik risklerinden <strong>Kullanıcı sorumludur</strong>.</p>
+            
+            <h2>6. ÜCRETLİ HİZMETLER VE İADE POLİTİKASI (GOLD/SILVER PAKETLER)</h2>
+            
+            <h3>6.1. Abonelik Paketleri</h3>
+            <p>MapHypee, bazı özellikleri (detaylı filtreleme, istatistik görme vb.) ücretli abonelik paketleri (Gold, Silver) ile sunar.</p>
+            
+            <h3>6.2. Cayma Hakkı İstisnası</h3>
+            <p>Satın alınan abonelikler ve özellikler, "Elektronik ortamda anında ifa edilen hizmetler" kapsamındadır. 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği uyarınca, hizmet ifası başladığı andan itibaren <strong>CAYMA VE İADE HAKKI BULUNMAMAKTADIR</strong>.</p>
+            
+            <h3>6.3. Abonelik Yenileme</h3>
+            <p>Abonelikler, Kullanıcı tarafından iptal edilmediği sürece seçilen periyotta otomatik olarak yenilenir. İptal işlemi, bir sonraki fatura dönemi için geçerli olur.</p>
+            
+            <h2>7. SORUMLULUK REDDİ (ÖNEMLİ)</h2>
+            
+            <h3>7.1. "Olduğu Gibi"</h3>
+            <p>Hizmet, "olduğu gibi" ve "mevcut haliyle" sunulmaktadır. MapHypee, hizmetin kesintisiz veya hatasız olacağını garanti etmez.</p>
+            
+            <h3>7.2. Kullanıcı Etkileşimleri</h3>
+            <p>MapHypee, 5651 Sayılı Kanun uyarınca bir <strong>"Yer Sağlayıcı"</strong>dır. Kullanıcıların oluşturduğu profillerin, paylaştığı sosyal medya hesaplarının veya beyanlarının doğruluğunu kontrol etmekle yükümlü değildir.</p>
+            
+            <h3>7.3. Sorumsuzluk</h3>
+            <p>Platform aracılığıyla tanıştığınız kişilerle olan çevrimiçi veya çevrimdışı (yüz yüze) etkileşimlerinizden tamamen siz sorumlusunuz. MapHypee; kullanıcılar arasındaki anlaşmazlıklardan, dolandırıcılıktan veya fiziksel/manevi zararlardan sorumlu tutulamaz. <strong>Tanımadığınız kişilerle buluşurken azami dikkat göstermeniz önerilir.</strong></p>
+            
+            <h2>8. HESABIN FESHİ</h2>
+            
+            <h3>8.1. Kullanıcı Tarafından İptal</h3>
+            <p>Kullanıcı, dilediği zaman "Ayarlar" bölümünden hesabını silebilir.</p>
+            
+            <h3>8.2. MapHypee Tarafından İptal</h3>
+            <p>MapHypee, bu Sözleşmeyi ihlal eden, şüpheli işlem yapan veya yasal mercilerce talep edilen hesapları önceden bildirimde bulunmaksızın askıya alma veya kalıcı olarak silme hakkını saklı tutar. <strong>Yasaklanan kullanıcılar ücret iadesi talep edemez.</strong></p>
+            
+            <h2>9. UYUŞMAZLIKLARIN ÇÖZÜMÜ</h2>
+            <p>İşbu Sözleşme'den doğacak her türlü uyuşmazlıkta <strong>Türkiye Cumhuriyeti Kanunları</strong> uygulanır. Uyuşmazlıkların çözümünde <strong>Bursa Mahkemeleri ve İcra Daireleri</strong> yetkilidir.</p>
+            
+            <h2>10. YÜRÜRLÜK</h2>
+            <p>Kullanıcı, Platforma kayıt olarak veya Platformu kullanarak bu Sözleşme'nin tüm maddelerini okuduğunu, anladığını ve kabul ettiğini beyan eder.</p>
+            
+            <h2>İletişim</h2>
+            <p>Sorularınız için: <strong>destek@maphypee.com</strong></p>
         `
     },
     privacy: {
         title: "Gizlilik Politikası & KVKK Aydınlatma Metni",
         content: `
-            <h2>1. Veri Sorumlusu</h2>
-            <p><strong>MapHypee</strong> olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla, kişisel verilerinizin işlenmesi konusunda aşağıdaki bilgileri sizlere sunuyoruz.</p>
-            
-            <h2>2. Toplanan Kişisel Veriler</h2>
-            <h3>2.1. Kimlik Bilgileri</h3>
-            <ul>
-                <li>Ad, soyad</li>
-                <li>Kullanıcı adı</li>
-                <li>Profil fotoğrafı</li>
-            </ul>
-            
-            <h3>2.2. İletişim Bilgileri</h3>
-            <ul>
-                <li>E-posta adresi (Google ile giriş yapıldığında)</li>
-            </ul>
-            
-            <h3>2.3. Konum Bilgileri</h3>
-            <ul>
-                <li>Şehir bilgisi (tam adres değil, sadece şehir)</li>
-                <li>İlçe bilgisi (isteğe bağlı)</li>
-                <li>Harita üzerindeki yaklaşık konum koordinatları</li>
-            </ul>
-            
-            <h3>2.4. Sosyal Medya Bilgileri</h3>
-            <ul>
-                <li>Snapchat, Instagram, Facebook, Twitter, Pinterest kullanıcı adları (isteğe bağlı)</li>
-            </ul>
-            
-            <h3>2.5. Diğer Bilgiler</h3>
-            <ul>
-                <li>Yaş bilgisi (18+ doğrulaması için)</li>
-                <li>Cinsiyet bilgisi (isteğe bağlı)</li>
-            </ul>
-            
-            <h2>3. Verilerin İşlenme Amacı</h2>
-            <ul>
-                <li>Sosyal harita platformunun sunulması</li>
-                <li>Kullanıcı hesaplarının yönetilmesi</li>
-                <li>Platform güvenliğinin sağlanması</li>
-                <li>Yasal yükümlülüklerin yerine getirilmesi</li>
-                <li>Kullanıcı şikayetlerinin değerlendirilmesi</li>
-            </ul>
-            
-            <h2>4. Verilerin Saklanma Süresi</h2>
-            <p>Kişisel verileriniz, KVKK ve ilgili mevzuatın öngördüğü süreler boyunca veya işlenme amacının gerektirdiği süre içinde saklanmaktadır. Hesabınızı sildiğinizde verileriniz 30 gün içinde silinir.</p>
-            
-            <h2>5. Verilerin Paylaşılması</h2>
-            <p>Kişisel verileriniz, yasal yükümlülükler hariç olmak üzere, <strong>üçüncü kişilerle paylaşılmamaktadır</strong>. Verileriniz sadece Supabase altyapısında güvenli bir şekilde saklanmaktadır.</p>
-            
-            <h2>6. Veri Güvenliği</h2>
-            <p>Kişisel verilerinizin güvenliği için teknik ve idari önlemler alınmıştır. Verileriniz SSL şifreleme ve modern güvenlik protokolleri ile korunmaktadır.</p>
-            
-            <h2>7. KVKK Haklarınız</h2>
-            <p>KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:</p>
-            <ul>
-                <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
-                <li>İşlenmişse buna ilişkin bilgi talep etme</li>
-                <li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme</li>
-                <li>Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme</li>
-                <li>Eksik veya yanlış işlenmişse düzeltilmesini isteme</li>
-                <li>KVKK'da öngörülen şartlar çerçevesinde silinmesini veya yok edilmesini isteme</li>
-                <li>İşlenen verilerin münhasıran otomatik sistemler ile analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme</li>
-                <li>Kanuna aykırı olarak işlenmesi sebebiyle zarara uğramanız hâlinde zararın giderilmesini talep etme</li>
-            </ul>
-            
-            <h2>8. İletişim</h2>
-            <p>KVKK haklarınızı kullanmak için: <strong>destek@maphypee.app</strong> adresine e-posta gönderebilirsiniz.</p>
-            
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            
+            <h2>1. Biz Kimiz (Veri Sorumlusu)</h2>
+            <p>Bu Gizlilik Politikası, MapHypee ("Platform") kullanıcılarının kişisel verilerinin işlenmesine ilişkin kuralları düzenler. Türkiye Cumhuriyeti sınırları içinde ve dışında hizmet veren platformumuzun veri sorumlusu:</p>
+            <ul>
+                <li><strong>Şirket/Platform Adı:</strong> MapHypee</li>
+                <li><strong>İletişim:</strong> destek@maphypee.com</li>
+                <li><strong>Adres:</strong> Bursa, Türkiye</li>
+            </ul>
+            
+            <h2>2. Hangi Verileri Topluyoruz?</h2>
+            <p>Hizmetimizi kullanabilmeniz ve haritada sosyalleşebilmeniz için aşağıdaki verileri topluyoruz:</p>
+            
+            <h3>2.1. Hesap Bilgileri</h3>
+            <p>Google OAuth aracılığıyla alınan Ad, Soyad, E-posta adresi ve Profil Fotoğrafı.</p>
+            
+            <h3>2.2. Profil Bilgileri</h3>
+            <p>Kullanıcı adı, Yaş, Cinsiyet, Şehir ve İlçe bilgisi.</p>
+            
+            <h3>2.3. Konum Verisi</h3>
+            <p>Harita üzerinde manuel olarak seçtiğiniz veya izin verdiğiniz yaklaşık konum (Şehir/İlçe bazlı). <strong>Kesin adresiniz (kapı numarası vb.) asla istenmez ve saklanmaz.</strong></p>
+            
+            <h3>2.4. Sosyal Medya Hesapları</h3>
+            <p>Kendi isteğinizle profilinize eklediğiniz Snapchat, Instagram, Twitter, Facebook ve Pinterest kullanıcı adları.</p>
+            
+            <h3>2.5. İşlem Verileri</h3>
+            <p>Platform içi etkileşimleriniz (Tıklamalar, Görüntülenmeler, Favoriler).</p>
+            
+            <h2>3. Verilerinizi Neden Kullanıyoruz? (İşleme Amaçları)</h2>
+            <p>Verileriniz şu amaçlarla işlenir:</p>
+            <ul>
+                <li>Sizi harita üzerinde diğer kullanıcılara gösterebilmek ("Hizmetin İfası").</li>
+                <li>Diğer kullanıcıların sizi sosyal medya hesaplarınızdan bulmasını sağlamak.</li>
+                <li>Platform güvenliğini sağlamak, sahte profilleri ve 18 yaş altı kullanımları engellemek.</li>
+                <li>Yasal yükümlülüklerimizi yerine getirmek (5651 Sayılı Kanun gereği log tutma vb.).</li>
+            </ul>
+            
+            <h2>4. Verilerinizi Kimlerle Paylaşıyoruz?</h2>
+            
+            <h3>4.1. Diğer Kullanıcılar</h3>
+            <p>Profiliniz (Adınız, Fotoğrafınız, Şehriniz, Sosyal Medya Linkleriniz) harita üzerinde <strong>herkese açık (public)</strong> olarak paylaşılır.</p>
+            
+            <h3>4.2. Hizmet Sağlayıcılar</h3>
+            <p>Verileriniz güvenli sunucularda (Supabase, Google Cloud) şifreli olarak saklanır.</p>
+            
+            <h3>4.3. Yasal Merciler</h3>
+            <p>Mahkeme kararı veya yasal bir talep olması durumunda, ilgili veriler Emniyet ve Savcılık makamlarıyla paylaşılabilir.</p>
+            
+            <h3>4.4. Asla</h3>
+            <p><strong>Verileriniz pazarlama amacıyla üçüncü taraf reklam şirketlerine satılmaz.</strong></p>
+            
+            <h2>5. KVKK Kapsamındaki Haklarınız</h2>
+            <p>6698 Sayılı Kişisel Verilerin Korunması Kanunu'nun 11. maddesi uyarınca; verilerinizin işlenip işlenmediğini öğrenme, düzeltme, silme ve itiraz etme hakkına sahipsiniz.</p>
+            
+            <h3>5.1. Hesap Silme</h3>
+            <p>Profilinizi dilediğiniz zaman "Ayarlar > Hesabı Sil" menüsünden kalıcı olarak silebilirsiniz. Silinen veriler <strong>30 gün içinde</strong> sistemlerimizden tamamen kaldırılır.</p>
+            
+            <h2>6. İletişim</h2>
+            <p>KVKK haklarınızı kullanmak için: <strong>destek@maphypee.com</strong> adresine e-posta gönderebilirsiniz.</p>
         `
     },
     cookies: {
         title: "Çerez Politikası & Tercihleri Yönet",
         content: `
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            
             <h2>1. Çerez Nedir?</h2>
-            <p>Çerezler, web sitelerinin bilgisayarınıza veya mobil cihazınıza kaydettiği küçük metin dosyalarıdır. MapHypee, platformun düzgün çalışması ve kullanıcı deneyimini iyileştirmek için çerezler kullanmaktadır.</p>
+            <p>Çerezler, web sitelerinin bilgisayarınıza veya mobil cihazınıza kaydettiği küçük metin dosyalarıdır. MapHypee olarak, platformun çalışması için zorunlu olan ve deneyiminizi iyileştiren çerezler kullanıyoruz.</p>
             
             <h2>2. Kullandığımız Çerez Türleri</h2>
             
             <h3>2.1. Zorunlu Çerezler</h3>
-            <p>Bu çerezler platformun çalışması için gereklidir ve devre dışı bırakılamaz:</p>
-            <ul>
-                <li><strong>Oturum Çerezleri:</strong> Giriş yaptığınızda oturumunuzu korur</li>
-                <li><strong>Güvenlik Çerezleri:</strong> Platform güvenliğini sağlar</li>
-            </ul>
+            <p>Oturumunuzun açık kalmasını sağlayan teknik çerezlerdir. Bu çerezler platformun çalışması için gereklidir ve devre dışı bırakılamaz.</p>
             
-            <h3>2.2. Performans Çerezleri</h3>
-            <p>Platformun performansını analiz etmek için kullanılır:</p>
-            <ul>
-                <li>Sayfa yükleme süreleri</li>
-                <li>Hata raporları</li>
-                <li>Kullanım istatistikleri</li>
-            </ul>
+            <h3>2.2. Analitik Çerezler</h3>
+            <p>Sitenin kaç kişi tarafından ziyaret edildiğini ölçen anonim verilerdir.</p>
             
-            <h3>2.3. İşlevsellik Çerezleri</h3>
-            <p>Kullanıcı tercihlerinizi hatırlamak için:</p>
-            <ul>
-                <li>Dil tercihleri</li>
-                <li>Tema ayarları</li>
-                <li>Filtre tercihleri</li>
-            </ul>
-            
-            <h2>3. Üçüncü Taraf Çerezler</h2>
-            <p>MapHypee, aşağıdaki hizmetler için üçüncü taraf çerezler kullanabilir:</p>
-            <ul>
-                <li><strong>Google Analytics:</strong> Platform kullanımını analiz etmek için</li>
-                <li><strong>Supabase:</strong> Veritabanı ve kimlik doğrulama için</li>
-            </ul>
+            <h2>3. Çerez Kullanımını Kabul</h2>
+            <p>Platformu kullanarak çerez kullanımını kabul etmiş sayılırsınız.</p>
             
             <h2>4. Çerez Tercihlerinizi Yönetme</h2>
             <p>Tarayıcı ayarlarınızdan çerezleri yönetebilirsiniz:</p>
@@ -4990,43 +5021,37 @@ const legalContents = {
             
             <p><strong>Not:</strong> Çerezleri devre dışı bırakırsanız, platformun bazı özellikleri çalışmayabilir.</p>
             
-            <h2>5. Çerez Saklama Süreleri</h2>
-            <ul>
-                <li><strong>Oturum Çerezleri:</strong> Tarayıcı kapatıldığında silinir</li>
-                <li><strong>Kalıcı Çerezler:</strong> Maksimum 1 yıl saklanır</li>
-            </ul>
-            
-            <h2>6. İletişim</h2>
-            <p>Çerez politikası ile ilgili sorularınız için: <strong>destek@maphypee.app</strong></p>
-            
-            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            <h2>5. İletişim</h2>
+            <p>Çerez politikası ile ilgili sorularınız için: <strong>destek@maphypee.com</strong></p>
         `
     },
     community: {
         title: "Topluluk Kuralları",
         content: `
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            
             <h2>1. Genel İlkeler</h2>
             <p>MapHypee, herkes için güvenli, saygılı ve hoş bir ortam sunmayı hedefler. Bu kurallara uymak, tüm kullanıcılarımızın sorumluluğundadır.</p>
             
-            <h2>2. Profil Oluşturma Kuralları</h2>
-            <h3>2.1. Gerçek Bilgiler</h3>
+            <h2>2. Yasaklı Davranışlar</h2>
+            <p>Aşağıdaki eylemler hesabın kalıcı olarak yasaklanmasına (ban) neden olur:</p>
+            <ul>
+                <li><strong>Fake Profil:</strong> Başkasına ait fotoğrafları veya bilgileri kullanmak</li>
+                <li><strong>Uygunsuz İçerik:</strong> Cinsel içerikli, pornografik veya rahatsız edici fotoğraflar yüklemek</li>
+                <li><strong>Taciz ve Nefret:</strong> Diğer kullanıcıları taciz etmek, nefret söyleminde bulunmak</li>
+                <li><strong>Spam ve Dolandırıcılık:</strong> Spam, dolandırıcılık veya reklam amaçlı içerik girmek</li>
+                <li><strong>Yaş Sınırı İhlali:</strong> 18 yaş altı kullanıcıların platformu kullanması</li>
+            </ul>
+            
+            <h2>3. Profil Oluşturma Kuralları</h2>
             <ul>
                 <li>Sadece kendi adınıza profil oluşturabilirsiniz</li>
                 <li>Gerçek kimlik bilgilerinizi kullanmalısınız</li>
-                <li>Sahte profil oluşturmak kesinlikle yasaktır</li>
+                <li>Kendi fotoğrafınızı kullanmalısınız</li>
                 <li>18 yaş ve üzeri olmalısınız</li>
             </ul>
             
-            <h3>2.2. Profil Fotoğrafı</h3>
-            <ul>
-                <li>Kendi fotoğrafınızı kullanmalısınız</li>
-                <li>Çıplaklık, pornografik veya müstehcen içerikler yasaktır</li>
-                <li>Şiddet içeren görüntüler yasaktır</li>
-                <li>Başkalarının fotoğraflarını izinsiz kullanmak yasaktır</li>
-            </ul>
-            
-            <h2>3. Davranış Kuralları</h2>
-            <h3>3.1. Saygı ve Nezaket</h3>
+            <h2>4. Davranış Kuralları</h2>
             <ul>
                 <li>Tüm kullanıcılara saygılı davranmalısınız</li>
                 <li>Hakaret, küfür veya nefret söylemi yasaktır</li>
@@ -5034,14 +5059,7 @@ const legalContents = {
                 <li>Zorbalık veya taciz yasaktır</li>
             </ul>
             
-            <h3>3.2. Spam ve İstenmeyen İçerik</h3>
-            <ul>
-                <li>Spam mesajlar göndermek yasaktır</li>
-                <li>Yanıltıcı veya dolandırıcılık içeren içerikler yasaktır</li>
-                <li>İstenmeyen reklam veya promosyon içerikleri yasaktır</li>
-            </ul>
-            
-            <h2>4. Yasal Uyum</h2>
+            <h2>5. Yasal Uyum</h2>
             <ul>
                 <li>Tüm Türkiye Cumhuriyeti yasalarına uymalısınız</li>
                 <li>Yasa dışı aktiviteler yasaktır</li>
@@ -5049,69 +5067,83 @@ const legalContents = {
                 <li>Başkalarının haklarını ihlal etmek yasaktır</li>
             </ul>
             
-            <h2>5. İhlal ve Sonuçları</h2>
+            <h2>6. İhlal ve Sonuçları</h2>
             <p>Bu kuralları ihlal eden kullanıcılar:</p>
             <ul>
                 <li>Uyarı alabilir</li>
                 <li>Geçici olarak engellenebilir</li>
-                <li>Kalıcı olarak platformdan yasaklanabilir</li>
+                <li>Kalıcı olarak platformdan yasaklanabilir (ban)</li>
                 <li>Yasal işleme tabi tutulabilir</li>
             </ul>
             
-            <h2>6. Şikayet Sistemi</h2>
+            <h2>7. Şikayet Sistemi</h2>
             <p>Kurallara aykırı içerik veya davranış gördüğünüzde, ilgili profili "Şikayet Et" butonunu kullanarak bildirebilirsiniz. Tüm şikayetler incelenmektedir.</p>
             
-            <h2>7. İletişim</h2>
-            <p>Sorularınız için: <strong>destek@maphypee.app</strong></p>
-            
-            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            <h2>8. İletişim</h2>
+            <p>Sorularınız için: <strong>destek@maphypee.com</strong></p>
         `
     },
     refund: {
-        title: "İade ve İptal Politikası",
+        title: "İADE VE İPTAL POLİTİKASI",
         content: `
-            <h2>1. Genel Hükümler</h2>
-            <p>MapHypee, <strong>ücretsiz bir platformdur</strong> ve herhangi bir ücret talep etmemektedir. Platformun tüm özellikleri kullanıcılarımıza bedelsiz olarak sunulmaktadır.</p>
-            
-            <h2>2. Ücretsiz Hizmet</h2>
-            <p>MapHypee platformu:</p>
-            <ul>
-                <li>Ücretsiz kayıt ve profil oluşturma imkanı sunar</li>
-                <li>Harita üzerinde konumlandırma hizmeti ücretsizdir</li>
-                <li>Tüm sosyal medya entegrasyonları ücretsizdir</li>
-                <li>Filtreleme ve arama özellikleri ücretsizdir</li>
-            </ul>
-            
-            <h2>3. Gelecekteki Ücretli Hizmetler</h2>
-            <p>İleride platforma eklenebilecek ücretli premium özellikler için:</p>
-            <ul>
-                <li>Tüm fiyatlandırma bilgileri önceden açıkça belirtilecektir</li>
-                <li>Kullanıcılar satın alma öncesi bilgilendirilecektir</li>
-                <li>İade politikaları ilgili hizmetin detaylarında yer alacaktır</li>
-            </ul>
-            
-            <h2>4. Hesap İptali</h2>
-            <p>Hesabınızı istediğiniz zaman silebilirsiniz. Hesap silme işlemi:</p>
-            <ul>
-                <li>Anında gerçekleşir</li>
-                <li>Profiliniz haritadan kaldırılır</li>
-                <li>Kişisel verileriniz 30 gün içinde kalıcı olarak silinir</li>
-                <li>Geri alınamaz bir işlemdir</li>
-            </ul>
-            
-            <h2>5. Hizmet Değişiklikleri</h2>
-            <p>MapHypee, platform özelliklerini zaman zaman güncelleyebilir veya değiştirebilir. Bu değişiklikler:</p>
-            <ul>
-                <li>Kullanıcılara bildirilecektir</li>
-                <li>Mevcut kullanıcı hesaplarını etkilemeyecektir</li>
-                <li>Güvenlik veya yasal gereklilikler için yapılabilir</li>
-            </ul>
-            
-            <h2>6. İletişim</h2>
-            <p>İade veya hesap iptali ile ilgili sorularınız için: <strong>destek@maphypee.app</strong></p>
-            
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
-            <p><strong>Not:</strong> MapHypee şu anda tamamen ücretsiz bir hizmettir. Herhangi bir ödeme alınmamaktadır.</p>
+            
+            <h2>1. GENEL HÜKÜMLER</h2>
+            <p>MapHypee, temel özellikleri ücretsiz olarak sunan, gelişmiş özellikler için ise ücretli abonelik paketleri (Gold ve Silver) sağlayan bir sosyal harita platformudur. İşbu politika, platform üzerinden yapılan tüm işlemler ve abonelikler için geçerlidir.</p>
+            
+            <h2>2. ÜCRETSİZ HİZMETLER</h2>
+            <p>Aşağıdaki hizmetler MapHypee kullanıcılarına tamamen ücretsiz olarak sunulmaktadır:</p>
+            <ul>
+                <li>Platforma kayıt olma ve temel profil oluşturma.</li>
+                <li>Harita üzerinde "Anonim Nokta" olarak yer alma.</li>
+                <li>Diğer kullanıcıların profillerini görüntüleme (Kısıtlı erişim).</li>
+                <li>Temel filtreleme seçeneklerini kullanma.</li>
+            </ul>
+            
+            <h2>3. ÜCRETLİ ABONELİKLER (GOLD VE SILVER)</h2>
+            <p>MapHypee, kullanıcılara daha gelişmiş özellikler sunmak amacıyla "Gold" ve "Silver" adı altında ücretli abonelik paketleri sunar.</p>
+            <ul>
+                <li>Bu paketler, satın alındığı andan itibaren kullanıcının hesabına tanımlanır.</li>
+                <li>Abonelik ücretleri, ödeme sayfasında belirtilen periyotlarla (Haftalık/Aylık/Yıllık vb.) tahsil edilir.</li>
+                <li><strong>Silver Paketi:</strong> ₺89/hafta - Liste görünürlüğü (Orta sırada), tam linkleri görme, şehir filtresi.</li>
+                <li><strong>Gold Paketi:</strong> ₺129/hafta - Harita görünürlüğü, liste görünürlüğü (Vitrin - En üstte), tam linkleri görme, harita mesajı (Status), profil istatistikleri, tüm filtreler, filtre sıralaması (En başta).</li>
+            </ul>
+            
+            <h2>4. CAYMA HAKKI VE İADE POLİTİKASI (ÖNEMLİ)</h2>
+            
+            <h3>4.1. Yasal Dayanak</h3>
+            <p>MapHypee üzerinden satın alınan Gold ve Silver üyelik paketleri, Türk Ticaret Kanunu ve 6502 sayılı Tüketicinin Korunması Hakkında Kanun kapsamında <strong>"Elektronik ortamda anında ifa edilen hizmetler"</strong> statüsündedir.</p>
+            
+            <h3>4.2. Cayma Hakkı İstisnası</h3>
+            <p>Mesafeli Sözleşmeler Yönetmeliği'nin 15. maddesinin (ğ) bendi uyarınca; elektronik ortamda anında ifa edilen hizmetlerde ve tüketiciye anında teslim edilen gayrimaddi mallarda <strong>CAYMA HAKKI BULUNMAMAKTADIR</strong>.</p>
+            
+            <h3>4.3. İade Durumu</h3>
+            <p>Kullanıcı, satın alma işlemini onayladığı andan itibaren hizmetin ifasının başladığını kabul eder. Bu nedenle, satın alınan aboneliklerde (memnuniyetsizlik, vazgeçme vb. nedenlerle) <strong>ücret iadesi yapılmamaktadır</strong>.</p>
+            
+            <h2>5. ABONELİK İPTALİ VE YENİLEME</h2>
+            
+            <h3>5.1. İptal</h3>
+            <p>Aboneliğinizi dilediğiniz zaman <strong>"Profil Ayarları"</strong> üzerinden iptal edebilirsiniz.</p>
+            
+            <h3>5.2. Süreç</h3>
+            <p>İptal işlemi yapıldığında, bir sonraki fatura döneminde kartınızdan çekim yapılmaz. Ancak, hâlihazırda ödemesini yaptığınız dönemin sonuna kadar Gold/Silver ayrıcalıklarını kullanmaya devam edersiniz.</p>
+            
+            <h3>5.3. Kısmi İade</h3>
+            <p>Abonelik süresi dolmadan yapılan iptallerde, kullanılmayan günlerin ücreti iade edilmez.</p>
+            
+            <h2>6. HESAP SİLME İŞLEMİ</h2>
+            <p>Kullanıcı hesabınızı kalıcı olarak sildiğinizde:</p>
+            <ul>
+                <li>Tüm profil verileriniz, mesajlarınız ve istatistikleriniz 30 gün içinde kalıcı olarak silinir.</li>
+                <li>Varsa aktif Gold veya Silver aboneliğiniz anında sona erer.</li>
+                <li>Hesabın silinmesi durumunda, kalan abonelik süresi için herhangi bir ücret iadesi yapılmaz.</li>
+            </ul>
+            
+            <h2>7. HİZMET VE FİYAT DEĞİŞİKLİKLERİ</h2>
+            <p>MapHypee; paket fiyatlarını, kapsamını veya özelliklerini dilediği zaman güncelleme hakkını saklı tutar. Fiyat değişiklikleri, mevcut abonelik döneminiz bittikten sonraki ilk yenilemede geçerli olur ve öncesinde size bildirim yapılır.</p>
+            
+            <h2>8. İLETİŞİM</h2>
+            <p>Abonelik, iptal veya ödeme sorunları ile ilgili destek almak için: <strong>destek@maphypee.app</strong></p>
         `
     },
     faq: {
@@ -5148,7 +5180,7 @@ const legalContents = {
             <p>Evet, MapHypee tamamen mobil uyumludur ve tüm cihazlarda çalışır.</p>
             
             <h2>İletişim</h2>
-            <p>Daha fazla soru için: <strong>destek@maphypee.app</strong></p>
+            <p>Daha fazla soru için: <strong>destek@maphypee.com</strong></p>
         `
     },
     contact: {
@@ -5158,17 +5190,86 @@ const legalContents = {
             <p>MapHypee ekibi olarak sorularınız, önerileriniz ve destek talepleriniz için buradayız.</p>
             
             <h3>E-posta</h3>
-            <p><strong>Genel İletişim:</strong> destek@maphypee.app</p>
-            <p><strong>Şikayet ve Geri Bildirim:</strong> destek@maphypee.app</p>
+            <p><strong>Genel İletişim:</strong> destek@maphypee.com</p>
+            <p><strong>Şikayet ve Geri Bildirim:</strong> destek@maphypee.com</p>
+            
+            <h3>Adres</h3>
+            <p>Bursa, Türkiye</p>
             
             <h3>Yanıt Süresi</h3>
             <p>E-postalarınıza <strong>2-3 iş günü içinde</strong> yanıt veriyoruz.</p>
             
             <h3>KVKK Hakları</h3>
-            <p>Kişisel verilerinizle ilgili talepleriniz için: <strong>destek@maphypee.app</strong></p>
+            <p>Kişisel verilerinizle ilgili talepleriniz için: <strong>destek@maphypee.com</strong></p>
+        `
+    },
+    distanceSale: {
+        title: "Mesafeli Satış Sözleşmesi",
+        content: `
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
             
-            <h3>Sosyal Medya</h3>
-            <p>Bizi sosyal medyadan takip edebilirsiniz (yakında).</p>
+            <h2>MADDE 1 – TARAFLAR</h2>
+            
+            <h3>1.1. SATICI</h3>
+            <ul>
+                <li><strong>Ünvan:</strong> MapHypee (bundan sonra "PLATFORM" veya "SATICI" olarak anılacaktır)</li>
+                <li><strong>E-posta:</strong> destek@maphypee.com</li>
+                <li><strong>Web Sitesi:</strong> www.maphypee.com (veya güncel domain)</li>
+                <li><strong>Adres:</strong> Bursa, Türkiye</li>
+            </ul>
+            <p><strong>Not:</strong> Satıcı, dijital ortamda hizmet veren bir platformdur.</p>
+            
+            <h3>1.2. ALICI</h3>
+            <p>MapHypee platformuna üye olan ve platform üzerinden ücretli abonelik (Gold/Silver) satın alan gerçek veya tüzel kişi. (Bundan sonra "ALICI" veya "KULLANICI" olarak anılacaktır).</p>
+            
+            <h2>MADDE 2 – SÖZLEŞMENİN KONUSU</h2>
+            <p>İşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait platform üzerinden elektronik ortamda siparişini verdiği, aşağıda nitelikleri ve satış fiyatı belirtilen dijital abonelik hizmetinin satışı ve ifası ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.</p>
+            
+            <h2>MADDE 3 – SÖZLEŞME KONUSU HİZMET (ÜRÜN)</h2>
+            <p>Sözleşmeye konu olan hizmet, MapHypee platformu üzerinde geçerli olan "Gold" veya "Silver" üyelik paketleridir.</p>
+            
+            <h3>3.1. Hizmetin Niteliği</h3>
+            <p>Dijital Abonelik / Elektronik Hizmet</p>
+            
+            <h3>3.2. Hizmet Kapsamı</h3>
+            <p>Satın alınan pakete göre; haritada profil görünürlüğü, detaylı filtreleme, istatistik görüntüleme ve mesaj bırakma gibi özellikleri kapsar.</p>
+            
+            <h3>3.3. Süre</h3>
+            <p>Hizmet, satın alınan periyot boyunca (Aylık/Yıllık/Süresiz) geçerlidir.</p>
+            
+            <h2>MADDE 4 – GENEL HÜKÜMLER</h2>
+            
+            <h3>4.1. Ön Bilgilendirme</h3>
+            <p>ALICI, platformda sözleşme konusu hizmetin temel nitelikleri, satış fiyatı, ödeme şekli ve ifasına ilişkin ön bilgileri okuyup bilgi sahibi olduğunu ve elektronik ortamda gerekli teyidi verdiğini beyan eder.</p>
+            
+            <h3>4.2. Hizmetin İfası</h3>
+            <p>Sözleşme konusu hizmet, ödemenin başarılı şekilde gerçekleşmesinin ardından <strong>anında ifa edilir</strong> ve ALICI'nın hesabına tanımlanır. Fiziksel bir teslimat/kargo söz konusu değildir.</p>
+            
+            <h3>4.3. SATICI Yükümlülükleri</h3>
+            <p>SATICI, teknik arızalar veya mücbir sebepler haricinde, sözleşme konusu hizmeti eksiksiz ve belirtilen niteliklere uygun olarak sunmakla yükümlüdür.</p>
+            
+            <h3>4.4. ALICI Yükümlülükleri ve Sözleşme Feshi</h3>
+            <p>ALICI'nın platformu kullanımı sırasında genel ahlaka, kamu düzenine ve kişilik haklarına aykırı davranışlarda bulunması (örn: sahte profil, hakaret, spam) durumunda, SATICI tek taraflı olarak üyeliği sonlandırma ve sözleşmeyi feshetme hakkına sahiptir. Bu durumda <strong>ücret iadesi yapılmaz</strong>.</p>
+            
+            <h2>MADDE 5 – CAYMA HAKKI VE İSTİSNALARI</h2>
+            
+            <h3>5.1. Hizmetin Niteliği</h3>
+            <p>İşbu sözleşme konusu hizmet; "Elektronik ortamda anında ifa edilen hizmetler veya tüketiciye anında teslim edilen gayrimaddi mallar" kapsamındadır.</p>
+            
+            <h3>5.2. Cayma Hakkı Yoktur</h3>
+            <p>Mesafeli Sözleşmeler Yönetmeliği'nin 15. maddesinin (ğ) bendi uyarınca; elektronik ortamda anında ifa edilen hizmetlerde <strong>CAYMA HAKKI BULUNMAMAKTADIR</strong>.</p>
+            
+            <h3>5.3. ALICI Beyanı</h3>
+            <p>ALICI, ödeme işlemini onayladığı andan itibaren hizmetin ifasının başladığını ve bu nedenle iade/cayma hakkının olmadığını peşinen kabul ve beyan eder.</p>
+            
+            <h2>MADDE 6 – UYUŞMAZLIKLARIN ÇÖZÜMÜ</h2>
+            <p>İşbu sözleşmenin uygulanmasında, Ticaret Bakanlığınca ilan edilen değere kadar ALICI'nın veya SATICI'nın yerleşim yerindeki <strong>Tüketici Hakem Heyetleri</strong> ile <strong>Tüketici Mahkemeleri</strong> yetkilidir.</p>
+            
+            <h2>MADDE 7 – YÜRÜRLÜK</h2>
+            <p>ALICI, platform üzerinden verdiği siparişe ait ödemeyi gerçekleştirdiğinde işbu sözleşmenin tüm koşullarını kabul etmiş sayılır. SATICI, siparişin gerçekleşmesi öncesinde işbu sözleşmenin sitede ALICI tarafından okunup kabul edildiğine dair onay mekanizmalarını oluşturmakla yükümlüdür.</p>
+            
+            <h2>İletişim</h2>
+            <p>Sorularınız için: <strong>destek@maphypee.com</strong></p>
         `
     }
 };
