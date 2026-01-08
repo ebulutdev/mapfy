@@ -49,27 +49,28 @@
                 </div>
                 
                 <nav class="navbar-nav">
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link">Harita <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-                        <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item">Türkiye Haritası</a>
-                            <a href="#" class="dropdown-item">Şehirler</a>
-                            <a href="#" class="dropdown-item">Profil Haritası</a>
-                        </div>
-                    </div>
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link">Profiller <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-                        <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item">Tüm Profiller</a>
-                            <a href="#" class="dropdown-item">Yeni Profil Ekle</a>
-                            <a href="#" class="dropdown-item">Profil Yönetimi</a>
-                        </div>
-                    </div>
-                    <a href="#" class="nav-link">Hakkında</a>
-                    <a href="#" class="nav-link">Dokümantasyon</a>
+                    <a href="#" class="nav-link" id="nav-discover">Keşfet</a>
+                    <a href="#" class="nav-link" id="nav-how-it-works">Nasıl Çalışır?</a>
+                    <a href="#pricing" class="nav-link highlight-link" id="nav-premium">Premium</a>
                 </nav>
                 
                 <div class="navbar-actions">
+                    <div class="nav-item dropdown" id="help-dropdown">
+                        <a href="#" class="nav-link">Yardım <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+                        <div class="dropdown-menu">
+                            <a href="#" class="dropdown-item" id="help-link">SSS</a>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section-title">KOŞULLAR</div>
+                            <a href="#" class="dropdown-item" id="privacy-link">Gizlilik</a>
+                            <a href="#" class="dropdown-item" id="cookies-link">Çerezler – Tercihleri yönet</a>
+                            <a href="#" class="dropdown-item" id="terms-link">Şartlar</a>
+                            <a href="#" class="dropdown-item" id="community-link">Topluluk Kuralları</a>
+                            <a href="#" class="dropdown-item" id="refund-link">İade Politikası</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item" id="report-link">Şikayet</a>
+                        </div>
+                    </div>
+                    
                     <!-- User Profile Dropdown -->
                     <div class="nav-item dropdown" id="user-profile-dropdown" style="display: none;">
                         <a href="#" class="nav-link user-profile-link" id="user-profile-link">
@@ -93,7 +94,9 @@
                             </a>
                         </div>
                     </div>
-                    <button class="btn-dashboard" id="login-btn" style="display: none;">Giriş Yap</button>
+                    
+                    <a href="#" class="nav-link login-link" id="login-btn" style="display: none;">Giriş Yap</a>
+                    <button class="btn-primary" id="signup-btn" style="display: none;">Ücretsiz Başla</button>
                 </div>
             </div>
         </header>

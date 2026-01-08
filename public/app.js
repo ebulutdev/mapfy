@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setupModalListeners();
     setupHeroListeners();
+    setupNavbarListeners();
     
     // Auth elements - DOM yüklendikten sonra seç
     authModal = document.getElementById('auth-modal');
@@ -615,6 +616,136 @@ function setupEventListeners() {
 
     // Keyboard shortcuts (desktop only)
     document.addEventListener('keydown', handleKeyboard);
+}
+
+// Navbar Event Listeners
+function setupNavbarListeners() {
+    // Logo - Ana sayfaya dön
+    const navbarBrand = document.querySelector('.navbar-brand');
+    if (navbarBrand) {
+        navbarBrand.addEventListener('click', (e) => {
+            e.preventDefault();
+            showHeroSection();
+        });
+    }
+    
+    // Keşfet linki - Haritaya git
+    const navDiscover = document.getElementById('nav-discover');
+    if (navDiscover) {
+        navDiscover.addEventListener('click', (e) => {
+            e.preventDefault();
+            showMapView();
+        });
+    }
+    
+    // Nasıl Çalışır? linki - Scroll to pricing section
+    const navHowItWorks = document.getElementById('nav-how-it-works');
+    if (navHowItWorks) {
+        navHowItWorks.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pricingSection = document.querySelector('.pricing-section');
+            if (pricingSection) {
+                pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+    
+    // Premium linki - Scroll to pricing section
+    const navPremium = document.getElementById('nav-premium');
+    if (navPremium) {
+        navPremium.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pricingSection = document.querySelector('.pricing-section');
+            if (pricingSection) {
+                pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+    
+    // Ücretsiz Başla butonu
+    const signupBtn = document.getElementById('signup-btn');
+    if (signupBtn) {
+        signupBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const user = await getCurrentUser();
+            if (!user) {
+                openAuthModal();
+            } else {
+                // Kullanıcı zaten giriş yapmış, profil oluşturma modalını aç
+                const hasProfile = await checkUserHasProfile(user.id);
+                if (hasProfile) {
+                    await showAlert('Zaten bir profiliniz var. Profil ayarlarından düzenleyebilirsiniz.', 'Bilgi', 'info');
+                    openEditProfileModal();
+                } else {
+                    openAddProfileModal();
+                }
+            }
+        });
+    }
+    
+    // Yardım dropdown linkleri
+    const helpLink = document.getElementById('help-link');
+    if (helpLink) {
+        helpLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('faq');
+        });
+    }
+    
+    // Gizlilik Politikası
+    const privacyLink = document.getElementById('privacy-link');
+    if (privacyLink) {
+        privacyLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('privacy');
+        });
+    }
+    
+    // Çerezler
+    const cookiesLink = document.getElementById('cookies-link');
+    if (cookiesLink) {
+        cookiesLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('cookies');
+        });
+    }
+    
+    // Şartlar (Kullanım Koşulları)
+    const termsLink = document.getElementById('terms-link');
+    if (termsLink) {
+        termsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('terms');
+        });
+    }
+    
+    // Topluluk Kuralları
+    const communityLink = document.getElementById('community-link');
+    if (communityLink) {
+        communityLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('community');
+        });
+    }
+    
+    // İade Politikası
+    const refundLink = document.getElementById('refund-link');
+    if (refundLink) {
+        refundLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLegalModal('refund');
+        });
+    }
+    
+    // Şikayet
+    const reportLink = document.getElementById('report-link');
+    if (reportLink) {
+        reportLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Şikayet modalı açılabilir veya sayfa yönlendirmesi yapılabilir
+            showAlert('Şikayet formu yakında eklenecek.', 'Bilgi', 'info');
+        });
+    }
 }
 
 // Modal Event Listeners
@@ -3794,19 +3925,11 @@ async function checkUserHasProfile(userId) {
 // Google ile giriş
 async function signInWithGoogle() {
     try {
-        // TEST AMAÇLI: Her zaman localhost'a yönlendir
-        // Production'a geçerken bu satırı kaldır ve aşağıdaki yorum satırındaki kodu kullan
-        const redirectUrl = `${window.location.origin}${window.location.pathname}`;
-        
-        // Production için (test bittiğinde yukarıdaki satırı kaldır ve bunu kullan):
-        // const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        //     ? `${window.location.origin}${window.location.pathname}`
-        //     : 'https://mapfy.vercel.app';
-            
+        // Vercel production için: Supabase otomatik olarak doğru URL'ye yönlendirecek
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: redirectUrl
+                redirectTo: window.location.origin + window.location.pathname
             }
         });
 
@@ -3839,11 +3962,14 @@ async function signOut() {
 // Auth state kontrolü
 async function checkAuthState() {
     const user = await getCurrentUser();
+    const loginBtn = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('signup-btn');
     
     if (user) {
         // Kullanıcı giriş yapmış
         if (userProfileDropdown) userProfileDropdown.style.display = 'block';
         if (loginBtn) loginBtn.style.display = 'none';
+        if (signupBtn) signupBtn.style.display = 'none';
         
         // Kullanıcı bilgilerini göster
         if (userAvatar) {
@@ -3857,6 +3983,7 @@ async function checkAuthState() {
         // Kullanıcı giriş yapmamış
         if (userProfileDropdown) userProfileDropdown.style.display = 'none';
         if (loginBtn) loginBtn.style.display = 'block';
+        if (signupBtn) signupBtn.style.display = 'block';
     }
 }
 
@@ -3887,7 +4014,10 @@ function setupAuthListeners() {
     }
     
     if (loginBtn) {
-        loginBtn.addEventListener('click', openAuthModal);
+        loginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAuthModal();
+        });
     }
     
     if (logoutBtn) {
@@ -4716,6 +4846,66 @@ const legalContents = {
             
             <h2>8. İletişim</h2>
             <p>KVKK haklarınızı kullanmak için: <strong>destek@mapfy.app</strong> adresine e-posta gönderebilirsiniz.</p>
+            
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+        `
+    },
+    cookies: {
+        title: "Çerez Politikası & Tercihleri Yönet",
+        content: `
+            <h2>1. Çerez Nedir?</h2>
+            <p>Çerezler, web sitelerinin bilgisayarınıza veya mobil cihazınıza kaydettiği küçük metin dosyalarıdır. Mapfy, platformun düzgün çalışması ve kullanıcı deneyimini iyileştirmek için çerezler kullanmaktadır.</p>
+            
+            <h2>2. Kullandığımız Çerez Türleri</h2>
+            
+            <h3>2.1. Zorunlu Çerezler</h3>
+            <p>Bu çerezler platformun çalışması için gereklidir ve devre dışı bırakılamaz:</p>
+            <ul>
+                <li><strong>Oturum Çerezleri:</strong> Giriş yaptığınızda oturumunuzu korur</li>
+                <li><strong>Güvenlik Çerezleri:</strong> Platform güvenliğini sağlar</li>
+            </ul>
+            
+            <h3>2.2. Performans Çerezleri</h3>
+            <p>Platformun performansını analiz etmek için kullanılır:</p>
+            <ul>
+                <li>Sayfa yükleme süreleri</li>
+                <li>Hata raporları</li>
+                <li>Kullanım istatistikleri</li>
+            </ul>
+            
+            <h3>2.3. İşlevsellik Çerezleri</h3>
+            <p>Kullanıcı tercihlerinizi hatırlamak için:</p>
+            <ul>
+                <li>Dil tercihleri</li>
+                <li>Tema ayarları</li>
+                <li>Filtre tercihleri</li>
+            </ul>
+            
+            <h2>3. Üçüncü Taraf Çerezler</h2>
+            <p>Mapfy, aşağıdaki hizmetler için üçüncü taraf çerezler kullanabilir:</p>
+            <ul>
+                <li><strong>Google Analytics:</strong> Platform kullanımını analiz etmek için</li>
+                <li><strong>Supabase:</strong> Veritabanı ve kimlik doğrulama için</li>
+            </ul>
+            
+            <h2>4. Çerez Tercihlerinizi Yönetme</h2>
+            <p>Tarayıcı ayarlarınızdan çerezleri yönetebilirsiniz:</p>
+            <ul>
+                <li><strong>Chrome:</strong> Ayarlar > Gizlilik ve Güvenlik > Çerezler</li>
+                <li><strong>Firefox:</strong> Seçenekler > Gizlilik ve Güvenlik > Çerezler</li>
+                <li><strong>Safari:</strong> Tercihler > Gizlilik > Çerezler</li>
+            </ul>
+            
+            <p><strong>Not:</strong> Çerezleri devre dışı bırakırsanız, platformun bazı özellikleri çalışmayabilir.</p>
+            
+            <h2>5. Çerez Saklama Süreleri</h2>
+            <ul>
+                <li><strong>Oturum Çerezleri:</strong> Tarayıcı kapatıldığında silinir</li>
+                <li><strong>Kalıcı Çerezler:</strong> Maksimum 1 yıl saklanır</li>
+            </ul>
+            
+            <h2>6. İletişim</h2>
+            <p>Çerez politikası ile ilgili sorularınız için: <strong>destek@mapfy.app</strong></p>
             
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
         `
