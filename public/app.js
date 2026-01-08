@@ -1010,6 +1010,25 @@ function setupModalListeners() {
         profileGenderFemaleBtn.addEventListener('click', () => selectProfileGender('female'));
     }
     
+    // Yaş input validasyonu - 18 altında değer girilmesini engelle
+    if (ageInput) {
+        ageInput.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value < 18) {
+                e.target.value = '';
+                showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
+            }
+        });
+        
+        ageInput.addEventListener('blur', (e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value < 18) {
+                e.target.value = '';
+                showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
+            }
+        });
+    }
+    
     // Filter listeners
     if (genderAllBtn) {
         genderAllBtn.addEventListener('click', () => selectFilterGender('all'));
@@ -3251,13 +3270,30 @@ async function saveProfile() {
         return;
     }
     
-    // Yaş kontrolü (18+)
-    if (ageInput && ageInput.value) {
-        const ageValue = parseInt(ageInput.value);
-        if (ageValue < 18) {
-            await showAlert('Yasal sebeplerden dolayı uygulamayı sadece 18 yaş ve üzeri kullanıcılar kullanabilir.', 'Yaş Sınırı', 'warning');
-            return;
+    // Yaş kontrolü (18+) - Zorunlu
+    if (!ageInput || !ageInput.value) {
+        await showAlert('Yaş bilgisi zorunludur. Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Eksik Bilgi', 'warning');
+        if (ageInput) ageInput.focus();
+        return;
+    }
+    
+    const ageValue = parseInt(ageInput.value);
+    if (isNaN(ageValue) || ageValue < 18) {
+        await showAlert('Yasal sebeplerden dolayı uygulamayı sadece 18 yaş ve üzeri kullanıcılar kullanabilir. Lütfen 18 veya daha büyük bir yaş girin.', 'Yaş Sınırı', 'warning');
+        if (ageInput) {
+            ageInput.value = '';
+            ageInput.focus();
         }
+        return;
+    }
+    
+    if (ageValue > 120) {
+        await showAlert('Lütfen geçerli bir yaş girin.', 'Geçersiz Yaş', 'warning');
+        if (ageInput) {
+            ageInput.value = '';
+            ageInput.focus();
+        }
+        return;
     }
     
     // Kaydet butonunu kilitle
@@ -4285,7 +4321,35 @@ async function updateProfile() {
     const name = document.getElementById('edit-username-input')?.value.trim();
     const city = document.getElementById('edit-city-input')?.value.trim();
     const district = document.getElementById('edit-district-input')?.value.trim();
-    const age = document.getElementById('edit-age-input')?.value ? parseInt(document.getElementById('edit-age-input').value) : null;
+    
+    // Yaş kontrolü (18+) - Zorunlu
+    const editAgeInput = document.getElementById('edit-age-input');
+    if (!editAgeInput || !editAgeInput.value) {
+        await showAlert('Yaş bilgisi zorunludur. Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Eksik Bilgi', 'warning');
+        if (editAgeInput) editAgeInput.focus();
+        return;
+    }
+    
+    const ageValue = parseInt(editAgeInput.value);
+    if (isNaN(ageValue) || ageValue < 18) {
+        await showAlert('Yasal sebeplerden dolayı uygulamayı sadece 18 yaş ve üzeri kullanıcılar kullanabilir. Lütfen 18 veya daha büyük bir yaş girin.', 'Yaş Sınırı', 'warning');
+        if (editAgeInput) {
+            editAgeInput.value = '';
+            editAgeInput.focus();
+        }
+        return;
+    }
+    
+    if (ageValue > 120) {
+        await showAlert('Lütfen geçerli bir yaş girin.', 'Geçersiz Yaş', 'warning');
+        if (editAgeInput) {
+            editAgeInput.value = '';
+            editAgeInput.focus();
+        }
+        return;
+    }
+    
+    const age = ageValue;
     const snapchat = document.getElementById('edit-snapchat-input')?.value.trim() || null;
     const instagram = document.getElementById('edit-instagram-input')?.value.trim() || null;
     const twitter = document.getElementById('edit-twitter-input')?.value.trim() || null;
@@ -4440,6 +4504,26 @@ function setupEditProfileListeners() {
         editGenderFemale.addEventListener('click', () => {
             editGenderFemale.classList.add('active');
             editGenderMale?.classList.remove('active');
+        });
+    }
+    
+    // Yaş input validasyonu - 18 altında değer girilmesini engelle
+    const editAgeInput = document.getElementById('edit-age-input');
+    if (editAgeInput) {
+        editAgeInput.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value < 18) {
+                e.target.value = '';
+                showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
+            }
+        });
+        
+        editAgeInput.addEventListener('blur', (e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value < 18) {
+                e.target.value = '';
+                showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
+            }
         });
     }
 }

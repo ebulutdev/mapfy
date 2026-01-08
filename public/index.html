@@ -494,8 +494,9 @@
 
                     <!-- Age -->
                     <div class="form-section">
-                        <label class="form-label">Yaş</label>
-                        <input type="number" id="age-input" class="form-input" placeholder="Yaşınızı girin" min="1" max="120">
+                        <label class="form-label">Yaş <span style="color: #ff4444;">*</span></label>
+                        <input type="number" id="age-input" class="form-input" placeholder="Yaşınızı girin (18 ve üzeri)" min="18" max="120" required>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.</p>
                     </div>
 
                     <!-- Gender -->
@@ -738,8 +739,9 @@
 
                 <!-- Age -->
                 <div class="form-section">
-                    <label class="form-label">Yaş</label>
-                    <input type="number" id="edit-age-input" class="form-input" placeholder="Yaşınız" min="18" max="99">
+                    <label class="form-label">Yaş <span style="color: #ff4444;">*</span></label>
+                    <input type="number" id="edit-age-input" class="form-input" placeholder="Yaşınız (18 ve üzeri)" min="18" max="120" required>
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.</p>
                 </div>
 
                 <!-- Gender -->
