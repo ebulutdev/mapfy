@@ -51,6 +51,17 @@ body {
     width: 100%;
 }
 
+/* Harita sayfasında header daha kompakt */
+.app-container.map-view .header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(10, 10, 10, 0.95);
+}
+
+.app-container.map-view .header .navbar {
+    height: 40px; /* 48px'den 40px'e küçültüldü */
+    padding: 0 14px; /* 16px'den 14px'e küçültüldü */
+}
+
 /* Harita sayfasında navbar'ı sadeleştir */
 .app-container.map-view .navbar-brand,
 .app-container.map-view .navbar-nav {
@@ -60,17 +71,41 @@ body {
 /* Harita sayfasında navbar actions'ı sağa hizala */
 .app-container.map-view .navbar {
     justify-content: flex-end;
+    height: 40px; /* Harita sayfasında daha küçük navbar (48px'den 40px'e) */
+    padding: 0 14px; /* Daha kompakt padding (16px'den 14px'e) */
+    gap: 10px; /* Daha kompakt gap (12px'den 10px'e) */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* İnce border */
+}
+
+/* Harita sayfasında navbar içindeki elemanları küçült */
+.app-container.map-view .navbar .navbar-actions {
+    gap: 8px;
+}
+
+.app-container.map-view .user-avatar {
+    width: 32px;
+    height: 32px;
+}
+
+.app-container.map-view .nav-link {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.app-container.map-view .btn-primary {
+    padding: 6px 14px;
+    font-size: 12px;
 }
 
 .navbar {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 0 24px;
-    height: 64px;
+    padding: 0 20px;
+    height: 52px; /* 64px'den 52px'e küçültüldü */
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 32px;
+    gap: 24px; /* 32px'den 24px'e küçültüldü */
 }
 
 .navbar-brand {
@@ -229,7 +264,12 @@ body {
 .navbar-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px; /* Daha kompakt gap */
+}
+
+/* Harita sayfasında navbar actions daha kompakt */
+.app-container.map-view .navbar-actions {
+    gap: 8px;
 }
 
 
@@ -355,8 +395,8 @@ body {
 
 /* Zoom Controls */
 .zoom-controls {
-    position: absolute;
-    top: 20px;
+    position: fixed;
+    bottom: 20px; /* En alt sağda */
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -454,8 +494,9 @@ body {
 /* Responsive - Tablet */
 @media (max-width: 1024px) {
     .zoom-controls {
-        top: 15px;
+        bottom: 20px; /* En alt sağda */
         right: 15px;
+        top: auto;
         gap: 8px;
     }
 
@@ -494,18 +535,46 @@ body {
 
     /* Harita container'ı navbar'ın altında kalsın */
     .hero-section, .map-container {
-        padding-top: 60px; /* Header yüksekliği kadar boşluk */
+        padding-top: 48px; /* Header yüksekliği kadar boşluk (44px navbar + 4px) */
         height: 100dvh; /* Dinamik viewport yüksekliği (adres çubuğu sorununu çözer) */
+    }
+    
+    /* Harita sayfasında padding daha küçük */
+    .app-container.map-view .map-container {
+        padding-top: 36px; /* 32px navbar + 4px boşluk */
+    }
+
+    /* Harita sayfasında navbar daha küçük */
+    .app-container.map-view .header .navbar {
+        height: 32px; /* 40px'den 32px'e küçültüldü */
+        padding: 0 12px;
+        gap: 8px;
     }
 
     .navbar {
         padding: 0 10px;
-        height: 44px;
-        gap: 10px;
+        height: 40px; /* 44px'den 40px'e küçültüldü */
+        gap: 8px; /* 10px'den 8px'e küçültüldü */
     }
     
     .navbar-brand {
         gap: 5px;
+    }
+    
+    /* Harita sayfasında navbar içindeki elemanları küçült */
+    .app-container.map-view .user-avatar {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .app-container.map-view .nav-link {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    
+    .app-container.map-view .btn-primary {
+        padding: 5px 12px;
+        font-size: 11px;
     }
     
     .logo-icon {
@@ -570,9 +639,23 @@ body {
     }
 
     .zoom-controls {
-        top: 10px;
+        bottom: 20px; /* En alt sağda */
         right: 10px;
+        top: auto;
         gap: 6px;
+    }
+    
+    /* Harita sayfasında butonlar en alt sağda L şeklinde */
+    .app-container.map-view .filter-toggle-icon {
+        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        right: 58px; /* Zoom controls'un solunda (40px buton + 6px gap + 6px gap + 6px ekstra) */
+        top: auto;
+    }
+    
+    .app-container.map-view .add-profile-btn {
+        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        right: 102px; /* Filter toggle'un solunda (40px zoom + 6px + 40px filter + 6px + 40px profil + 6px + 4px ekstra) */
+        top: auto;
     }
 
     .zoom-btn {
@@ -607,10 +690,68 @@ body {
 
 /* Small Mobile */
 @media (max-width: 480px) {
+    /* Harita sayfasında navbar daha küçük */
+    .app-container.map-view .header .navbar {
+        height: 30px; /* 36px'den 30px'e küçültüldü */
+        padding: 0 10px;
+        gap: 6px;
+    }
+
     .navbar {
         padding: 0 8px;
-        height: 40px;
-        gap: 8px;
+        height: 36px; /* 40px'den 36px'e küçültüldü */
+        gap: 6px; /* 8px'den 6px'e küçültüldü */
+    }
+    
+    /* Harita sayfasında navbar içindeki elemanları küçült */
+    .app-container.map-view .user-avatar {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .app-container.map-view .nav-link {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    
+    .app-container.map-view .btn-primary {
+        padding: 4px 10px;
+        font-size: 10px;
+    }
+    
+    .app-container.map-view .zoom-controls {
+        bottom: 20px; /* En alt sağda */
+        right: 10px;
+        top: auto;
+    }
+    
+    /* Harita sayfasında butonlar en alt sağda L şeklinde */
+    .app-container.map-view .filter-toggle-icon {
+        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        right: 54px; /* Zoom controls'un solunda (32px buton + 6px gap + 6px gap + 10px ekstra) */
+        top: auto;
+        width: 32px;
+        height: 32px;
+    }
+    
+    .app-container.map-view .add-profile-btn {
+        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        right: 94px; /* Filter toggle'un solunda (32px zoom + 6px + 32px filter + 6px + 32px profil + 6px + 10px ekstra) */
+        top: auto;
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+    
+    /* Küçük mobilde zoom butonları da küçült */
+    .app-container.map-view .zoom-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+    
+    .app-container.map-view .zoom-controls {
+        gap: 6px;
     }
     
     .logo-icon {
@@ -891,8 +1032,8 @@ body {
 /* Add Profile Button */
 .filter-toggle-icon {
     position: fixed;
-    top: 20px;
-    right: 70px;
+    bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+    right: 68px; /* Zoom controls'un solunda (36px buton + 8px gap + 8px gap + 16px ekstra) */
     width: 36px;
     height: 36px;
     background: rgba(62, 207, 142, 0.15);
@@ -934,8 +1075,8 @@ body {
 
 .add-profile-btn {
     position: fixed;
-    top: 20px;
-    right: 120px;
+    bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+    right: 112px; /* Filter toggle'un solunda (36px filter + 8px gap + 36px profil + 8px gap + 24px ekstra) */
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -986,7 +1127,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    /* Navbar (z-index: 9999) üstünde olmalı */
+    z-index: 10000 !important;
     padding: 20px;
     overflow-y: auto;
 }
@@ -1027,7 +1169,8 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    z-index: 1002;
+    /* Modal overlay (z-index: 10000) içinde olduğu için navbar'ın üstünde */
+    z-index: 10001;
     padding: 0;
     font-size: 0;
     -webkit-tap-highlight-color: transparent;
@@ -1087,7 +1230,8 @@ body {
     justify-content: center;
     transition: all 0.2s ease;
     line-height: 1;
-    z-index: 1001;
+    /* Modal overlay (z-index: 10000) içinde olduğu için navbar'ın üstünde */
+    z-index: 10001;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -1801,7 +1945,8 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    z-index: 10;
+    /* Modal overlay (z-index: 10000) içinde olduğu için navbar'ın üstünde */
+    z-index: 10001;
     padding: 0;
 }
 
@@ -1838,7 +1983,8 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    z-index: 10;
+    /* Modal overlay (z-index: 10000) içinde olduğu için navbar'ın üstünde */
+    z-index: 10001;
     padding: 0;
 }
 
@@ -2257,8 +2403,15 @@ body {
         width: 38px;
         height: 38px;
         font-size: 20px;
-        top: 15px;
-        right: 110px;
+        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        right: 106px; /* Filter toggle'un solunda */
+        top: auto;
+    }
+    
+    .filter-toggle-icon {
+        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        right: 64px; /* Zoom controls'un solunda */
+        top: auto;
     }
     
     .modal-title {
@@ -2823,8 +2976,9 @@ body {
     }
     
     .filter-toggle-icon {
-        top: 15px;
-        right: 60px;
+        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        right: 64px; /* Zoom controls'un solunda (38px buton + 8px gap + 8px gap + 10px ekstra) */
+        top: auto;
         width: 34px;
         height: 34px;
     }
@@ -2835,8 +2989,9 @@ body {
     }
     
     .add-profile-btn {
-        top: 15px;
-        right: 100px;
+        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        right: 106px; /* Filter toggle'un solunda (34px filter + 8px gap + 38px profil + 8px gap + 18px ekstra) */
+        top: auto;
         width: 38px;
         height: 38px;
         font-size: 20px;
