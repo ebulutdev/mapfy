@@ -4489,7 +4489,7 @@ async function shareProfile(profileId) {
     if (navigator.share) {
         try {
             await navigator.share({
-                title: 'Mapfy Profilim',
+                title: 'MapHypee Profilim',
                 text: 'Beni haritada bul!',
                 url: shareUrl
             });
@@ -4753,11 +4753,11 @@ const legalContents = {
         title: "Kullanıcı Sözleşmesi",
         content: `
             <h2>1. Genel Hükümler</h2>
-            <p>Bu Kullanıcı Sözleşmesi ("Sözleşme"), Mapfy platformunu ("Platform", "Servis", "Site") kullanımınızı düzenler. Platformu kullanarak bu sözleşmenin tüm koşullarını kabul etmiş sayılırsınız.</p>
+            <p>Bu Kullanıcı Sözleşmesi ("Sözleşme"), MapHypee platformunu ("Platform", "Servis", "Site") kullanımınızı düzenler. Platformu kullanarak bu sözleşmenin tüm koşullarını kabul etmiş sayılırsınız.</p>
             
             <h3>1.1. Tanımlar</h3>
             <ul>
-                <li><strong>Mapfy:</strong> Sosyal harita platformu</li>
+                <li><strong>MapHypee:</strong> Sosyal harita platformu</li>
                 <li><strong>Kullanıcı:</strong> Platformu kullanan kişi</li>
                 <li><strong>Profil:</strong> Kullanıcının oluşturduğu harita üzerindeki görünümü</li>
                 <li><strong>İçerik:</strong> Platforma yüklenen tüm veri, fotoğraf ve bilgiler</li>
@@ -4781,13 +4781,13 @@ const legalContents = {
             </ul>
             
             <h2>4. Sorumluluk Reddi</h2>
-            <p>Mapfy, kullanıcılar arasındaki etkileşimlerden, paylaşılan içeriklerden veya harita üzerindeki konumlandırmalardan kaynaklanan hiçbir zarardan sorumlu değildir. Kullanıcılar kendi riskleriyle platformu kullanırlar.</p>
+            <p>MapHypee, kullanıcılar arasındaki etkileşimlerden, paylaşılan içeriklerden veya harita üzerindeki konumlandırmalardan kaynaklanan hiçbir zarardan sorumlu değildir. Kullanıcılar kendi riskleriyle platformu kullanırlar.</p>
             
             <h2>5. Fikri Mülkiyet</h2>
-            <p>Platformdaki tüm içerikler, tasarımlar ve yazılımlar Mapfy'ye aittir. Kullanıcılar kendi yükledikleri içeriklerin telif haklarını Mapfy'ye devrederler.</p>
+            <p>Platformdaki tüm içerikler, tasarımlar ve yazılımlar MapHypee'ye aittir. Kullanıcılar kendi yükledikleri içeriklerin telif haklarını MapHypee'ye devrederler.</p>
             
             <h2>6. Hesap Kapatma</h2>
-            <p>Mapfy, sözleşme ihlali, yasa dışı aktivite veya platformun güvenliğini tehdit eden durumlarda, önceden haber vermeksizin kullanıcı hesaplarını kapatabilir.</p>
+            <p>MapHypee, sözleşme ihlali, yasa dışı aktivite veya platformun güvenliğini tehdit eden durumlarda, önceden haber vermeksizin kullanıcı hesaplarını kapatabilir.</p>
             
             <h2>7. Değişiklikler</h2>
             <p>Bu sözleşme her zaman değiştirilebilir. Değişiklikler Platform üzerinde yayınlandıktan sonra yürürlüğe girer.</p>
@@ -4799,7 +4799,7 @@ const legalContents = {
         title: "Gizlilik Politikası & KVKK Aydınlatma Metni",
         content: `
             <h2>1. Veri Sorumlusu</h2>
-            <p><strong>Mapfy</strong> olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla, kişisel verilerinizin işlenmesi konusunda aşağıdaki bilgileri sizlere sunuyoruz.</p>
+            <p><strong>MapHypee</strong> olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla, kişisel verilerinizin işlenmesi konusunda aşağıdaki bilgileri sizlere sunuyoruz.</p>
             
             <h2>2. Toplanan Kişisel Veriler</h2>
             <h3>2.1. Kimlik Bilgileri</h3>
@@ -4864,7 +4864,7 @@ const legalContents = {
             </ul>
             
             <h2>8. İletişim</h2>
-            <p>KVKK haklarınızı kullanmak için: <strong>destek@mapfy.app</strong> adresine e-posta gönderebilirsiniz.</p>
+            <p>KVKK haklarınızı kullanmak için: <strong>destek@maphypee.app</strong> adresine e-posta gönderebilirsiniz.</p>
             
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
         `
@@ -4873,7 +4873,7 @@ const legalContents = {
         title: "Çerez Politikası & Tercihleri Yönet",
         content: `
             <h2>1. Çerez Nedir?</h2>
-            <p>Çerezler, web sitelerinin bilgisayarınıza veya mobil cihazınıza kaydettiği küçük metin dosyalarıdır. Mapfy, platformun düzgün çalışması ve kullanıcı deneyimini iyileştirmek için çerezler kullanmaktadır.</p>
+            <p>Çerezler, web sitelerinin bilgisayarınıza veya mobil cihazınıza kaydettiği küçük metin dosyalarıdır. MapHypee, platformun düzgün çalışması ve kullanıcı deneyimini iyileştirmek için çerezler kullanmaktadır.</p>
             
             <h2>2. Kullandığımız Çerez Türleri</h2>
             
@@ -4901,7 +4901,7 @@ const legalContents = {
             </ul>
             
             <h2>3. Üçüncü Taraf Çerezler</h2>
-            <p>Mapfy, aşağıdaki hizmetler için üçüncü taraf çerezler kullanabilir:</p>
+            <p>MapHypee, aşağıdaki hizmetler için üçüncü taraf çerezler kullanabilir:</p>
             <ul>
                 <li><strong>Google Analytics:</strong> Platform kullanımını analiz etmek için</li>
                 <li><strong>Supabase:</strong> Veritabanı ve kimlik doğrulama için</li>
@@ -4924,7 +4924,7 @@ const legalContents = {
             </ul>
             
             <h2>6. İletişim</h2>
-            <p>Çerez politikası ile ilgili sorularınız için: <strong>destek@mapfy.app</strong></p>
+            <p>Çerez politikası ile ilgili sorularınız için: <strong>destek@maphypee.app</strong></p>
             
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
         `
@@ -4933,7 +4933,7 @@ const legalContents = {
         title: "Topluluk Kuralları",
         content: `
             <h2>1. Genel İlkeler</h2>
-            <p>Mapfy, herkes için güvenli, saygılı ve hoş bir ortam sunmayı hedefler. Bu kurallara uymak, tüm kullanıcılarımızın sorumluluğundadır.</p>
+            <p>MapHypee, herkes için güvenli, saygılı ve hoş bir ortam sunmayı hedefler. Bu kurallara uymak, tüm kullanıcılarımızın sorumluluğundadır.</p>
             
             <h2>2. Profil Oluşturma Kuralları</h2>
             <h3>2.1. Gerçek Bilgiler</h3>
@@ -4989,7 +4989,7 @@ const legalContents = {
             <p>Kurallara aykırı içerik veya davranış gördüğünüzde, ilgili profili "Şikayet Et" butonunu kullanarak bildirebilirsiniz. Tüm şikayetler incelenmektedir.</p>
             
             <h2>7. İletişim</h2>
-            <p>Sorularınız için: <strong>destek@mapfy.app</strong></p>
+            <p>Sorularınız için: <strong>destek@maphypee.app</strong></p>
             
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
         `
@@ -4998,10 +4998,10 @@ const legalContents = {
         title: "İade ve İptal Politikası",
         content: `
             <h2>1. Genel Hükümler</h2>
-            <p>Mapfy, <strong>ücretsiz bir platformdur</strong> ve herhangi bir ücret talep etmemektedir. Platformun tüm özellikleri kullanıcılarımıza bedelsiz olarak sunulmaktadır.</p>
+            <p>MapHypee, <strong>ücretsiz bir platformdur</strong> ve herhangi bir ücret talep etmemektedir. Platformun tüm özellikleri kullanıcılarımıza bedelsiz olarak sunulmaktadır.</p>
             
             <h2>2. Ücretsiz Hizmet</h2>
-            <p>Mapfy platformu:</p>
+            <p>MapHypee platformu:</p>
             <ul>
                 <li>Ücretsiz kayıt ve profil oluşturma imkanı sunar</li>
                 <li>Harita üzerinde konumlandırma hizmeti ücretsizdir</li>
@@ -5027,7 +5027,7 @@ const legalContents = {
             </ul>
             
             <h2>5. Hizmet Değişiklikleri</h2>
-            <p>Mapfy, platform özelliklerini zaman zaman güncelleyebilir veya değiştirebilir. Bu değişiklikler:</p>
+            <p>MapHypee, platform özelliklerini zaman zaman güncelleyebilir veya değiştirebilir. Bu değişiklikler:</p>
             <ul>
                 <li>Kullanıcılara bildirilecektir</li>
                 <li>Mevcut kullanıcı hesaplarını etkilemeyecektir</li>
@@ -5035,10 +5035,10 @@ const legalContents = {
             </ul>
             
             <h2>6. İletişim</h2>
-            <p>İade veya hesap iptali ile ilgili sorularınız için: <strong>destek@mapfy.app</strong></p>
+            <p>İade veya hesap iptali ile ilgili sorularınız için: <strong>destek@maphypee.app</strong></p>
             
             <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
-            <p><strong>Not:</strong> Mapfy şu anda tamamen ücretsiz bir hizmettir. Herhangi bir ödeme alınmamaktadır.</p>
+            <p><strong>Not:</strong> MapHypee şu anda tamamen ücretsiz bir hizmettir. Herhangi bir ödeme alınmamaktadır.</p>
         `
     },
     faq: {
@@ -5046,11 +5046,11 @@ const legalContents = {
         content: `
             <h2>Genel Sorular</h2>
             
-            <h3>Mapfy nedir?</h3>
-            <p>Mapfy, Türkiye'nin sosyal haritasını oluşturan bir platformdur. Kullanıcılar harita üzerinde kendilerini konumlandırarak yeni bağlantılar kurabilir.</p>
+            <h3>MapHypee nedir?</h3>
+            <p>MapHypee, Türkiye'nin sosyal haritasını oluşturan bir platformdur. Kullanıcılar harita üzerinde kendilerini konumlandırarak yeni bağlantılar kurabilir.</p>
             
             <h3>Ücretsiz mi?</h3>
-            <p>Evet, Mapfy tamamen ücretsizdir. Kayıt, profil oluşturma ve tüm özellikler bedelsiz sunulmaktadır.</p>
+            <p>Evet, MapHypee tamamen ücretsizdir. Kayıt, profil oluşturma ve tüm özellikler bedelsiz sunulmaktadır.</p>
             
             <h3>Yaş sınırı var mı?</h3>
             <p>Evet, platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.</p>
@@ -5072,27 +5072,27 @@ const legalContents = {
             <p>Chrome, Firefox, Safari ve Edge'in son sürümlerini destekliyoruz.</p>
             
             <h3>Mobilde kullanabilir miyim?</h3>
-            <p>Evet, Mapfy tamamen mobil uyumludur ve tüm cihazlarda çalışır.</p>
+            <p>Evet, MapHypee tamamen mobil uyumludur ve tüm cihazlarda çalışır.</p>
             
             <h2>İletişim</h2>
-            <p>Daha fazla soru için: <strong>destek@mapfy.app</strong></p>
+            <p>Daha fazla soru için: <strong>destek@maphypee.app</strong></p>
         `
     },
     contact: {
         title: "İletişim",
         content: `
             <h2>Bize Ulaşın</h2>
-            <p>Mapfy ekibi olarak sorularınız, önerileriniz ve destek talepleriniz için buradayız.</p>
+            <p>MapHypee ekibi olarak sorularınız, önerileriniz ve destek talepleriniz için buradayız.</p>
             
             <h3>E-posta</h3>
-            <p><strong>Genel İletişim:</strong> destek@mapfy.app</p>
-            <p><strong>Şikayet ve Geri Bildirim:</strong> destek@mapfy.app</p>
+            <p><strong>Genel İletişim:</strong> destek@maphypee.app</p>
+            <p><strong>Şikayet ve Geri Bildirim:</strong> destek@maphypee.app</p>
             
             <h3>Yanıt Süresi</h3>
             <p>E-postalarınıza <strong>2-3 iş günü içinde</strong> yanıt veriyoruz.</p>
             
             <h3>KVKK Hakları</h3>
-            <p>Kişisel verilerinizle ilgili talepleriniz için: <strong>destek@mapfy.app</strong></p>
+            <p>Kişisel verilerinizle ilgili talepleriniz için: <strong>destek@maphypee.app</strong></p>
             
             <h3>Sosyal Medya</h3>
             <p>Bizi sosyal medyadan takip edebilirsiniz (yakında).</p>

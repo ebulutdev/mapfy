@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mapfy - Python Backend
+MapHypee - Python Backend
 Türkiye haritası için Python Flask backend servisi
 """
 
@@ -65,7 +65,7 @@ def handle_map_click():
     })
 
 if __name__ == '__main__':
-    print("🚀 Mapfy Python Backend başlatılıyor...")
+    print("🚀 MapHypee Python Backend başlatılıyor...")
     print("📊 Harita uygulaması hazır!")
     print("🌐 Server: http://localhost:5000")
     app.run(debug=True, port=5000, host='0.0.0.0')
