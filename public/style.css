@@ -4,25 +4,37 @@
     box-sizing: border-box;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    /* Mobilde adres çubuğu değişirken zıplamayı önler */
+    height: 100dvh;
+    min-height: 100dvh;
+    /* Sayfanın yukarı/aşağı kaymasını engeller */
+    overflow: hidden;
+    /* iOS lastik bant efektini kapatır */
+    overscroll-behavior: none;
+    position: fixed; /* iOS Safari fix */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: #0a0a0a;
-    overflow: hidden;
-    height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     color: #ffffff;
     display: flex;
     flex-direction: column;
 }
 
 .app-container {
+    width: 100%;
+    height: 100dvh; /* Ekranın o anki görünür alanı kadar yer kapla */
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    width: 100vw;
-    flex: 1;
     overflow: hidden;
+    position: relative;
 }
 
 /* Main content area - harita ve sidebar yan yana */
@@ -40,21 +52,28 @@ body {
 }
 
 .header {
-    background: rgba(10, 10, 10, 0.8);
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    
+    /* ÖNEMLİ: Arka plan rengini buraya ver ki çentik dahil her yer boyansın */
+    background-color: rgba(10, 10, 10, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 0;
-    z-index: 1000;
-    position: sticky;
-    top: 0;
-    width: 100%;
+    
+    /* Çentik (Safe Area) kadar üstten iç boşluk bırak */
+    padding-top: env(safe-area-inset-top, 0);
 }
 
 /* Harita sayfasında header daha kompakt */
 .app-container.map-view .header {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(10, 10, 10, 0.95);
+    background-color: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .app-container.map-view .header .navbar {
@@ -74,7 +93,9 @@ body {
     height: 40px; /* Harita sayfasında daha küçük navbar (48px'den 40px'e) */
     padding: 0 14px; /* Daha kompakt padding (16px'den 14px'e) */
     gap: 10px; /* Daha kompakt gap (12px'den 10px'e) */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* İnce border */
+    /* ÖNEMLİ: Şeffaf olmalı, rengi üstten (.header) alacak */
+    background: transparent !important;
+    border-bottom: none; /* Border header'da var, burada gerek yok */
 }
 
 /* Harita sayfasında navbar içindeki elemanları küçült */
@@ -106,6 +127,9 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 24px; /* 32px'den 24px'e küçültüldü */
+    
+    /* ÖNEMLİ: Burası şeffaf olmalı, rengi üstten (.header) alacak */
+    background: transparent !important;
 }
 
 .navbar-brand {
@@ -396,8 +420,9 @@ body {
 /* Zoom Controls */
 .zoom-controls {
     position: fixed;
-    bottom: 20px; /* En alt sağda */
     right: 20px;
+    /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -494,7 +519,8 @@ body {
 /* Responsive - Tablet */
 @media (max-width: 1024px) {
     .zoom-controls {
-        bottom: 20px; /* En alt sağda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 15px;
         top: auto;
         gap: 8px;
@@ -520,17 +546,25 @@ body {
     }
 
     .header {
-        position: fixed; /* Zaten eklemiştik ama emin olalım */
+        position: sticky;
         top: 0;
         left: 0;
         width: 100%;
         z-index: 9999;
         
-        /* Çentikli telefonlar için güvenli alan */
-        padding-top: env(safe-area-inset-top); 
-        height: auto;
-        min-height: 60px; /* Navbar kaybolmasın */
+        /* Çentikli telefonlar için güvenli alan - arka plan rengi burada */
+        padding-top: env(safe-area-inset-top, 0);
+        background-color: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        height: auto;
+        min-height: auto;
+    }
+    
+    .navbar {
+        /* Navbar şeffaf olmalı, rengi header'dan alır */
+        background: transparent !important;
     }
 
     /* Harita container'ı navbar'ın altında kalsın */
@@ -639,7 +673,8 @@ body {
     }
 
     .zoom-controls {
-        bottom: 20px; /* En alt sağda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 10px;
         top: auto;
         gap: 6px;
@@ -647,13 +682,15 @@ body {
     
     /* Harita sayfasında butonlar en alt sağda L şeklinde */
     .app-container.map-view .filter-toggle-icon {
-        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 58px; /* Zoom controls'un solunda (40px buton + 6px gap + 6px gap + 6px ekstra) */
         top: auto;
     }
     
     .app-container.map-view .add-profile-btn {
-        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 102px; /* Filter toggle'un solunda (40px zoom + 6px + 40px filter + 6px + 40px profil + 6px + 4px ekstra) */
         top: auto;
     }
@@ -1032,7 +1069,8 @@ body {
 /* Add Profile Button */
 .filter-toggle-icon {
     position: fixed;
-    bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+    /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
     right: 68px; /* Zoom controls'un solunda (36px buton + 8px gap + 8px gap + 16px ekstra) */
     width: 36px;
     height: 36px;
@@ -1075,7 +1113,8 @@ body {
 
 .add-profile-btn {
     position: fixed;
-    bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+    /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
     right: 112px; /* Filter toggle'un solunda (36px filter + 8px gap + 36px profil + 8px gap + 24px ekstra) */
     width: 36px;
     height: 36px;
@@ -2403,13 +2442,15 @@ body {
         width: 38px;
         height: 38px;
         font-size: 20px;
-        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 106px; /* Filter toggle'un solunda */
         top: auto;
     }
     
     .filter-toggle-icon {
-        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 64px; /* Zoom controls'un solunda */
         top: auto;
     }
@@ -2976,7 +3017,8 @@ body {
     }
     
     .filter-toggle-icon {
-        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 64px; /* Zoom controls'un solunda (38px buton + 8px gap + 8px gap + 10px ekstra) */
         top: auto;
         width: 34px;
@@ -2989,7 +3031,8 @@ body {
     }
     
     .add-profile-btn {
-        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
         right: 106px; /* Filter toggle'un solunda (34px filter + 8px gap + 38px profil + 8px gap + 18px ekstra) */
         top: auto;
         width: 38px;
@@ -4495,6 +4538,15 @@ body {
     
     .pricing-features {
         margin-bottom: 12px;
+    }
+    
+    /* Eğer ekran çok küçükse butonları biraz daha yukarı al */
+    @media (max-height: 600px) {
+        .zoom-controls,
+        .filter-toggle-icon,
+        .add-profile-btn {
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 60px) !important;
+        }
     }
     
     .feature-item {
