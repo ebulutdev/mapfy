@@ -3216,10 +3216,15 @@ async function checkUserHasProfile(userId) {
 // Google ile giriş
 async function signInWithGoogle() {
     try {
+        // Production URL veya localhost
+        const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? `${window.location.origin}${window.location.pathname}`
+            : 'https://mapfy.vercel.app';
+            
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}${window.location.pathname}`
+                redirectTo: redirectUrl
             }
         });
 
@@ -3739,8 +3744,11 @@ function checkUrlForDeepLink() {
 async function shareProfile(profileId) {
     if (!profileId) return;
 
-    // Link formatı: https://mapfy.app/?u=PROFIL_ID
-    const shareUrl = `${window.location.origin}${window.location.pathname}?u=${profileId}`;
+    // Link formatı: https://mapfy.vercel.app/?u=PROFIL_ID
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? `${window.location.origin}${window.location.pathname}` 
+        : 'https://mapfy.vercel.app';
+    const shareUrl = `${baseUrl}?u=${profileId}`;
 
     // Mobil Cihazlar İçin Native Paylaşım Menüsü
     if (navigator.share) {

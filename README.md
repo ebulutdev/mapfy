@@ -1,129 +1,140 @@
-# 🗺️ Mapfy - İnteraktif Türkiye Haritası
+# Mapfy - Türkiye Haritası
 
-Modern, tam ekran, pan & zoom özellikli Türkiye haritası uygulaması. Snapchat harita benzeri elle büyütme/küçültme ve sürükleme özellikleri ile.
+Interactive Türkiye haritası uygulaması. Harita üzerinde şehirleri keşfedin, profilleri görüntüleyin ve sosyal medya hesaplarına ulaşın.
 
-## ✨ Özellikler
+## 🚀 Özellikler
 
-- 🖱️ **Tam Ekran Harita**: Responsive, tüm ekranı kaplayan harita görünümü
-- 🔍 **Pan & Zoom**: Elle büyütme/küçültme, sürükleme (Snapchat tarzı)
-- 🏙️ **Şehir Seçimi**: Her şehir tıklanabilir ve seçilebilir
-- 📱 **Mobil Uyumlu**: Touch gesture desteği
-- 🎨 **Modern UI**: Güzel animasyonlar ve geçiş efektleri
-- 🐍 **Python Backend**: Flask ile API desteği (opsiyonel)
-- 🚀 **Node.js Server**: Express ile hızlı servis
+- 🇹🇷 İnteraktif Türkiye haritası (Pan & Zoom)
+- 👤 Kullanıcı profilleri
+- 🔍 Şehir bazlı filtreleme
+- 📱 Mobil uyumlu tasarım
+- 🔐 Supabase ile güvenli authentication
 
-## 🚀 Kurulum
+## 📦 Kurulum
 
-### Node.js Backend
+### Yerel Geliştirme
 
 ```bash
 # Bağımlılıkları yükle
 npm install
 
-# Sunucuyu başlat
-npm start
-
-# Geliştirme modu (nodemon ile)
+# Geliştirme sunucusunu başlat
 npm run dev
+
+# Veya production modunda
+npm start
 ```
 
-Sunucu `http://localhost:3000` adresinde çalışacak.
+Uygulama `http://localhost:3000` adresinde çalışacaktır.
 
-### Python Backend (Opsiyonel)
+## 🌐 Vercel Deployment
+
+### 1. GitHub'a Push Edin
 
 ```bash
-# Python bağımlılıklarını yükle
-pip install -r requirements.txt
-
-# Python sunucusunu başlat
-python app.py
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin https://github.com/KULLANICI_ADI/mapfy.git
+git push -u origin main
 ```
 
-Python sunucusu `http://localhost:5000` adresinde çalışacak.
+### 2. Vercel'e Deploy Edin
 
-## 🎮 Kullanım
+#### Yöntem 1: Vercel CLI ile
 
-### Klavye Kısayolları
+```bash
+# Vercel CLI'ı yükleyin
+npm i -g vercel
 
-- `+` veya `Zoom In` butonu: Yakınlaştır
-- `-` veya `Zoom Out` butonu: Uzaklaştır
-- `0` veya `Home` veya `⌂` butonu: Görünümü sıfırla
-- `ESC`: Bilgi panelini kapat
+# Projeyi deploy edin
+vercel
 
-### Mouse/Touch Kontrolleri
+# Production'a deploy edin
+vercel --prod
+```
 
-- **Sürükleme**: Haritayı hareket ettirmek için tıklayıp sürükleyin
-- **Zoom**: Mouse tekerleği ile yakınlaştırın/uzaklaştırın
-- **Şehir Seçimi**: Bir şehre tıklayarak detaylarını görüntüleyin
-- **Touch**: Mobil cihazlarda parmakla sürükleyin, pinch-to-zoom yapın
+#### Yöntem 2: Vercel Dashboard ile
+
+1. [Vercel](https://vercel.com) hesabınıza giriş yapın
+2. "New Project" butonuna tıklayın
+3. GitHub repository'nizi seçin veya import edin
+4. Root Directory: `.` (boş bırakın)
+5. Build Command: boş bırakın (gerekli değil)
+6. Output Directory: boş bırakın
+7. Install Command: `npm install`
+8. "Deploy" butonuna tıklayın
+
+### 3. Environment Variables Ayarlayın
+
+Vercel Dashboard > Settings > Environment Variables:
+
+```
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+**Önemli:** `supabase-config.js` dosyasını GitHub'a commit etmeyin! Environment variables kullanın.
+
+### 4. Supabase Config Güncellemesi
+
+`public/supabase-config.js` dosyasını oluşturun (local için):
+
+```javascript
+export const supabaseConfig = {
+    url: process.env.SUPABASE_URL || 'your_supabase_url',
+    anonKey: process.env.SUPABASE_ANON_KEY || 'your_supabase_anon_key'
+};
+```
+
+Veya Vercel'de runtime'da environment variables kullanın.
 
 ## 📁 Proje Yapısı
 
 ```
 mapfy/
-├── server.js           # Node.js Express sunucusu
-├── app.py              # Python Flask sunucusu (opsiyonel)
-├── package.json        # Node.js bağımlılıkları
-├── requirements.txt    # Python bağımlılıkları
-├── data/
-│   └── cities.json    # Şehir verileri
-├── public/
-│   ├── index.html     # Ana HTML dosyası
-│   ├── style.css      # Stil dosyası
-│   └── app.js         # JavaScript uygulaması
-└── README.md          # Bu dosya
+├── api/                 # Vercel serverless functions
+│   ├── cities.js
+│   └── city/
+│       └── [name].js
+├── data/               # JSON verileri
+│   └── cities.json
+├── public/             # Static dosyalar
+│   ├── index.html
+│   ├── app.js
+│   ├── style.css
+│   ├── supabase-client.js
+│   └── ...
+├── server.js           # Express server (local dev)
+├── vercel.json         # Vercel configuration
+└── package.json
 ```
 
 ## 🔧 Yapılandırma
 
-### Şehir Verilerini Güncelleme
+### Supabase Setup
 
-`data/cities.json` dosyasını düzenleyerek şehir bilgilerini güncelleyebilirsiniz:
+1. [Supabase](https://supabase.com) hesabı oluşturun
+2. Yeni proje oluşturun
+3. Database schema'yı kurun (SQL dosyasını çalıştırın)
+4. API keys'i alın ve environment variables'a ekleyin
 
-```json
-{
-    "name": "İstanbul",
-    "population": 15519267,
-    "area": 5461,
-    "description": "Şehir açıklaması"
-}
-```
+Detaylı kurulum için `SUPABASE_INTEGRATION.md` dosyasına bakın.
 
-### SVG Path'leri Ekleme
+## 📝 API Endpoints
 
-`public/app.js` dosyasındaki `getAllProvincePaths()` fonksiyonuna yeni şehir path'leri ekleyebilirsiniz.
+### GET /api/cities
+Tüm şehirleri döndürür.
 
-## 🎨 Özelleştirme
+### GET /api/city?name=İstanbul
+Belirli bir şehir bilgisi döndürür.
 
-### Renkleri Değiştirme
+## 🌍 Canlı Demo
 
-`public/style.css` dosyasındaki renk değerlerini değiştirerek harita görünümünü özelleştirebilirsiniz:
+🌐 **Canlı Site:** [https://mapfy.vercel.app](https://mapfy.vercel.app)
 
-- `.province`: Varsayılan şehir rengi
-- `.province:hover`: Hover rengi
-- `.province.selected`: Seçili şehir rengi
+Deploy edildikten sonra otomatik olarak bu URL'de yayınlanır.
 
-### Zoom Limitleri
+## 📄 Lisans
 
-`public/app.js` dosyasındaki zoom fonksiyonunda min/max değerlerini değiştirebilirsiniz:
-
-```javascript
-mapState.scale = Math.max(0.5, Math.min(5, mapState.scale * factor));
-```
-
-## 📝 Lisans
-
-MIT License
-
-## 🤝 Katkıda Bulunma
-
-Pull request'ler memnuniyetle karşılanır. Büyük değişiklikler için önce bir issue açarak neyi değiştirmek istediğinizi tartışın.
-
-## 📧 İletişim
-
-Sorularınız için issue açabilirsiniz.
-
----
-
-**Not**: Gerçek bir üretim ortamında, Türkiye'nin tüm 81 ili için detaylı SVG path'lerinin eklenmesi gerekmektedir. Bu proje, temel yapıyı ve işlevselliği göstermek için hazırlanmıştır.
-
+MIT
