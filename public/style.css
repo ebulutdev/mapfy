@@ -81,6 +81,22 @@ body {
     padding: 0 14px; /* 16px'den 14px'e küçültüldü */
 }
 
+/* Map-view'da butonlar header altında */
+.app-container.map-view .zoom-controls {
+    top: calc(env(safe-area-inset-top, 0px) + 40px + 16px);
+    bottom: auto;
+}
+
+.app-container.map-view .filter-toggle-icon {
+    top: calc(env(safe-area-inset-top, 0px) + 40px + 16px);
+    bottom: auto;
+}
+
+.app-container.map-view .add-profile-btn {
+    top: calc(env(safe-area-inset-top, 0px) + 40px + 16px);
+    bottom: auto;
+}
+
 /* Harita sayfasında navbar'ı sadeleştir */
 .app-container.map-view .navbar-brand,
 .app-container.map-view .navbar-nav {
@@ -421,8 +437,8 @@ body {
 .zoom-controls {
     position: fixed;
     right: 20px;
-    /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+    top: calc(env(safe-area-inset-top, 0px) + 52px + 16px);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -519,10 +535,10 @@ body {
 /* Responsive - Tablet */
 @media (max-width: 1024px) {
     .zoom-controls {
-        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+        /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 52px + 16px);
         right: 15px;
-        top: auto;
+        bottom: auto;
         gap: 8px;
     }
 
@@ -673,26 +689,37 @@ body {
     }
 
     .zoom-controls {
-        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+        /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 40px + 12px);
         right: 10px;
-        top: auto;
+        bottom: auto;
         gap: 6px;
     }
     
-    /* Harita sayfasında butonlar en alt sağda L şeklinde */
+    /* Harita sayfasında butonlar header altında L şeklinde */
     .app-container.map-view .filter-toggle-icon {
-        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+        /* Header'ın altında başla (safe-area + 32px navbar + 12px boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 32px + 12px);
         right: 58px; /* Zoom controls'un solunda (40px buton + 6px gap + 6px gap + 6px ekstra) */
-        top: auto;
+        bottom: auto;
     }
     
     .app-container.map-view .add-profile-btn {
-        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+        /* Header'ın altında başla (safe-area + 32px navbar + 12px boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 32px + 12px);
         right: 102px; /* Filter toggle'un solunda (40px zoom + 6px + 40px filter + 6px + 40px profil + 6px + 4px ekstra) */
-        top: auto;
+        bottom: auto;
+    }
+    
+    /* Normal sayfada header daha yüksek */
+    .filter-toggle-icon:not(.app-container.map-view .filter-toggle-icon) {
+        top: calc(env(safe-area-inset-top, 0px) + 40px + 12px);
+        bottom: auto;
+    }
+    
+    .add-profile-btn:not(.app-container.map-view .add-profile-btn) {
+        top: calc(env(safe-area-inset-top, 0px) + 40px + 12px);
+        bottom: auto;
     }
 
     .zoom-btn {
@@ -757,27 +784,46 @@ body {
     }
     
     .app-container.map-view .zoom-controls {
-        bottom: 20px; /* En alt sağda */
+        /* Header'ın altında başla (safe-area + 30px navbar + 10px boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 30px + 10px);
         right: 10px;
-        top: auto;
+        bottom: auto;
     }
     
-    /* Harita sayfasında butonlar en alt sağda L şeklinde */
+    /* Harita sayfasında butonlar header altında L şeklinde */
     .app-container.map-view .filter-toggle-icon {
-        bottom: 20px; /* En alt sağda, zoom controls'un solunda */
+        /* Header'ın altında başla (safe-area + 30px navbar + 10px boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 30px + 10px);
         right: 54px; /* Zoom controls'un solunda (32px buton + 6px gap + 6px gap + 10px ekstra) */
-        top: auto;
+        bottom: auto;
         width: 32px;
         height: 32px;
     }
     
     .app-container.map-view .add-profile-btn {
-        bottom: 20px; /* En alt sağda, filter toggle'un solunda */
+        /* Header'ın altında başla (safe-area + 30px navbar + 10px boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 30px + 10px);
         right: 94px; /* Filter toggle'un solunda (32px zoom + 6px + 32px filter + 6px + 32px profil + 6px + 10px ekstra) */
-        top: auto;
+        bottom: auto;
         width: 32px;
         height: 32px;
         font-size: 18px;
+    }
+    
+    /* Normal sayfada header daha yüksek (36px) */
+    .filter-toggle-icon:not(.app-container.map-view .filter-toggle-icon) {
+        top: calc(env(safe-area-inset-top, 0px) + 36px + 10px);
+        bottom: auto;
+    }
+    
+    .add-profile-btn:not(.app-container.map-view .add-profile-btn) {
+        top: calc(env(safe-area-inset-top, 0px) + 36px + 10px);
+        bottom: auto;
+    }
+    
+    .zoom-controls:not(.app-container.map-view .zoom-controls) {
+        top: calc(env(safe-area-inset-top, 0px) + 36px + 10px);
+        bottom: auto;
     }
     
     /* Küçük mobilde zoom butonları da küçült */
@@ -1069,8 +1115,8 @@ body {
 /* Add Profile Button */
 .filter-toggle-icon {
     position: fixed;
-    /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+    top: calc(env(safe-area-inset-top, 0px) + 52px + 16px);
     right: 68px; /* Zoom controls'un solunda (36px buton + 8px gap + 8px gap + 16px ekstra) */
     width: 36px;
     height: 36px;
@@ -1113,8 +1159,8 @@ body {
 
 .add-profile-btn {
     position: fixed;
-    /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+    top: calc(env(safe-area-inset-top, 0px) + 52px + 16px);
     right: 112px; /* Filter toggle'un solunda (36px filter + 8px gap + 36px profil + 8px gap + 24px ekstra) */
     width: 36px;
     height: 36px;
@@ -2442,17 +2488,17 @@ body {
         width: 38px;
         height: 38px;
         font-size: 20px;
-        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+        /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 40px + 12px);
         right: 106px; /* Filter toggle'un solunda */
-        top: auto;
+        bottom: auto;
     }
     
     .filter-toggle-icon {
-        /* Alttan güvenli alan kadar + 80px yukarıda olsun (adres çubuğu payı) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+        /* Header'ın altında başla (safe-area + navbar yüksekliği + boşluk) */
+        top: calc(env(safe-area-inset-top, 0px) + 40px + 12px);
         right: 64px; /* Zoom controls'un solunda */
-        top: auto;
+        bottom: auto;
     }
     
     .modal-title {
@@ -4540,12 +4586,14 @@ body {
         margin-bottom: 12px;
     }
     
-    /* Eğer ekran çok küçükse butonları biraz daha yukarı al */
+    /* Eğer ekran çok küçükse butonları header altında tut (zaten header altında) */
     @media (max-height: 600px) {
         .zoom-controls,
         .filter-toggle-icon,
         .add-profile-btn {
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 60px) !important;
+            /* Header altında kalacak şekilde, sadece boşluğu azalt */
+            top: calc(env(safe-area-inset-top, 0px) + 36px + 8px) !important;
+            bottom: auto !important;
         }
     }
     
