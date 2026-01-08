@@ -361,10 +361,9 @@ async function loadMap() {
                 console.log(`${provinces.length} il yüklendi`);
             }, 100);
             
-            // Harita yüklendikten sonra Supabase'den profilleri yükle
-            setTimeout(() => {
-                loadProfilesFromSupabase();
-            }, 500);
+            // NOT: Profiller hero sayfasındayken yüklenmeyecek
+            // Profiller sadece "Haritayı Keşfet" butonuna basıldığında yüklenecek
+            console.log('✓ Harita yüklendi. Profiller "Haritayı Keşfet" butonuna basıldığında yüklenecek.');
         } else {
             throw new Error('Turkey grubu bulunamadı');
         }
@@ -630,7 +629,7 @@ function setupModalListeners() {
                 // Kullanıcının zaten profili var mı kontrol et
                 const hasProfile = await checkUserHasProfile(user.id);
                 if (hasProfile) {
-                    alert('Zaten bir profiliniz var. Profil ayarlarından düzenleyebilirsiniz.');
+                    await showAlert('Zaten bir profiliniz var. Profil ayarlarından düzenleyebilirsiniz.', 'Bilgi', 'info');
                     openEditProfileModal();
                 } else {
                     openAddProfileModal();
@@ -648,6 +647,78 @@ function setupModalListeners() {
     }
     if (closeDetailModalBtn) {
         closeDetailModalBtn.addEventListener('click', closeProfileDetailModal);
+    }
+    
+    // Geri Butonları
+    const backAddProfileBtn = document.getElementById('back-add-profile');
+    const backProfileDetailBtn = document.getElementById('back-profile-detail');
+    const backAuthModalBtn = document.getElementById('back-auth-modal');
+    const backEditProfileBtn = document.getElementById('back-edit-profile');
+    const backReportModalBtn = document.getElementById('back-report-modal');
+    const backLegalModalBtn = document.getElementById('back-legal-modal');
+    const backFilterBtn = document.getElementById('back-filter');
+    
+    if (backAddProfileBtn) {
+        backAddProfileBtn.addEventListener('click', closeAddProfileModal);
+    }
+    if (backProfileDetailBtn) {
+        backProfileDetailBtn.addEventListener('click', closeProfileDetailModal);
+    }
+    if (backAuthModalBtn) {
+        backAuthModalBtn.addEventListener('click', closeAuthModal);
+    }
+    if (backEditProfileBtn) {
+        backEditProfileBtn.addEventListener('click', closeEditProfileModal);
+    }
+    if (backReportModalBtn) {
+        backReportModalBtn.addEventListener('click', closeReportModal);
+    }
+    if (backLegalModalBtn) {
+        backLegalModalBtn.addEventListener('click', closeLegalModal);
+    }
+    if (backFilterBtn) {
+        backFilterBtn.addEventListener('click', () => {
+            // Filtre sidebar'ı kapat
+            const filterSidebar = document.getElementById('filter-sidebar');
+            if (filterSidebar) {
+                filterSidebar.style.width = '0px';
+                filterSidebar.style.display = 'none';
+            }
+        });
+    }
+    
+    // Report modal
+    const closeReportBtn = document.getElementById('close-report-modal');
+    const submitReportBtn = document.getElementById('submit-report-btn');
+    const reportModal = document.getElementById('report-modal');
+    
+    if (closeReportBtn) {
+        closeReportBtn.addEventListener('click', closeReportModal);
+    }
+    if (submitReportBtn) {
+        submitReportBtn.addEventListener('click', submitReport);
+    }
+    if (reportModal) {
+        reportModal.addEventListener('click', (e) => {
+            if (e.target === reportModal) {
+                closeReportModal();
+            }
+        });
+    }
+    
+    // Legal modal
+    const closeLegalBtn = document.getElementById('close-legal-modal');
+    const legalModal = document.getElementById('legal-modal');
+    
+    if (closeLegalBtn) {
+        closeLegalBtn.addEventListener('click', closeLegalModal);
+    }
+    if (legalModal) {
+        legalModal.addEventListener('click', (e) => {
+            if (e.target === legalModal) {
+                closeLegalModal();
+            }
+        });
     }
     
     // Ana Sayfaya Git Butonu
@@ -787,6 +858,8 @@ function setupModalListeners() {
                         if (toggleFilterBtn) toggleFilterBtn.textContent = 'Gizle';
                     } else {
                         filterSidebar.classList.add('collapsed');
+                        // Tamamen gizlemek için genişliği sıfırla
+                        filterSidebar.style.width = '0px';
                         filterToggleIcon.classList.remove('active');
                         if (toggleFilterBtn) toggleFilterBtn.textContent = 'Göster';
                     }
@@ -871,6 +944,8 @@ function setupModalListeners() {
                         if (filterToggleIcon) filterToggleIcon.classList.add('active');
                     } else {
                         filterSidebar.classList.add('collapsed');
+                        // Tamamen gizlemek için genişliği sıfırla
+                        filterSidebar.style.width = '0px';
                         toggleFilterBtn.textContent = 'Göster';
                         if (filterToggleIcon) filterToggleIcon.classList.remove('active');
                     }
@@ -1451,72 +1526,90 @@ async function addSampleProfiles() {
 
 // Şehrin merkezini ve sınırlarını bulur
 function getCityGeometry(cityId) {
+    if (!cityId || !svg) {
+        console.warn(`Geçersiz cityId veya SVG yok: ${cityId}`);
+        return null;
+    }
+    
     // Şehri bul (ID eşleşmesi ile)
     let cityGroup = svg.querySelector(`g[id*="${cityId}" i]`);
     if (!cityGroup) {
+        // Tüm grupları kontrol et
         const allGroups = svg.querySelectorAll('g[id]');
         cityGroup = Array.from(allGroups).find(g => {
             const id = g.id.toLowerCase();
-            return id.includes(cityId.toLowerCase());
+            const searchId = cityId.toLowerCase();
+            return id === searchId || id.includes(searchId) || searchId.includes(id);
         });
     }
     
     if (!cityGroup) {
-        console.warn(`Şehir bulunamadı: ${cityId}`);
+        console.warn(`⚠ Şehir bulunamadı: "${cityId}"`);
+        // Mevcut tüm şehir ID'lerini logla (debug için)
+        const allCityIds = Array.from(svg.querySelectorAll('g[id]')).map(g => g.id);
+        console.log('Mevcut şehir ID\'leri:', allCityIds.slice(0, 10), '... (toplam', allCityIds.length, 'şehir)');
         return null;
     }
     
     const path = cityGroup.querySelector('path');
     if (!path) {
-        console.warn(`Şehir path'i bulunamadı: ${cityId}`);
+        console.warn(`⚠ Şehir path'i bulunamadı: ${cityId}`);
         return null;
     }
     
-    const bbox = path.getBBox();
-    
-    return {
-        pathElement: path,
-        bbox: bbox,
-        center: {
-        x: bbox.x + bbox.width / 2,
-        y: bbox.y + bbox.height / 2
+    try {
+        const bbox = path.getBBox();
+        
+        // Bbox değerlerini kontrol et
+        if (!bbox || bbox.width <= 0 || bbox.height <= 0) {
+            console.warn(`⚠ Geçersiz bbox: ${cityId}`, bbox);
+            return null;
         }
-    };
+        
+        const center = {
+            x: bbox.x + bbox.width / 2,
+            y: bbox.y + bbox.height / 2
+        };
+        
+        return {
+            pathElement: path,
+            bbox: bbox,
+            center: center
+        };
+    } catch (e) {
+        console.error(`❌ Bbox hesaplama hatası (${cityId}):`, e);
+        return null;
+    }
 }
 
-// Spiral (Salyangoz) Dağılım Hesaplayıcı
-// index arttıkça merkezden dışarı doğru döner
+// Spiral (Salyangoz) Dağılım Hesaplayıcı - GÜNCELLENMİŞ VERSİYON
+// isPointInFill yerine bounding box ve merkezden uzaklaşma mantığı kullanılır.
+// index arttıkça merkezden dışarı doğru spiral şeklinde dağılım sağlar
 function calculateSpiralPosition(index, center, bbox, pathElement) {
-    // Eğer ilk kişi ise ve çakışma riski yoksa merkeze koy
-    // Ama index 0 olsa bile hafif bir sapma (jitter) ekleyelim ki 
-    // iki kişi aynı anda eklerse tam üst üste binmesin.
+    // 1. İlk kişi her zaman merkeze yakın olsun
     if (index === 0) {
+        // Hafif bir sapma (jitter) ekle ki tam üst üste binmesinler
         const jitterX = (Math.random() - 0.5) * 5; 
         const jitterY = (Math.random() - 0.5) * 5;
-        const testX = center.x + jitterX;
-        const testY = center.y + jitterY;
-        
-        // Şehir içinde mi kontrol et
-        if (pathElement && typeof pathElement.isPointInFill === 'function') {
-            const point = svg.createSVGPoint();
-            point.x = testX;
-            point.y = testY;
-            if (pathElement.isPointInFill(point)) {
-                return { x: testX, y: testY };
-            }
-        }
         return { x: center.x + jitterX, y: center.y + jitterY };
     }
 
-    // Spiral Ayarları
-    let currentAngle = index * 2.4; // Altın oran açısı (~137.5 derece)
-    let currentRadius = 12 + (index * 5); // Merkezden uzaklık (her kişi için artar)
+    // 2. Spiral Ayarları
+    // Altın oran açısı (~137.5 derece) - Doğal dağılım sağlar
+    const angleStep = 2.39996; 
+    // Her adımda merkezden ne kadar uzaklaşacağı (pixel)
+    const distanceStep = 14; 
+
+    let currentAngle = index * angleStep;
+    let currentRadius = 10 + (index * 5); // İlk halka 10px, sonra genişler
 
     let finalX = center.x;
     let finalY = center.y;
-    let isValidPosition = false;
+    
+    // Güvenlik: Sonsuz döngüden kaçınmak için max deneme
     let attempts = 0;
-    const maxAttempts = 100;
+    const maxAttempts = 50;
+    let isValidPosition = false;
 
     while (!isValidPosition && attempts < maxAttempts) {
         // Polar -> Kartezyen dönüşümü
@@ -1526,60 +1619,72 @@ function calculateSpiralPosition(index, center, bbox, pathElement) {
         finalX = center.x + dx;
         finalY = center.y + dy;
 
-        // 1. KONTROL: Şehir sınırları (Bounding Box) içinde mi?
-        const padding = 10;
-        if (finalX < bbox.x + padding || finalX > bbox.x + bbox.width - padding ||
-            finalY < bbox.y + padding || finalY > bbox.y + bbox.height - padding) {
-            
-            // Sınıra çarptıysa açıyı değiştir ve yarıçapı biraz kıs
-            currentAngle += 0.5;
-            currentRadius *= 0.95; 
-            attempts++;
-            continue;
-        }
+        // KONTROL: Şehir sınırları (Bounding Box) içinde mi?
+        // bbox: {x, y, width, height}
+        // Sınırlara çok yaklaşmasın diye 'padding' kullanıyoruz
+        const padding = 5; 
         
-        // 2. KONTROL: Nokta tam olarak şehrin harita şekli (Path) içinde mi?
-        // Bu, profillerin denize veya komşu şehre taşmasını engeller.
-        const point = svg.createSVGPoint();
-        point.x = finalX;
-        point.y = finalY;
-
-        // isPointInFill metodu tarayıcıda destekleniyorsa kullan
-        if (pathElement && typeof pathElement.isPointInFill === 'function') {
-            if (pathElement.isPointInFill(point)) {
-                isValidPosition = true;
-            } else {
-                // Şehir dışında kaldı, açıyı değiştirip tekrar dene
-                currentAngle += 1; 
-        attempts++;
-    }
-        } else {
-            // isPointInFill yoksa sadece bbox kontrolü ile devam et
+        if (finalX >= bbox.x + padding && 
+            finalX <= bbox.x + bbox.width - padding &&
+            finalY >= bbox.y + padding && 
+            finalY <= bbox.y + bbox.height - padding) {
+            
+            // Eğer kutunun içindeyse kabul et.
+            // isPointInFill kullanmıyoruz çünkü tarayıcı desteği zayıf ve hata veriyor.
             isValidPosition = true;
+        } else {
+            // Sınıra çarptıysa, bir sonraki deneme için açıyı değiştir ve yarıçapı azalt
+            currentAngle += 1; 
+            currentRadius *= 0.9; // Yarıçapı biraz küçült (içeri çek)
+            attempts++;
         }
     }
 
-    // Eğer uygun yer bulunamazsa merkeze yakın rastgele bir yer ver
+    // Eğer 50 denemede kutu içinde bir yer bulamazsa (çok dar/küçük bir şehir olabilir)
+    // Yine de hesaplanan son noktayı veya merkeze yakın bir yeri döndür
     if (!isValidPosition) {
-        console.warn(`⚠ Spiral pozisyon bulunamadı (index: ${index}), merkeze yakın nokta kullanılıyor`);
-    return {
-            x: center.x + (Math.random() - 0.5) * 20, 
-            y: center.y + (Math.random() - 0.5) * 20 
-    };
+        console.warn(`⚠ Spiral pozisyon tam oturmadı (index: ${index}), merkeze yakın nokta kullanılıyor`);
+        return { 
+            x: center.x + (Math.random() - 0.5) * 15, 
+            y: center.y + (Math.random() - 0.5) * 15 
+        };
     }
 
     return { x: finalX, y: finalY };
 }
 
 function addProfileToMap(profile) {
-    // Create profiles group if it doesn't exist
+    // Debug: Profil eklenirken kontrol et
+    if (!profile || !profile.x || !profile.y || isNaN(profile.x) || isNaN(profile.y)) {
+        console.error('❌ Geçersiz profil verisi:', profile);
+        return;
+    }
+    
+    if (!profile.imageUrl) {
+        console.error('❌ Profil görseli yok:', profile.id, profile.name);
+        return;
+    }
+    
+    // SVG'nin mevcut olduğundan emin ol
+    if (!svg) {
+        console.error('❌ SVG elementi bulunamadı');
+        return;
+    }
+    
+    // Profil grubunu bul veya oluştur
     let profilesGroup = svg.querySelector('#profiles-group');
+    
     if (!profilesGroup) {
         profilesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         profilesGroup.id = 'profiles-group';
-        // Profillerin harita efektlerinden bağımsız olması için
         profilesGroup.setAttribute('style', 'transform-style: flat; isolation: isolate;');
         svg.appendChild(profilesGroup);
+        console.log('✓ Profiles group oluşturuldu');
+    } else {
+        // [ÖNEMLİ] Zaten varsa, onu DOM'un en sonuna taşı ki haritanın üstünde görünsün
+        if (svg.lastElementChild !== profilesGroup) {
+            svg.appendChild(profilesGroup);
+        }
     }
     
     // Profile base size (küçük Snapchat-style - şık görünüm için)
@@ -1617,6 +1722,13 @@ function addProfileToMap(profile) {
     image.setAttribute('href', profile.imageUrl);
     image.setAttribute('clip-path', `url(#clip-${profile.id})`); // Yuvarlak clip path uygula
     image.setAttribute('class', 'profile-image');
+    // Başlangıç pozisyonları - updateProfileSizes() çağrılana kadar görünür olması için
+    const imageX = profile.x - baseSize / 2;
+    const imageY = profile.y - baseSize / 2;
+    image.setAttribute('x', imageX);
+    image.setAttribute('y', imageY);
+    image.setAttribute('width', baseSize);
+    image.setAttribute('height', baseSize);
     // Yüksek kalite için preserveAspectRatio optimize edildi
     image.setAttribute('preserveAspectRatio', 'xMidYMid slice'); // Görseli yuvarlak içine tam oturt
     // Yüksek kalite için image-rendering optimize edildi
@@ -1631,6 +1743,10 @@ function addProfileToMap(profile) {
     borderCircle.setAttribute('stroke', '#3ECF8E'); // Site temasına uyumlu yeşil çizgi
     borderCircle.setAttribute('stroke-width', '0.35'); // Daha ince çizgi
     borderCircle.setAttribute('opacity', '0.8'); // Hafif şeffaflık
+    // Başlangıç pozisyonları
+    borderCircle.setAttribute('cx', profile.x);
+    borderCircle.setAttribute('cy', profile.y);
+    borderCircle.setAttribute('r', baseSize / 2);
     
     // Create invisible clickable circle - sadece profil görselinin boyutu kadar
     // Etrafına basılınca profil açılmasın, sadece profil görseline basılınca açılsın
@@ -1676,8 +1792,36 @@ function addProfileToMap(profile) {
     
     profilesGroup.appendChild(profileGroup);
     
-    // İlk boyutlandırmayı yap
-    updateProfileSizes();
+    // Debug: Profil eklendiğini logla
+    console.log(`✓ Profil haritaya eklendi:`, {
+        id: profile.id,
+        name: profile.name,
+        x: profile.x,
+        y: profile.y,
+        imageX: imageX,
+        imageY: imageY,
+        baseSize: baseSize,
+        profilesGroupExists: !!profilesGroup,
+        svgExists: !!svg
+    });
+    
+    // SVG'de görünür olup olmadığını kontrol et
+    if (profilesGroup.parentNode !== svg) {
+        console.error('❌ Profiles group SVG içinde değil!');
+        svg.appendChild(profilesGroup);
+    }
+    
+    // İlk boyutlandırmayı yap - transform uygulandıktan sonra pozisyonları güncelle
+    // updateTransform çağrılmalı ki profiles-group transform'u ayarlansın
+    if (profilesGroup && profilesGroup.parentNode) {
+        // Profiles-group transform'unun ayarlandığından emin ol
+        updateTransform();
+        // Profil boyutlarını da güncelle
+        updateProfileSizes();
+    } else {
+        // Fallback: sadece profil boyutlarını güncelle
+        updateProfileSizes();
+    }
 }
 
 // Profil boyutlarını zoom seviyesine göre güncelle (ters orantılı)
@@ -1746,6 +1890,14 @@ function updateProfileSizes() {
 // Supabase'den tüm profilleri yükle ve Spiral Dağıt
 async function loadProfilesFromSupabase() {
     try {
+        // SVG'nin hazır olduğundan emin ol
+        if (!svg || !svg.querySelector('#turkey-provinces')) {
+            console.warn('⚠ SVG henüz hazır değil, profiller yüklenemedi. Hero sayfasından haritaya geçiş yapmalısınız.');
+            return;
+        }
+        
+        console.log('📡 Supabase\'den profiller yükleniyor...');
+        
         const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -1753,8 +1905,11 @@ async function loadProfilesFromSupabase() {
         
         if (error) {
             console.error('Supabase profil yükleme hatası:', error);
+            // Kullanıcıya hata mesajı gösterme (sessizce devam et)
             return;
         }
+        
+        console.log('Profiller yükleniyor:', data);
         
         if (data && data.length > 0) {
             // Mevcut profilleri temizle
@@ -1768,11 +1923,17 @@ async function loadProfilesFromSupabase() {
             const profilesByCity = {};
             data.forEach(profileData => {
                 const cityId = String(profileData.city_id || '').toLowerCase().trim();
+                if (!cityId) {
+                    console.warn('Profil city_id boş:', profileData.id, profileData.name);
+                    return; // city_id boş olan profilleri atla
+                }
                 if (!profilesByCity[cityId]) {
                     profilesByCity[cityId] = [];
                 }
                 profilesByCity[cityId].push(profileData);
             });
+            
+            console.log('Şehirlere göre gruplanmış profiller:', Object.keys(profilesByCity).length, 'şehir');
             
             let profilesAdded = 0;
             let profilesRepositioned = 0;
@@ -1784,6 +1945,17 @@ async function loadProfilesFromSupabase() {
                 // Şehrin merkezini ve sınırlarını bul
                 const cityInfo = getCityGeometry(cityId);
                 
+                if (!cityInfo) {
+                    console.error(`❌ Şehir geometrisi bulunamadı: ${cityId}, ${cityProfiles.length} profil atlanıyor`);
+                    console.log('Mevcut şehir grupları:', Array.from(svg.querySelectorAll('g[id]')).map(g => g.id));
+                } else {
+                    console.log(`✓ Şehir geometrisi bulundu: ${cityId}`, {
+                        center: cityInfo.center,
+                        bbox: cityInfo.bbox,
+                        profileCount: cityProfiles.length
+                    });
+                }
+                
                 if (cityInfo) {
                     // Bu şehirdeki profilleri spiral dağılım ile ekle
                     cityProfiles.forEach((profileData, index) => {
@@ -1794,6 +1966,21 @@ async function loadProfilesFromSupabase() {
                             cityInfo.bbox,      // Şehir sınırları
                             cityInfo.pathElement // SVG path'i (içeride mi kontrolü için)
                         );
+                        
+                        // Debug: Pozisyon değerlerini kontrol et
+                        if (!pos || isNaN(pos.x) || isNaN(pos.y) || !isFinite(pos.x) || !isFinite(pos.y)) {
+                            console.error(`❌ Geçersiz pozisyon hesaplandı:`, {
+                                profileId: profileData.id,
+                                profileName: profileData.name,
+                                cityId: cityId,
+                                pos: pos,
+                                center: cityInfo.center,
+                                bbox: cityInfo.bbox
+                            });
+                            // Geçersiz pozisyon varsa merkezi kullan
+                            pos.x = cityInfo.center.x;
+                            pos.y = cityInfo.center.y;
+                        }
                         
                         // Eğer veritabanındaki pozisyon farklıysa güncelle
                         const originalX = parseFloat(profileData.position_x);
@@ -1809,12 +1996,12 @@ async function loadProfilesFromSupabase() {
                         }
                         
                         // Profil nesnesini oluştur
-                const profile = {
-                    id: profileData.id,
-                    name: profileData.name,
-                    imageUrl: profileData.image_url,
-                    cityId: profileData.city_id,
-                    city: profileData.city_name,
+                        const profile = {
+                            id: profileData.id,
+                            name: profileData.name,
+                            imageUrl: profileData.image_url,
+                            cityId: profileData.city_id,
+                            city: profileData.city_name,
                             x: pos.x,
                             y: pos.y,
                             snapchat_username: profileData.snapchat_username || null,
@@ -1825,11 +2012,21 @@ async function loadProfilesFromSupabase() {
                             age: profileData.age || null,
                             district: profileData.district || null,
                             gender: profileData.gender || null,
-                };
-                
+                        };
+                        
+                        // Debug: Profil oluşturulduğunu logla
+                        console.log(`✓ Profil oluşturuluyor:`, {
+                            id: profile.id,
+                            name: profile.name,
+                            city: profile.city,
+                            x: profile.x,
+                            y: profile.y,
+                            imageUrl: profile.imageUrl ? 'Var' : 'Yok'
+                        });
+                        
                         // State'e ve haritaya ekle
-                mapState.profiles.push(profile);
-                addProfileToMap(profile);
+                        mapState.profiles.push(profile);
+                        addProfileToMap(profile);
                         profilesAdded++;
             });
                 } else {
@@ -1848,9 +2045,23 @@ async function loadProfilesFromSupabase() {
             
             // [YENİ] Deep Link Kontrolü
             checkUrlForDeepLink();
+        } else {
+            // Veri yoksa sessizce devam et (normal durum)
+            console.log('Henüz profil bulunmuyor.');
         }
     } catch (error) {
+        // Network veya bağlantı hatalarını sessizce yakala
+        if (error.message && (
+            error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('ERR_CONNECTION_CLOSED') ||
+            error.message.includes('ERR_INTERNET_DISCONNECTED')
+        )) {
+            console.warn('Bağlantı hatası: Supabase\'e şu anda erişilemiyor. İnternet bağlantınızı kontrol edin.');
+        } else {
         console.error('Profil yükleme hatası:', error);
+        }
+        // Hata durumunda sessizce devam et, uygulama çalışmaya devam etsin
     }
 }
 
@@ -1948,6 +2159,15 @@ async function deleteProfileFromSupabase(profileId) {
         
         console.log('Profil Supabase\'den silindi:', profileId);
     } catch (error) {
+        // Network hatalarını daha iyi yakala
+        if (error.message && (
+            error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('ERR_CONNECTION_CLOSED')
+        )) {
+            console.warn('Bağlantı hatası: Profil silinemedi. İnternet bağlantınızı kontrol edin.');
+            throw new Error('İnternet bağlantısı hatası. Lütfen tekrar deneyin.');
+        }
         console.error('Profil silme hatası:', error);
         throw error;
     }
@@ -1968,6 +2188,14 @@ async function uploadImageToSupabase(file, fileName) {
         
         if (error) {
             console.error('Supabase görsel yükleme hatası:', error);
+            // Network hatalarını kontrol et
+            if (error.message && (
+                error.message.includes('Failed to fetch') || 
+                error.message.includes('NetworkError') ||
+                error.message.includes('ERR_CONNECTION_CLOSED')
+            )) {
+                throw new Error('İnternet bağlantısı hatası. Görsel yüklenemedi. Lütfen tekrar deneyin.');
+            }
             throw error;
         }
         
@@ -1979,6 +2207,15 @@ async function uploadImageToSupabase(file, fileName) {
         console.log('Görsel Supabase Storage\'a yüklendi:', urlData.publicUrl);
         return urlData.publicUrl;
     } catch (error) {
+        // Network hatalarını daha iyi yakala
+        if (error.message && (
+            error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('ERR_CONNECTION_CLOSED')
+        )) {
+            console.warn('Bağlantı hatası: Görsel yüklenemedi. İnternet bağlantınızı kontrol edin.');
+            throw new Error('İnternet bağlantısı hatası. Lütfen tekrar deneyin.');
+        }
         console.error('Görsel yükleme hatası:', error);
         throw error;
     }
@@ -1998,6 +2235,17 @@ let modalState = {
     isCropping: false,
     cropImageSrc: null, // Crop için kullanılan görsel kaynağı
     selectedGender: null
+};
+
+// Edit Modal state
+let editModalState = {
+    selectedFile: null,
+    croppedImage: null,
+    cropStartX: 0,
+    cropStartY: 0,
+    cropEndX: 0,
+    cropEndY: 0,
+    cropImageSrc: null
 };
 
 // Filter state
@@ -2057,7 +2305,7 @@ function handlePhotoSelect(e) {
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
-        alert('Lütfen bir resim dosyası seçin');
+        showAlert('Lütfen bir resim dosyası seçin', 'Hata', 'error');
         return;
     }
     
@@ -2407,18 +2655,27 @@ function showCitySuggestions(matches) {
 async function saveProfile() {
     // 1. Validasyonlar
     if (!modalState.croppedImage && !modalState.selectedFile) {
-        alert('Lütfen bir profil fotoğrafı seçin');
+        showAlert('Lütfen bir profil fotoğrafı seçin', 'Eksik Bilgi', 'warning');
         return;
     }
     
     if (!usernameInput || !usernameInput.value.trim()) {
-        alert('Lütfen kullanıcı adınızı girin');
+        showAlert('Lütfen kullanıcı adınızı girin', 'Eksik Bilgi', 'warning');
         return;
     }
     
     if (!modalState.selectedCity) {
-        alert('Lütfen bir şehir seçin');
+        showAlert('Lütfen bir şehir seçin', 'Eksik Bilgi', 'warning');
         return;
+    }
+    
+    // Yaş kontrolü (18+)
+    if (ageInput && ageInput.value) {
+        const ageValue = parseInt(ageInput.value);
+        if (ageValue < 18) {
+            await showAlert('Yasal sebeplerden dolayı uygulamayı sadece 18 yaş ve üzeri kullanıcılar kullanabilir.', 'Yaş Sınırı', 'warning');
+            return;
+        }
     }
     
     // Kaydet butonunu kilitle
@@ -2496,14 +2753,14 @@ async function saveProfile() {
         closeAddProfileModal();
         
         // Başarı mesajı
-        alert('Profil başarıyla eklendi!');
+        showAlert('Profil başarıyla eklendi!', 'Başarılı', 'success');
         
         // Update filters and results
         applyFilters();
         
     } catch (error) {
         console.error('Profil kaydetme hatası:', error);
-        alert('Hata: ' + error.message);
+        showAlert('Hata: ' + error.message, 'Hata', 'error');
     } finally {
         // Re-enable save button
         if (saveProfileBtn) {
@@ -2606,6 +2863,18 @@ function handleProfileClick(profileId) {
             newShareBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); // Modalın kapanmasını engelle
                 shareProfile(profile.id);
+            });
+        }
+        
+        // Şikayet Butonunu Bul ve Bağla
+        const reportBtn = document.getElementById('report-profile-btn');
+        if (reportBtn) {
+            const newReportBtn = reportBtn.cloneNode(true);
+            reportBtn.parentNode.replaceChild(newReportBtn, reportBtn);
+            
+            newReportBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openReportModal(profile.id);
             });
         }
         
@@ -2956,11 +3225,11 @@ async function signInWithGoogle() {
 
         if (error) {
             console.error("Google giriş hatası:", error.message);
-            alert('Giriş yapılırken bir hata oluştu: ' + error.message);
+            showAlert('Giriş yapılırken bir hata oluştu: ' + error.message, 'Giriş Hatası', 'error');
         }
     } catch (error) {
         console.error("Google giriş hatası:", error);
-        alert('Giriş yapılırken bir hata oluştu.');
+        showAlert('Giriş yapılırken bir hata oluştu.', 'Giriş Hatası', 'error');
     }
 }
 
@@ -2970,7 +3239,7 @@ async function signOut() {
         const { error } = await supabase.auth.signOut();
         if (error) {
             console.error('Çıkış hatası:', error);
-            alert('Çıkış yapılırken bir hata oluştu.');
+            showAlert('Çıkış yapılırken bir hata oluştu.', 'Hata', 'error');
         } else {
             checkAuthState();
             closeEditProfileModal();
@@ -3068,7 +3337,7 @@ async function openEditProfileModal() {
     // Kullanıcının profilini yükle
     const profile = await loadUserProfile(user.id);
     if (!profile) {
-        alert('Profil bulunamadı.');
+        showAlert('Profil bulunamadı.', 'Hata', 'error');
         return;
     }
     
@@ -3127,6 +3396,23 @@ function closeEditProfileModal() {
     if (editProfileModal) {
         editProfileModal.classList.add('hidden');
         document.body.style.overflow = '';
+        
+        // Edit modal state'i temizle
+        editModalState.selectedFile = null;
+        editModalState.croppedImage = null;
+        editModalState.cropImageSrc = null;
+        
+        // Crop canvas ve controls'ü temizle
+        const editCropCanvas = document.getElementById('edit-crop-canvas');
+        const editCropControls = document.getElementById('edit-crop-controls');
+        if (editCropCanvas) {
+            editCropCanvas.classList.add('hidden');
+            const ctx = editCropCanvas.getContext('2d');
+            ctx.clearRect(0, 0, editCropCanvas.width, editCropCanvas.height);
+        }
+        if (editCropControls) {
+            editCropControls.classList.add('hidden');
+        }
     }
 }
 
@@ -3155,13 +3441,13 @@ async function loadUserProfile(userId) {
 async function updateProfile() {
     const user = await getCurrentUser();
     if (!user) {
-        alert('Giriş yapmanız gerekiyor.');
+        showAlert('Giriş yapmanız gerekiyor.', 'Giriş Gerekli', 'warning');
         return;
     }
     
     const profile = await loadUserProfile(user.id);
     if (!profile) {
-        alert('Profil bulunamadı.');
+        showAlert('Profil bulunamadı.', 'Hata', 'error');
         return;
     }
     
@@ -3182,10 +3468,15 @@ async function updateProfile() {
     
     // Fotoğraf güncelleme (eğer yeni fotoğraf seçildiyse)
     let imageUrl = profile.image_url;
-    const editPhotoInput = document.getElementById('edit-photo-input');
-    if (editPhotoInput?.files && editPhotoInput.files.length > 0) {
+    
+    // Önce kırpılmış resmi kontrol et
+    if (editModalState.croppedImage) {
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-        imageUrl = await uploadImageToSupabase(editPhotoInput.files[0], fileName);
+        imageUrl = await uploadImageToSupabase(editModalState.croppedImage, fileName);
+    } else if (editModalState.selectedFile) {
+        // Kırpılmamış ama seçilmiş dosya varsa onu yükle
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+        imageUrl = await uploadImageToSupabase(editModalState.selectedFile, fileName);
     }
     
     try {
@@ -3209,34 +3500,35 @@ async function updateProfile() {
         
         if (error) {
             console.error('Profil güncelleme hatası:', error);
-            alert('Profil güncellenirken bir hata oluştu: ' + error.message);
+            showAlert('Profil güncellenirken bir hata oluştu: ' + error.message, 'Hata', 'error');
         } else {
-            alert('Profil başarıyla güncellendi!');
+            showAlert('Profil başarıyla güncellendi!', 'Başarılı', 'success');
             closeEditProfileModal();
             // Profilleri yeniden yükle
             loadProfilesFromSupabase();
         }
     } catch (error) {
         console.error('Profil güncelleme hatası:', error);
-        alert('Profil güncellenirken bir hata oluştu.');
+        showAlert('Profil güncellenirken bir hata oluştu.', 'Hata', 'error');
     }
 }
 
 // Profil sil
 async function deleteProfile() {
-    if (!confirm('Profili silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+    const confirmed = await showConfirm('Hesabı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.', 'Hesabı Sil', 'warning');
+    if (!confirmed) {
         return;
     }
     
     const user = await getCurrentUser();
     if (!user) {
-        alert('Giriş yapmanız gerekiyor.');
+        showAlert('Giriş yapmanız gerekiyor.', 'Giriş Gerekli', 'warning');
         return;
     }
     
     const profile = await loadUserProfile(user.id);
     if (!profile) {
-        alert('Profil bulunamadı.');
+        showAlert('Profil bulunamadı.', 'Hata', 'error');
         return;
     }
     
@@ -3248,16 +3540,16 @@ async function deleteProfile() {
         
         if (error) {
             console.error('Profil silme hatası:', error);
-            alert('Profil silinirken bir hata oluştu: ' + error.message);
+            showAlert('Profil silinirken bir hata oluştu: ' + error.message, 'Hata', 'error');
         } else {
-            alert('Profil başarıyla silindi!');
+            showAlert('Profil başarıyla silindi!', 'Başarılı', 'success');
             closeEditProfileModal();
             // Profilleri yeniden yükle
             loadProfilesFromSupabase();
         }
     } catch (error) {
         console.error('Profil silme hatası:', error);
-        alert('Profil silinirken bir hata oluştu.');
+        showAlert('Profil silinirken bir hata oluştu.', 'Hata', 'error');
     }
 }
 
@@ -3292,18 +3584,17 @@ function setupEditProfileListeners() {
     const editPhotoUploadArea = document.getElementById('edit-photo-upload-area');
     if (editPhotoInput && editPhotoUploadArea) {
         editPhotoUploadArea.addEventListener('click', () => editPhotoInput.click());
-        editPhotoInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const editUploadPreview = document.getElementById('edit-upload-preview');
-                    if (editUploadPreview) {
-                        editUploadPreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
-                    }
-                };
-                reader.readAsDataURL(e.target.files[0]);
-            }
-        });
+        editPhotoInput.addEventListener('change', handleEditPhotoSelect);
+    }
+    
+    // Edit crop buttons
+    const editCropApply = document.getElementById('edit-crop-apply');
+    const editCropCancel = document.getElementById('edit-crop-cancel');
+    if (editCropApply) {
+        editCropApply.addEventListener('click', applyEditCrop);
+    }
+    if (editCropCancel) {
+        editCropCancel.addEventListener('click', cancelEditCrop);
     }
     
     // Edit gender selection
@@ -3328,25 +3619,10 @@ function setupEditProfileListeners() {
 // Setup hero section listeners
 function setupHeroListeners() {
     const heroStartBtn = document.getElementById('hero-start-btn');
-    const heroLearnMoreBtn = document.getElementById('hero-learn-more-btn');
-    
     if (heroStartBtn) {
         heroStartBtn.addEventListener('click', () => {
+            // Direkt hero section'ı gizle, haritayı göster
             hideHeroSection();
-        });
-    }
-    
-    if (heroLearnMoreBtn) {
-        heroLearnMoreBtn.addEventListener('click', () => {
-            // Scroll to map or show info
-            hideHeroSection();
-            // Optionally scroll to a specific section
-            setTimeout(() => {
-                const mapContainer = document.getElementById('map-container');
-                if (mapContainer) {
-                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }, 300);
         });
     }
 }
@@ -3354,18 +3630,62 @@ function setupHeroListeners() {
 // Hide hero section
 function hideHeroSection() {
     const heroSection = document.getElementById('hero-section');
+    const appContainer = document.querySelector('.app-container');
+    const mainContent = document.querySelector('.main-content');
+    
     if (heroSection) {
         heroSection.classList.add('hidden');
         document.body.style.overflow = '';
+    }
+    
+    // Haritayı göster
+    if (mainContent) {
+        mainContent.classList.add('visible');
+    }
+    
+    // App container'a map-view class'ı ekle (navbar'ı sadeleştirmek için)
+    if (appContainer) {
+        appContainer.classList.add('map-view');
+    }
+    
+    // "Haritayı Keşfet" butonuna basıldığında profilleri yükle
+    // SVG'nin hazır olduğundan emin ol
+    if (svg && svg.querySelector('#turkey-provinces')) {
+        console.log('✓ Hero bölümü gizlendi, profiller yükleniyor...');
+        loadProfilesFromSupabase();
+    } else {
+        console.warn('⚠ SVG henüz hazır değil, profiller yüklenemedi. Kısa bir süre sonra tekrar deneniyor...');
+        // SVG hazır olana kadar bekle
+        setTimeout(() => {
+            if (svg && svg.querySelector('#turkey-provinces')) {
+                console.log('✓ SVG hazır, profiller yükleniyor...');
+                loadProfilesFromSupabase();
+            } else {
+                console.error('❌ SVG yüklenemedi, profiller gösterilemiyor');
+            }
+        }, 500);
     }
 }
 
 // Show hero section (if needed)
 function showHeroSection() {
     const heroSection = document.getElementById('hero-section');
+    const appContainer = document.querySelector('.app-container');
+    const mainContent = document.querySelector('.main-content');
+    
     if (heroSection) {
         heroSection.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+    }
+    
+    // Haritayı gizle
+    if (mainContent) {
+        mainContent.classList.remove('visible');
+    }
+    
+    // App container'dan map-view class'ını kaldır (navbar'ı tam göster)
+    if (appContainer) {
+        appContainer.classList.remove('map-view');
     }
 }
 
@@ -3380,22 +3700,38 @@ function checkUrlForDeepLink() {
     if (profileId) {
         console.log("🔗 Deep Link Tespit Edildi:", profileId);
         // Hero bölümünü gizle ki modal üstte görünsün
+        // hideHeroSection içinde profiller yüklenecek
         hideHeroSection();
         
-        // Profilin yüklenmesini bekle (kısa bir gecikme gerekebilir)
-        setTimeout(() => {
+        // Profillerin yüklenmesini bekle (hideHeroSection içinde profiller yüklenecek)
+        // Profiller yüklendikten sonra modalı aç
+        let checkAttempts = 0;
+        const maxAttempts = 10; // Maksimum 5 saniye bekle (10 * 500ms)
+        
+        const checkProfile = setInterval(() => {
+            checkAttempts++;
             const profile = mapState.profiles.find(p => String(p.id) === String(profileId));
             
             if (profile) {
+                clearInterval(checkProfile);
+                console.log("✓ Profil bulundu, detay modalı açılıyor:", profile.name);
                 // Sadece detay modalını aç (zoom yok)
                 handleProfileClick(profile.id);
                 
                 // İsteğe bağlı: URL'yi temizle (kullanıcı gezinmeye devam ederse)
                 // window.history.replaceState({}, document.title, window.location.pathname);
-            } else {
+            } else if (checkAttempts >= maxAttempts) {
+                clearInterval(checkProfile);
+                console.warn("⚠ Profil yüklenemedi veya bulunamadı:", profileId);
                 showToast("Aradığın profil bulunamadı veya silinmiş.");
             }
-        }, 1000); // 1 saniye bekle ki harita ve veriler tam yüklensin
+            // Eğer profil henüz bulunamadıysa ve max deneme sayısına ulaşılmadıysa, devam et
+        }, 500); // Her 500ms'de bir kontrol et
+        
+        // Maksimum bekleme süresi sonunda temizle
+        setTimeout(() => {
+            clearInterval(checkProfile);
+        }, maxAttempts * 500);
     }
 }
 
@@ -3426,7 +3762,8 @@ async function shareProfile(profileId) {
         showToast("Profil linki kopyalandı! 🔗");
     } catch (err) {
         console.error('Link kopyalanamadı:', err);
-        prompt("Linki kopyala:", shareUrl);
+        // Fallback: Linki göster ve kopyalama talimatı ver
+        showAlert(`Linki kopyalamak için: ${shareUrl}`, 'Linki Kopyala', 'info');
     }
 }
 
@@ -3447,5 +3784,759 @@ function showToast(message) {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ==================== EDIT PROFILE PHOTO CROPPING ====================
+
+// Handle edit photo select
+function handleEditPhotoSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showAlert('Lütfen bir resim dosyası seçin', 'Hata', 'error');
+        return;
+    }
+    
+    editModalState.selectedFile = file;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const editUploadPreview = document.getElementById('edit-upload-preview');
+        const editCropCanvas = document.getElementById('edit-crop-canvas');
+        const editCropControls = document.getElementById('edit-crop-controls');
+        
+        if (!editUploadPreview || !editCropCanvas) return;
+        
+        // Hide preview, show canvas
+        editUploadPreview.classList.add('hidden');
+        editCropCanvas.classList.remove('hidden');
+        
+        const img = new Image();
+        img.onload = () => {
+            const maxWidth = 400;
+            const maxHeight = 400;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+            }
+            
+            editCropCanvas.width = width;
+            editCropCanvas.height = height;
+            
+            const imageSrc = event.target.result;
+            editModalState.cropImageSrc = imageSrc;
+            
+            const ctx = editCropCanvas.getContext('2d');
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Show crop controls
+            if (editCropControls) {
+                editCropControls.classList.remove('hidden');
+            }
+            
+            // Initial crop square
+            const size = Math.min(width, height) * 0.8;
+            const x = (width - size) / 2;
+            const y = (height - size) / 2;
+            
+            drawCropOverlay(ctx, width, height, x, y, size);
+            
+            editModalState.cropStartX = x;
+            editModalState.cropStartY = y;
+            editModalState.cropEndX = x + size;
+            editModalState.cropEndY = y + size;
+            
+            // Add click handler
+            editCropCanvas.removeEventListener('click', handleEditCropClick);
+            editCropCanvas.addEventListener('click', handleEditCropClick);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Handle edit crop click
+function handleEditCropClick(e) {
+    const editCropCanvas = document.getElementById('edit-crop-canvas');
+    if (!editCropCanvas) return;
+    
+    const rect = editCropCanvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    const size = Math.min(editCropCanvas.width, editCropCanvas.height) * 0.8;
+    const x = Math.max(0, Math.min(clickX - size / 2, editCropCanvas.width - size));
+    const y = Math.max(0, Math.min(clickY - size / 2, editCropCanvas.height - size));
+    
+    if (editModalState.cropImageSrc) {
+        const img = new Image();
+        img.onload = () => {
+            const ctx = editCropCanvas.getContext('2d');
+            ctx.clearRect(0, 0, editCropCanvas.width, editCropCanvas.height);
+            ctx.drawImage(img, 0, 0, editCropCanvas.width, editCropCanvas.height);
+            
+            drawCropOverlay(ctx, editCropCanvas.width, editCropCanvas.height, x, y, size);
+            
+            editModalState.cropStartX = x;
+            editModalState.cropStartY = y;
+            editModalState.cropEndX = x + size;
+            editModalState.cropEndY = y + size;
+        };
+        img.src = editModalState.cropImageSrc;
+    }
+}
+
+// Apply edit crop
+function applyEditCrop() {
+    const editCropCanvas = document.getElementById('edit-crop-canvas');
+    const editCropControls = document.getElementById('edit-crop-controls');
+    const editUploadPreview = document.getElementById('edit-upload-preview');
+    
+    if (!editCropCanvas || !editModalState.selectedFile) return;
+    
+    const cropX = editModalState.cropStartX;
+    const cropY = editModalState.cropStartY;
+    const cropWidth = editModalState.cropEndX - editModalState.cropStartX;
+    const cropHeight = editModalState.cropEndY - editModalState.cropStartY;
+    
+    const croppedCanvas = document.createElement('canvas');
+    croppedCanvas.width = cropWidth;
+    croppedCanvas.height = cropHeight;
+    const croppedCtx = croppedCanvas.getContext('2d');
+    
+    const img = new Image();
+    img.onload = () => {
+        croppedCtx.drawImage(
+            img,
+            cropX, cropY, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight
+        );
+        
+        croppedCanvas.toBlob((blob) => {
+            editModalState.croppedImage = blob;
+            
+            // Hide canvas and controls, show preview
+            if (editCropControls) editCropControls.classList.add('hidden');
+            if (editCropCanvas) {
+                editCropCanvas.classList.add('hidden');
+                editCropCanvas.removeEventListener('click', handleEditCropClick);
+            }
+            
+            if (editUploadPreview) {
+                editUploadPreview.classList.remove('hidden');
+                editUploadPreview.innerHTML = `<img src="${croppedCanvas.toDataURL()}" style="max-width: 100%; max-height: 120px; border-radius: 8px;">`;
+            }
+        }, 'image/png');
+    };
+    
+    if (editModalState.cropImageSrc) {
+        img.src = editModalState.cropImageSrc;
+    }
+}
+
+// Cancel edit crop
+function cancelEditCrop() {
+    const editCropControls = document.getElementById('edit-crop-controls');
+    const editCropCanvas = document.getElementById('edit-crop-canvas');
+    const editUploadPreview = document.getElementById('edit-upload-preview');
+    
+    if (editCropControls) editCropControls.classList.add('hidden');
+    if (editCropCanvas) {
+        editCropCanvas.classList.add('hidden');
+        const ctx = editCropCanvas.getContext('2d');
+        ctx.clearRect(0, 0, editCropCanvas.width, editCropCanvas.height);
+        editCropCanvas.removeEventListener('click', handleEditCropClick);
+    }
+    
+    editModalState.croppedImage = null;
+    editModalState.cropImageSrc = null;
+    
+    // Show preview again
+    if (editUploadPreview && editModalState.selectedFile) {
+        editUploadPreview.classList.remove('hidden');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            editUploadPreview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 120px; border-radius: 8px;">`;
+        };
+        reader.readAsDataURL(editModalState.selectedFile);
+    }
+}
+
+// ==================== LEGAL/FOOTER SYSTEM ====================
+
+// Legal modal içerikleri
+const legalContents = {
+    terms: {
+        title: "Kullanıcı Sözleşmesi",
+        content: `
+            <h2>1. Genel Hükümler</h2>
+            <p>Bu Kullanıcı Sözleşmesi ("Sözleşme"), Mapfy platformunu ("Platform", "Servis", "Site") kullanımınızı düzenler. Platformu kullanarak bu sözleşmenin tüm koşullarını kabul etmiş sayılırsınız.</p>
+            
+            <h3>1.1. Tanımlar</h3>
+            <ul>
+                <li><strong>Mapfy:</strong> Sosyal harita platformu</li>
+                <li><strong>Kullanıcı:</strong> Platformu kullanan kişi</li>
+                <li><strong>Profil:</strong> Kullanıcının oluşturduğu harita üzerindeki görünümü</li>
+                <li><strong>İçerik:</strong> Platforma yüklenen tüm veri, fotoğraf ve bilgiler</li>
+            </ul>
+            
+            <h2>2. Yaş Sınırı ve Kullanım Koşulları</h2>
+            <p>Platformu kullanmak için <strong>18 yaş ve üzeri</strong> olmanız gerekmektedir. 18 yaş altındaki kişilerin platformu kullanması kesinlikle yasaktır.</p>
+            
+            <h2>3. Kullanıcı Yükümlülükleri</h2>
+            <h3>3.1. Doğru Bilgi Verme</h3>
+            <p>Kullanıcılar, Platformda paylaştıkları tüm bilgilerin doğru, güncel ve eksiksiz olduğunu taahhüt eder.</p>
+            
+            <h3>3.2. Yasaklanmış İçerikler</h3>
+            <ul>
+                <li>Çıplaklık, pornografik veya müstehcen içerikler</li>
+                <li>Şiddet, nefret söylemi veya ayrımcılık içeren içerikler</li>
+                <li>Sahte profil veya kimlik bilgileri</li>
+                <li>Spam, dolandırıcılık veya yanıltıcı bilgiler</li>
+                <li>Telif hakkı ihlali yapan içerikler</li>
+                <li>18 yaş altı kişilerin profilleri</li>
+            </ul>
+            
+            <h2>4. Sorumluluk Reddi</h2>
+            <p>Mapfy, kullanıcılar arasındaki etkileşimlerden, paylaşılan içeriklerden veya harita üzerindeki konumlandırmalardan kaynaklanan hiçbir zarardan sorumlu değildir. Kullanıcılar kendi riskleriyle platformu kullanırlar.</p>
+            
+            <h2>5. Fikri Mülkiyet</h2>
+            <p>Platformdaki tüm içerikler, tasarımlar ve yazılımlar Mapfy'ye aittir. Kullanıcılar kendi yükledikleri içeriklerin telif haklarını Mapfy'ye devrederler.</p>
+            
+            <h2>6. Hesap Kapatma</h2>
+            <p>Mapfy, sözleşme ihlali, yasa dışı aktivite veya platformun güvenliğini tehdit eden durumlarda, önceden haber vermeksizin kullanıcı hesaplarını kapatabilir.</p>
+            
+            <h2>7. Değişiklikler</h2>
+            <p>Bu sözleşme her zaman değiştirilebilir. Değişiklikler Platform üzerinde yayınlandıktan sonra yürürlüğe girer.</p>
+            
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+        `
+    },
+    privacy: {
+        title: "Gizlilik Politikası & KVKK Aydınlatma Metni",
+        content: `
+            <h2>1. Veri Sorumlusu</h2>
+            <p><strong>Mapfy</strong> olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla, kişisel verilerinizin işlenmesi konusunda aşağıdaki bilgileri sizlere sunuyoruz.</p>
+            
+            <h2>2. Toplanan Kişisel Veriler</h2>
+            <h3>2.1. Kimlik Bilgileri</h3>
+            <ul>
+                <li>Ad, soyad</li>
+                <li>Kullanıcı adı</li>
+                <li>Profil fotoğrafı</li>
+            </ul>
+            
+            <h3>2.2. İletişim Bilgileri</h3>
+            <ul>
+                <li>E-posta adresi (Google ile giriş yapıldığında)</li>
+            </ul>
+            
+            <h3>2.3. Konum Bilgileri</h3>
+            <ul>
+                <li>Şehir bilgisi (tam adres değil, sadece şehir)</li>
+                <li>İlçe bilgisi (isteğe bağlı)</li>
+                <li>Harita üzerindeki yaklaşık konum koordinatları</li>
+            </ul>
+            
+            <h3>2.4. Sosyal Medya Bilgileri</h3>
+            <ul>
+                <li>Snapchat, Instagram, Facebook, Twitter, Pinterest kullanıcı adları (isteğe bağlı)</li>
+            </ul>
+            
+            <h3>2.5. Diğer Bilgiler</h3>
+            <ul>
+                <li>Yaş bilgisi (18+ doğrulaması için)</li>
+                <li>Cinsiyet bilgisi (isteğe bağlı)</li>
+            </ul>
+            
+            <h2>3. Verilerin İşlenme Amacı</h2>
+            <ul>
+                <li>Sosyal harita platformunun sunulması</li>
+                <li>Kullanıcı hesaplarının yönetilmesi</li>
+                <li>Platform güvenliğinin sağlanması</li>
+                <li>Yasal yükümlülüklerin yerine getirilmesi</li>
+                <li>Kullanıcı şikayetlerinin değerlendirilmesi</li>
+            </ul>
+            
+            <h2>4. Verilerin Saklanma Süresi</h2>
+            <p>Kişisel verileriniz, KVKK ve ilgili mevzuatın öngördüğü süreler boyunca veya işlenme amacının gerektirdiği süre içinde saklanmaktadır. Hesabınızı sildiğinizde verileriniz 30 gün içinde silinir.</p>
+            
+            <h2>5. Verilerin Paylaşılması</h2>
+            <p>Kişisel verileriniz, yasal yükümlülükler hariç olmak üzere, <strong>üçüncü kişilerle paylaşılmamaktadır</strong>. Verileriniz sadece Supabase altyapısında güvenli bir şekilde saklanmaktadır.</p>
+            
+            <h2>6. Veri Güvenliği</h2>
+            <p>Kişisel verilerinizin güvenliği için teknik ve idari önlemler alınmıştır. Verileriniz SSL şifreleme ve modern güvenlik protokolleri ile korunmaktadır.</p>
+            
+            <h2>7. KVKK Haklarınız</h2>
+            <p>KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:</p>
+            <ul>
+                <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
+                <li>İşlenmişse buna ilişkin bilgi talep etme</li>
+                <li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme</li>
+                <li>Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme</li>
+                <li>Eksik veya yanlış işlenmişse düzeltilmesini isteme</li>
+                <li>KVKK'da öngörülen şartlar çerçevesinde silinmesini veya yok edilmesini isteme</li>
+                <li>İşlenen verilerin münhasıran otomatik sistemler ile analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme</li>
+                <li>Kanuna aykırı olarak işlenmesi sebebiyle zarara uğramanız hâlinde zararın giderilmesini talep etme</li>
+            </ul>
+            
+            <h2>8. İletişim</h2>
+            <p>KVKK haklarınızı kullanmak için: <strong>destek@mapfy.app</strong> adresine e-posta gönderebilirsiniz.</p>
+            
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+        `
+    },
+    community: {
+        title: "Topluluk Kuralları",
+        content: `
+            <h2>1. Genel İlkeler</h2>
+            <p>Mapfy, herkes için güvenli, saygılı ve hoş bir ortam sunmayı hedefler. Bu kurallara uymak, tüm kullanıcılarımızın sorumluluğundadır.</p>
+            
+            <h2>2. Profil Oluşturma Kuralları</h2>
+            <h3>2.1. Gerçek Bilgiler</h3>
+            <ul>
+                <li>Sadece kendi adınıza profil oluşturabilirsiniz</li>
+                <li>Gerçek kimlik bilgilerinizi kullanmalısınız</li>
+                <li>Sahte profil oluşturmak kesinlikle yasaktır</li>
+                <li>18 yaş ve üzeri olmalısınız</li>
+            </ul>
+            
+            <h3>2.2. Profil Fotoğrafı</h3>
+            <ul>
+                <li>Kendi fotoğrafınızı kullanmalısınız</li>
+                <li>Çıplaklık, pornografik veya müstehcen içerikler yasaktır</li>
+                <li>Şiddet içeren görüntüler yasaktır</li>
+                <li>Başkalarının fotoğraflarını izinsiz kullanmak yasaktır</li>
+            </ul>
+            
+            <h2>3. Davranış Kuralları</h2>
+            <h3>3.1. Saygı ve Nezaket</h3>
+            <ul>
+                <li>Tüm kullanıcılara saygılı davranmalısınız</li>
+                <li>Hakaret, küfür veya nefret söylemi yasaktır</li>
+                <li>Ayrımcılık yapmak yasaktır (ırk, din, cinsiyet, yönelim vb.)</li>
+                <li>Zorbalık veya taciz yasaktır</li>
+            </ul>
+            
+            <h3>3.2. Spam ve İstenmeyen İçerik</h3>
+            <ul>
+                <li>Spam mesajlar göndermek yasaktır</li>
+                <li>Yanıltıcı veya dolandırıcılık içeren içerikler yasaktır</li>
+                <li>İstenmeyen reklam veya promosyon içerikleri yasaktır</li>
+            </ul>
+            
+            <h2>4. Yasal Uyum</h2>
+            <ul>
+                <li>Tüm Türkiye Cumhuriyeti yasalarına uymalısınız</li>
+                <li>Yasa dışı aktiviteler yasaktır</li>
+                <li>Telif hakkı ihlalleri yasaktır</li>
+                <li>Başkalarının haklarını ihlal etmek yasaktır</li>
+            </ul>
+            
+            <h2>5. İhlal ve Sonuçları</h2>
+            <p>Bu kuralları ihlal eden kullanıcılar:</p>
+            <ul>
+                <li>Uyarı alabilir</li>
+                <li>Geçici olarak engellenebilir</li>
+                <li>Kalıcı olarak platformdan yasaklanabilir</li>
+                <li>Yasal işleme tabi tutulabilir</li>
+            </ul>
+            
+            <h2>6. Şikayet Sistemi</h2>
+            <p>Kurallara aykırı içerik veya davranış gördüğünüzde, ilgili profili "Şikayet Et" butonunu kullanarak bildirebilirsiniz. Tüm şikayetler incelenmektedir.</p>
+            
+            <h2>7. İletişim</h2>
+            <p>Sorularınız için: <strong>destek@mapfy.app</strong></p>
+            
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+        `
+    },
+    refund: {
+        title: "İade ve İptal Politikası",
+        content: `
+            <h2>1. Genel Hükümler</h2>
+            <p>Mapfy, <strong>ücretsiz bir platformdur</strong> ve herhangi bir ücret talep etmemektedir. Platformun tüm özellikleri kullanıcılarımıza bedelsiz olarak sunulmaktadır.</p>
+            
+            <h2>2. Ücretsiz Hizmet</h2>
+            <p>Mapfy platformu:</p>
+            <ul>
+                <li>Ücretsiz kayıt ve profil oluşturma imkanı sunar</li>
+                <li>Harita üzerinde konumlandırma hizmeti ücretsizdir</li>
+                <li>Tüm sosyal medya entegrasyonları ücretsizdir</li>
+                <li>Filtreleme ve arama özellikleri ücretsizdir</li>
+            </ul>
+            
+            <h2>3. Gelecekteki Ücretli Hizmetler</h2>
+            <p>İleride platforma eklenebilecek ücretli premium özellikler için:</p>
+            <ul>
+                <li>Tüm fiyatlandırma bilgileri önceden açıkça belirtilecektir</li>
+                <li>Kullanıcılar satın alma öncesi bilgilendirilecektir</li>
+                <li>İade politikaları ilgili hizmetin detaylarında yer alacaktır</li>
+            </ul>
+            
+            <h2>4. Hesap İptali</h2>
+            <p>Hesabınızı istediğiniz zaman silebilirsiniz. Hesap silme işlemi:</p>
+            <ul>
+                <li>Anında gerçekleşir</li>
+                <li>Profiliniz haritadan kaldırılır</li>
+                <li>Kişisel verileriniz 30 gün içinde kalıcı olarak silinir</li>
+                <li>Geri alınamaz bir işlemdir</li>
+            </ul>
+            
+            <h2>5. Hizmet Değişiklikleri</h2>
+            <p>Mapfy, platform özelliklerini zaman zaman güncelleyebilir veya değiştirebilir. Bu değişiklikler:</p>
+            <ul>
+                <li>Kullanıcılara bildirilecektir</li>
+                <li>Mevcut kullanıcı hesaplarını etkilemeyecektir</li>
+                <li>Güvenlik veya yasal gereklilikler için yapılabilir</li>
+            </ul>
+            
+            <h2>6. İletişim</h2>
+            <p>İade veya hesap iptali ile ilgili sorularınız için: <strong>destek@mapfy.app</strong></p>
+            
+            <p><strong>Son Güncelleme:</strong> Ocak 2026</p>
+            <p><strong>Not:</strong> Mapfy şu anda tamamen ücretsiz bir hizmettir. Herhangi bir ödeme alınmamaktadır.</p>
+        `
+    },
+    faq: {
+        title: "Sık Sorulan Sorular",
+        content: `
+            <h2>Genel Sorular</h2>
+            
+            <h3>Mapfy nedir?</h3>
+            <p>Mapfy, Türkiye'nin sosyal haritasını oluşturan bir platformdur. Kullanıcılar harita üzerinde kendilerini konumlandırarak yeni bağlantılar kurabilir.</p>
+            
+            <h3>Ücretsiz mi?</h3>
+            <p>Evet, Mapfy tamamen ücretsizdir. Kayıt, profil oluşturma ve tüm özellikler bedelsiz sunulmaktadır.</p>
+            
+            <h3>Yaş sınırı var mı?</h3>
+            <p>Evet, platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.</p>
+            
+            <h2>Profil ve Güvenlik</h2>
+            
+            <h3>Kişisel bilgilerim güvende mi?</h3>
+            <p>Evet, verileriniz SSL şifreleme ile korunmakta ve sadece gerekli bilgiler toplanmaktadır. Detaylı bilgi için Gizlilik Politikamızı okuyabilirsiniz.</p>
+            
+            <h3>Profilimi nasıl silebilirim?</h3>
+            <p>Profil Ayarları bölümünden "Profili Sil" butonunu kullanarak hesabınızı silebilirsiniz.</p>
+            
+            <h3>Konumum gerçek adresimi gösteriyor mu?</h3>
+            <p>Hayır, sadece şehir ve ilçe bilgisi gösterilmektedir. Tam adresiniz hiçbir zaman paylaşılmaz.</p>
+            
+            <h2>Teknik Sorular</h2>
+            
+            <h3>Hangi tarayıcıları destekliyorsunuz?</h3>
+            <p>Chrome, Firefox, Safari ve Edge'in son sürümlerini destekliyoruz.</p>
+            
+            <h3>Mobilde kullanabilir miyim?</h3>
+            <p>Evet, Mapfy tamamen mobil uyumludur ve tüm cihazlarda çalışır.</p>
+            
+            <h2>İletişim</h2>
+            <p>Daha fazla soru için: <strong>destek@mapfy.app</strong></p>
+        `
+    },
+    contact: {
+        title: "İletişim",
+        content: `
+            <h2>Bize Ulaşın</h2>
+            <p>Mapfy ekibi olarak sorularınız, önerileriniz ve destek talepleriniz için buradayız.</p>
+            
+            <h3>E-posta</h3>
+            <p><strong>Genel İletişim:</strong> destek@mapfy.app</p>
+            <p><strong>Şikayet ve Geri Bildirim:</strong> destek@mapfy.app</p>
+            
+            <h3>Yanıt Süresi</h3>
+            <p>E-postalarınıza <strong>2-3 iş günü içinde</strong> yanıt veriyoruz.</p>
+            
+            <h3>KVKK Hakları</h3>
+            <p>Kişisel verilerinizle ilgili talepleriniz için: <strong>destek@mapfy.app</strong></p>
+            
+            <h3>Sosyal Medya</h3>
+            <p>Bizi sosyal medyadan takip edebilirsiniz (yakında).</p>
+        `
+    }
+};
+
+// Legal modal açma fonksiyonu
+function openLegalModal(type) {
+    const modal = document.getElementById('legal-modal');
+    const titleEl = document.getElementById('legal-modal-title');
+    const bodyEl = document.getElementById('legal-modal-body');
+    
+    if (!modal || !titleEl || !bodyEl) return;
+    
+    const content = legalContents[type];
+    if (!content) return;
+    
+    titleEl.textContent = content.title;
+    bodyEl.innerHTML = content.content;
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Legal modal kapatma fonksiyonu
+function closeLegalModal() {
+    const modal = document.getElementById('legal-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// ==================== REPORT SYSTEM ====================
+
+// Report değişkenleri
+let reportingProfileId = null;
+
+// Şikayet modalını aç
+function openReportModal(profileId) {
+    reportingProfileId = profileId;
+    const reportModal = document.getElementById('report-modal');
+    if (reportModal) {
+        reportModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Formu sıfırla
+        const firstRadio = document.querySelector('input[name="report-reason"]');
+        if (firstRadio) firstRadio.checked = true;
+        const descTextarea = document.getElementById('report-description');
+        if (descTextarea) descTextarea.value = '';
+    }
+}
+
+// Şikayet modalını kapat
+function closeReportModal() {
+    const reportModal = document.getElementById('report-modal');
+    if (reportModal) {
+        reportModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    reportingProfileId = null;
+}
+
+// Şikayeti gönder
+async function submitReport() {
+    if (!reportingProfileId) return;
+
+    const user = await getCurrentUser();
+    if (!user) {
+        showAlert("Raporlamak için giriş yapmalısınız.", "Giriş Gerekli", "warning");
+        return;
+    }
+
+    const reasonInput = document.querySelector('input[name="report-reason"]:checked');
+    if (!reasonInput) {
+        showAlert("Lütfen bir sebep seçin.", "Eksik Bilgi", "warning");
+        return;
+    }
+
+    const reason = reasonInput.value;
+    const description = document.getElementById('report-description')?.value || '';
+    const submitBtn = document.getElementById('submit-report-btn');
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Gönderiliyor...";
+    }
+
+    try {
+        const { error } = await supabase
+            .from('reports')
+            .insert({
+                reporter_id: user.id,
+                reported_profile_id: reportingProfileId,
+                reason: reason,
+                description: description
+            });
+
+        if (error) throw error;
+
+        await showAlert("Bildiriminiz alındı. İnceleme sonucunu e-posta ile bildireceğiz. Teşekkür ederiz.", "Başarılı", "success");
+        closeReportModal();
+
+    } catch (error) {
+        console.error('Rapor hatası:', error);
+        showAlert("Bir hata oluştu: " + error.message, "Hata", "error");
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Şikayet Et";
+        }
+    }
+}
+
+// ==================== CUSTOM ALERT & CONFIRM SYSTEM ====================
+
+// Custom Alert Modal
+function showAlert(message, title = 'Bilgi', type = 'info') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-alert-modal');
+        const iconEl = document.getElementById('custom-alert-icon');
+        const titleEl = document.getElementById('custom-alert-title');
+        const messageEl = document.getElementById('custom-alert-message');
+        const buttonsEl = document.getElementById('custom-alert-buttons');
+        const okBtn = document.getElementById('custom-alert-ok');
+
+        if (!modal) {
+            console.error('Custom alert modal bulunamadı');
+            resolve();
+            return;
+        }
+
+        // İkon tipine göre stil ayarla
+        iconEl.className = 'custom-alert-icon';
+        if (type === 'error') {
+            iconEl.classList.add('error');
+            iconEl.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            `;
+        } else if (type === 'success') {
+            iconEl.classList.add('success');
+            iconEl.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            `;
+        } else if (type === 'warning') {
+            iconEl.classList.add('warning');
+            iconEl.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            `;
+        } else {
+            iconEl.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            `;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        // Butonları temizle ve sadece Tamam butonu ekle
+        buttonsEl.innerHTML = '';
+        const okButton = document.createElement('button');
+        okButton.className = 'btn-primary';
+        okButton.textContent = 'Tamam';
+        okButton.onclick = () => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            resolve();
+        };
+        buttonsEl.appendChild(okButton);
+
+        // Modal overlay'e tıklayınca kapat
+        const handleOverlayClick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                modal.removeEventListener('click', handleOverlayClick);
+                resolve();
+            }
+        };
+        modal.addEventListener('click', handleOverlayClick);
+
+        // Modalı göster
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+}
+
+// Custom Confirm Modal
+function showConfirm(message, title = 'Onay', type = 'warning') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-alert-modal');
+        const iconEl = document.getElementById('custom-alert-icon');
+        const titleEl = document.getElementById('custom-alert-title');
+        const messageEl = document.getElementById('custom-alert-message');
+        const buttonsEl = document.getElementById('custom-alert-buttons');
+
+        if (!modal) {
+            console.error('Custom confirm modal bulunamadı');
+            resolve(false);
+            return;
+        }
+
+        // İkon tipine göre stil ayarla
+        iconEl.className = 'custom-alert-icon';
+        if (type === 'warning') {
+            iconEl.classList.add('warning');
+            iconEl.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            `;
+        } else {
+            iconEl.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            `;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        // Butonları temizle ve İptal/Tamam butonları ekle
+        buttonsEl.innerHTML = '';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.className = 'btn-secondary';
+        cancelButton.textContent = 'İptal';
+        cancelButton.onclick = () => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            resolve(false);
+        };
+        
+        const confirmButton = document.createElement('button');
+        confirmButton.className = 'btn-primary';
+        confirmButton.textContent = 'Tamam';
+        confirmButton.onclick = () => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            resolve(true);
+        };
+        
+        buttonsEl.appendChild(cancelButton);
+        buttonsEl.appendChild(confirmButton);
+
+        // Modal overlay'e tıklayınca iptal et
+        const handleOverlayClick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                modal.removeEventListener('click', handleOverlayClick);
+                resolve(false);
+            }
+        };
+        modal.addEventListener('click', handleOverlayClick);
+
+        // Modalı göster
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
 }
 
