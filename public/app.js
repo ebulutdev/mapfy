@@ -1762,6 +1762,38 @@ function addProfileToMap(profile) {
     profileGroup.appendChild(borderCircle);
     profileGroup.appendChild(clickArea); // Click area en üstte
     
+    // Günlük mesaj kutusu ekle (eğer bugünkü mesaj varsa)
+    if (profile.daily_message && profile.message_date) {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugünün tarihi
+        const messageDate = new Date(profile.message_date).toISOString().split('T')[0];
+        
+        // Sadece bugünkü mesajı göster
+        if (messageDate === today) {
+            const messageGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            messageGroup.id = `message-group-${profile.id}`;
+            messageGroup.classList.add('profile-message-group');
+            
+            // Başlangıçta gizli olsun (Zoom kontrolü açacak)
+            messageGroup.style.display = 'none'; 
+            messageGroup.style.opacity = '0';
+
+            const messageBox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            messageBox.setAttribute('class', 'profile-message-box');
+            
+            const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+            messageText.setAttribute('class', 'profile-message-text');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'profile-message-content';
+            messageDiv.textContent = profile.daily_message;
+            messageText.appendChild(messageDiv);
+            
+            messageGroup.appendChild(messageBox);
+            messageGroup.appendChild(messageText);
+            profileGroup.appendChild(messageGroup);
+        }
+    }
+    
     // Sadece profil görseline (image, border, click area) tıklanınca açılsın
     // Profile group'a click handler ekleme - sadece direkt elementlere tıklanınca çalışsın
     
@@ -1824,65 +1856,371 @@ function addProfileToMap(profile) {
     }
 }
 
-// Profil boyutlarını zoom seviyesine göre güncelle (ters orantılı)
+// Profil ve Mesaj boyutlarını zoom seviyesine göre güncelle
+// Profil ve Mesaj boyutlarını güncelle (Netlik için Counter-Scale Yöntemi)
 function updateProfileSizes() {
     const profilesGroup = svg.querySelector('#profiles-group');
     if (!profilesGroup) return;
     
     const profiles = profilesGroup.querySelectorAll('.snap-profile');
     
+    // Mobil algılama
+    const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+    // [AYAR] Görünürlük Eşiği (Çok fazla zoom yapıldığında göster)
+    const MESSAGE_VISIBILITY_ZOOM_THRESHOLD = isMobile ? 3.5 : 4.0; 
+    const showMessages = mapState.scale >= MESSAGE_VISIBILITY_ZOOM_THRESHOLD;
+
+    // [AYAR] Profil Boyutları (Zoom'a göre hafif değişir)
+    // Harita büyüdükçe profil boyutu biraz küçülür ama yok olmaz.
+    const currentProfileSize = Math.max(6, Math.min(20, 24 / Math.pow(mapState.scale, 0.6)));
+
+    // [AYAR] Mesaj Kutusu Sabit Değerleri (Küçültülmüş boyutlar)
+    // Bunları scale ile çarpmıyoruz! Net kalması için sabit tutuyoruz.
+    const msgConfig = {
+        fontSize: isMobile ? 11 : 10,       // Küçültülmüş font
+        height: isMobile ? 24 : 22,         // Küçültülmüş kutu yüksekliği
+        padding: isMobile ? 10 : 8,        // Küçültülmüş yan boşluklar
+        arrowSize: isMobile ? 5 : 4,        // Küçültülmüş ok boyutu
+        borderRadius: isMobile ? 6 : 5,     // Küçültülmüş yuvarlak köşeler
+        minWidth: 32,
+        maxWidth: 130
+    };
+
+    // Mesaj kutusu için ters ölçek (Counter-Scale)
+    // Harita ne kadar büyürse, kutuyu o oranda küçültüyoruz ki ekranda sabit kalsın.
+    const counterScale = 1 / mapState.scale;
+    
     profiles.forEach(profileGroup => {
-        // Base koordinatlar SVG viewBox koordinat sisteminde
-        // Bu koordinatlar scale edilmiş profiles-group içinde olduğu için
-        // zaten doğru pozisyonda olmalılar (transform ile scale ediliyorlar)
+        // Profilin orijinal koordinatları
         const baseX = parseFloat(profileGroup.getAttribute('data-base-x')) || 0;
         const baseY = parseFloat(profileGroup.getAttribute('data-base-y')) || 0;
-        const baseSize = parseFloat(profileGroup.getAttribute('data-base-size')) || 12;
-        
-        // Ters orantılı boyutlandırma: zoom in (scale artar) → profil küçülür
-        // Zoom out (scale azalır) → profil büyür
-        // Daha agresif küçülme için optimize edildi
-        const minSize = 8; // Minimum boyut (daha küçük)
-        const maxSize = 18; // Maksimum boyut (daha küçük ve şık)
-        
-        // Daha agresif küçülme: zoom yapıldıkça profiller belirgin şekilde küçülsün
-        // Formül: size = baseSize / scale^0.85 - daha agresif küçülme
-        const scaleFactor = Math.pow(mapState.scale, 0.85); // 0.85 ile daha agresif küçülme
-        const calculatedSize = baseSize / scaleFactor;
-        const currentSize = Math.max(minSize, Math.min(maxSize, calculatedSize));
-        
-        // Image güncelle - baseX ve baseY zaten scale edilmiş koordinat sisteminde
-        // çünkü profiles-group transform ile scale ediliyor
+
+        // 1. PROFİL GÖRSELİNİ GÜNCELLE
         const image = profileGroup.querySelector('.profile-image');
         if (image) {
-            image.setAttribute('x', baseX - currentSize / 2);
-            image.setAttribute('y', baseY - currentSize / 2);
-            image.setAttribute('width', currentSize);
-            image.setAttribute('height', currentSize);
+            image.setAttribute('x', baseX - currentProfileSize / 2);
+            image.setAttribute('y', baseY - currentProfileSize / 2);
+            image.setAttribute('width', currentProfileSize);
+            image.setAttribute('height', currentProfileSize);
         }
         
-        // Border circle güncelle (ince siyah çizgi)
         const borderCircle = profileGroup.querySelector('.profile-border');
         if (borderCircle) {
             borderCircle.setAttribute('cx', baseX);
             borderCircle.setAttribute('cy', baseY);
-            borderCircle.setAttribute('r', currentSize / 2); // Profil yarıçapı ile eşit
+            borderCircle.setAttribute('r', currentProfileSize / 2);
+            // Çizgi kalınlığını scale'e göre ayarla ki çok kalınlaşmasın
+            borderCircle.setAttribute('stroke-width', Math.max(0.5, 1.5 * counterScale));
         }
         
-        // Click area güncelle - sadece profil görselinin boyutu kadar
-        // Zoom'da da etrafına basılınca açılmasın, sadece profil görseline basılınca açılsın
         const clickArea = profileGroup.querySelector('.profile-click-area');
         if (clickArea) {
             clickArea.setAttribute('cx', baseX);
             clickArea.setAttribute('cy', baseY);
-            // Click area boyutu sadece profil görselinin yarıçapı kadar - zoom'da da aynı
-            const clickAreaSize = currentSize / 2; // Profil görselinin tam yarıçapı - etrafına basılınca açılmasın
-            clickArea.setAttribute('r', clickAreaSize);
+            clickArea.setAttribute('r', currentProfileSize / 1.2);
+        }
+
+        // 2. MESAJ KUTUSUNU GÜNCELLE
+        const messageGroup = profileGroup.querySelector('.profile-message-group');
+        
+        if (messageGroup) {
+            if (!showMessages) {
+                messageGroup.style.display = 'none';
+                messageGroup.style.opacity = '0';
+            } else {
+                messageGroup.style.display = 'block';
+                requestAnimationFrame(() => { messageGroup.style.opacity = '1'; });
+
+                const messageBox = messageGroup.querySelector('.profile-message-box');
+                const messageText = messageGroup.querySelector('.profile-message-text');
+                const messageDiv = messageGroup.querySelector('.profile-message-content');
+
+                if (messageBox && messageText && messageDiv) {
+                    // --- KRİTİK NOKTA: TRANSFORM ---
+                    // Grubu profilin tam üzerine taşıyoruz ve scale'i tersine çeviriyoruz.
+                    // Böylece içindeki her şeyi normal pixel boyutunda (örn 14px) çizebiliriz.
+                    
+                    // Pozisyon: Profilin biraz üstü
+                    const verticalOffset = (currentProfileSize / 2) + (5 * counterScale); // Profil ile kutu arası boşluk
+                    
+                    // Transform uygula: Koordinata git -> Ters ölçekle
+                    // Bu sayede grubun içi "Zoom 1x" dünyası gibi davranır
+                    messageGroup.setAttribute('transform', 
+                        `translate(${baseX}, ${baseY - verticalOffset}) scale(${counterScale})`
+                    );
+
+                    // --- İÇERİK ÇİZİMİ (Artık sabit pixel değerleri kullanıyoruz) ---
+                    
+                    // Genişlik hesabı
+                    const textLength = messageDiv.textContent.length;
+                    // Ortalama karakter genişliği tahmini
+                    const estimatedTextWidth = textLength * (msgConfig.fontSize * 0.65);
+                    const totalWidth = Math.max(
+                        msgConfig.minWidth, 
+                        Math.min(msgConfig.maxWidth, estimatedTextWidth + (msgConfig.padding * 2))
+                    );
+
+                    // Koordinatlar (0,0 noktası artık profilin hemen üstü)
+                    // Kutuyu X ekseninde ortala, Y ekseninde yukarı doğru çiz
+                    const boxLeft = -(totalWidth / 2);
+                    const boxBottom = -msgConfig.arrowSize; // Okun başladığı yer
+                    const boxTop = -(msgConfig.height + msgConfig.arrowSize);
+
+                    // Modern Baloncuk Path'i (Squircle + Ok)
+                    const r = msgConfig.borderRadius;
+                    const ah = msgConfig.arrowSize; // Arrow Height
+                    const aw = msgConfig.arrowSize * 1.5; // Arrow Width
+
+                    const d = `
+                        M ${boxLeft + r},${boxTop}
+                        H ${boxLeft + totalWidth - r}
+                        Q ${boxLeft + totalWidth},${boxTop} ${boxLeft + totalWidth},${boxTop + r}
+                        V ${boxBottom - r}
+                        Q ${boxLeft + totalWidth},${boxBottom} ${boxLeft + totalWidth - r},${boxBottom}
+                        
+                        H ${aw / 2}
+                        L 0,0
+                        L ${-aw / 2},${boxBottom}
+                        
+                        H ${boxLeft + r}
+                        Q ${boxLeft},${boxBottom} ${boxLeft},${boxBottom - r}
+                        V ${boxTop + r}
+                        Q ${boxLeft},${boxTop} ${boxLeft + r},${boxTop}
+                        Z
+                    `;
+
+                    // SVG Özelliklerini Güncelle
+                    messageBox.setAttribute('d', d.replace(/\s+/g, ' ').trim());
+                    // Çizgi kalınlığı sabit kalsın (zaten counter-scale içindeyiz)
+                    messageBox.setAttribute('stroke-width', '0.5'); 
+
+                    // Text (ForeignObject) Konumu
+                    messageText.setAttribute('x', boxLeft);
+                    messageText.setAttribute('y', boxTop);
+                    messageText.setAttribute('width', totalWidth);
+                    messageText.setAttribute('height', msgConfig.height);
+
+                    // CSS Stilleri (Doğrudan pixel veriyoruz, hesaplama yok!)
+                    messageDiv.style.fontSize = `${msgConfig.fontSize}px`;
+                    messageDiv.style.lineHeight = `${msgConfig.height}px`;
+                    messageDiv.style.padding = `0 ${msgConfig.padding / 2}px`;
+                }
+            }
+        }
+    });
+}
+
+// Mesaj kutuları arasındaki çakışmaları çöz
+function resolveMessageBoxCollisions(messageBoxes) {
+    if (messageBoxes.length < 2 || !svg) return;
+    
+    // Her mesaj kutusunu kontrol et
+    for (let i = 0; i < messageBoxes.length; i++) {
+        const current = messageBoxes[i];
+        let offsetY = 0;
+        
+        // Mevcut mesaj kutusunun gerçek yüksekliğini al
+        const messageGroup = svg.querySelector(`#${current.id}`);
+        if (!messageGroup) continue;
+        
+        const messageBox = messageGroup.querySelector('.profile-message-box');
+        if (!messageBox) continue;
+        
+        // Path kullandığımız için yükseklik artık current.height'da (ok dahil)
+        const actualHeight = current.height;
+        
+        // Diğer mesaj kutuları ile karşılaştır
+        for (let j = 0; j < messageBoxes.length; j++) {
+            if (i === j) continue;
+            
+            const other = messageBoxes[j];
+            
+            // Diğer mesaj kutusunun gerçek yüksekliğini al
+            const otherMessageGroup = svg.querySelector(`#${other.id}`);
+            if (!otherMessageGroup) continue;
+            
+            const otherMessageBox = otherMessageGroup.querySelector('.profile-message-box');
+            if (!otherMessageBox) continue;
+            
+            // Path kullandığımız için yükseklik artık other.height'da (ok dahil)
+            const otherActualHeight = other.height;
+            
+            // Çakışma kontrolü: iki dikdörtgen çakışıyor mu?
+            const horizontalOverlap = !(current.x + current.width < other.x || other.x + other.width < current.x);
+            const verticalOverlap = !(current.y + actualHeight < other.y || other.y + otherActualHeight < current.y);
+            
+            if (horizontalOverlap && verticalOverlap) {
+                // Çakışma var - mevcut mesaj kutusunu yukarı kaydır
+                // Hangi mesaj kutusu daha aşağıda ise onu yukarı kaydır
+                if (current.y > other.y) {
+                    const overlapHeight = Math.min(current.y + actualHeight - other.y, other.y + otherActualHeight - current.y);
+                    offsetY = Math.min(offsetY, -overlapHeight - 10 * mapState.scale); // 10px boşluk
+                }
+            }
         }
         
-        // Clip path güncelle (objectBoundingBox kullanıldığı için güncelleme gerekmez)
-        // Clip path zaten 0-1 arası koordinatlarla tanımlı, otomatik ölçekleniyor
-    });
+        // Pozisyonu güncelle (eğer çakışma varsa)
+        // Path kullandığımız için tüm path'i yeniden oluşturmalıyız
+        if (offsetY < 0 && messageBox) {
+            const messageText = messageGroup.querySelector('.profile-message-text');
+            const messageDiv = messageGroup.querySelector('.profile-message-content');
+            
+            if (messageText && messageDiv) {
+                // Mevcut path'i parse et ve yeni pozisyonla yeniden oluştur
+                const pathData = messageBox.getAttribute('d');
+                if (pathData) {
+                    // Path'teki tüm Y koordinatlarını offsetY kadar kaydır
+                    const newPath = pathData.replace(/([\d.]+),([\d.]+)/g, (match, x, y) => {
+                        // Sadece Y koordinatlarını (ikinci sayı) güncelle
+                        const newY = parseFloat(y) + offsetY;
+                        return `${x},${newY}`;
+                    });
+                    messageBox.setAttribute('d', newPath);
+                    
+                    // Text pozisyonunu da güncelle
+                    const currentTextY = parseFloat(messageText.getAttribute('y'));
+                    messageText.setAttribute('y', currentTextY + offsetY);
+                }
+            }
+        }
+    }
+}
+
+// ==================== SUPABASE INTEGRATION ====================
+
+// ==================== PROFİL İSTATİSTİKLERİ ====================
+
+// Profil tıklama sayısını artır (RPC ile güvenli)
+async function incrementClickCount(profileId) {
+    try {
+        const { error } = await supabase.rpc('increment_click_count', {
+            row_id: profileId
+        });
+        
+        if (error) {
+            console.error('Click count RPC hatası, alternatif yöntem deneniyor:', error);
+            // Alternatif: Direct update (RPC yoksa veya hata varsa)
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ 
+                    click_count: supabase.raw('COALESCE(click_count, 0) + 1') 
+                })
+                .eq('id', profileId);
+            
+            if (updateError) {
+                console.error('Click count artırma hatası:', updateError);
+            }
+        }
+    } catch (err) {
+        console.error('Click count artırma hatası:', err);
+    }
+}
+
+// Profil görüntülenme sayısını artır (RPC ile güvenli)
+async function incrementViewCount(profileId) {
+    try {
+        const { error } = await supabase.rpc('increment_view_count', {
+            row_id: profileId
+        });
+        
+        if (error) {
+            console.error('View count RPC hatası, alternatif yöntem deneniyor:', error);
+            // Alternatif: Direct update
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ 
+                    view_count: supabase.raw('COALESCE(view_count, 0) + 1') 
+                })
+                .eq('id', profileId);
+            
+            if (updateError) {
+                console.error('View count artırma hatası:', updateError);
+            }
+        }
+    } catch (err) {
+        console.error('View count artırma hatası:', err);
+    }
+}
+
+// Profil paylaşım sayısını artır (RPC ile güvenli)
+async function incrementShareCount(profileId) {
+    try {
+        const { error } = await supabase.rpc('increment_share_count', {
+            row_id: profileId
+        });
+        
+        if (error) {
+            console.error('Share count RPC hatası, alternatif yöntem deneniyor:', error);
+            // Alternatif: Direct update
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ 
+                    share_count: supabase.raw('COALESCE(share_count, 0) + 1') 
+                })
+                .eq('id', profileId);
+            
+            if (updateError) {
+                console.error('Share count artırma hatası:', updateError);
+            }
+        }
+    } catch (err) {
+        console.error('Share count artırma hatası:', err);
+    }
+}
+
+// Profil istatistiklerini modalda göster
+function displayProfileStats(profile) {
+    // İstatistikler için HTML elementi oluştur veya mevcut elementi bul
+    let statsElement = document.getElementById('profile-stats');
+    
+    if (!statsElement) {
+        // Eğer HTML'de yoksa oluştur
+        statsElement = document.createElement('div');
+        statsElement.id = 'profile-stats';
+        statsElement.className = 'profile-stats';
+        
+        // Profil detay modalının body'sine ekle
+        const detailBody = document.querySelector('.profile-detail-body');
+        if (detailBody) {
+            detailBody.insertBefore(statsElement, detailBody.firstChild);
+        }
+    }
+    
+    // İstatistikleri göster
+    const clickCount = profile.click_count || 0;
+    const viewCount = profile.view_count || 0;
+    const shareCount = profile.share_count || 0;
+    
+    statsElement.innerHTML = `
+        <div class="stats-container">
+            <div class="stat-item">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 11l3 3L22 4"></path>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+                <span class="stat-label">Tıklanma</span>
+                <span class="stat-value">${clickCount}</span>
+            </div>
+            <div class="stat-item">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span class="stat-label">Görüntülenme</span>
+                <span class="stat-value">${viewCount}</span>
+            </div>
+            <div class="stat-item">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                    <polyline points="16 6 12 2 8 6"></polyline>
+                    <line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+                <span class="stat-label">Paylaşım</span>
+                <span class="stat-value">${shareCount}</span>
+            </div>
+        </div>
+    `;
 }
 
 // ==================== SUPABASE INTEGRATION ====================
@@ -1998,6 +2336,7 @@ async function loadProfilesFromSupabase() {
                         // Profil nesnesini oluştur
                         const profile = {
                             id: profileData.id,
+                            user_id: profileData.user_id,
                             name: profileData.name,
                             imageUrl: profileData.image_url,
                             cityId: profileData.city_id,
@@ -2012,6 +2351,8 @@ async function loadProfilesFromSupabase() {
                             age: profileData.age || null,
                             district: profileData.district || null,
                             gender: profileData.gender || null,
+                            daily_message: profileData.daily_message || null,
+                            message_date: profileData.message_date || null,
                         };
                         
                         // Debug: Profil oluşturulduğunu logla
@@ -2774,12 +3115,140 @@ async function saveProfile() {
 // - saveProfileToSupabase already defined at line 1317
 // - loadProfilesFromSupabase already defined at line 1272
 
+// Günlük mesaj güncelle (günde bir kez)
+async function updateDailyMessage(profileId, message) {
+    try {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugünün tarihi
+        
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                daily_message: message,
+                message_date: today,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', profileId);
+        
+        if (error) {
+            console.error('Günlük mesaj güncelleme hatası:', error);
+            showAlert('Mesaj güncellenirken bir hata oluştu: ' + error.message, 'Hata', 'error');
+            return;
+        }
+        
+        // Profil state'ini güncelle
+        const profile = mapState.profiles.find(p => p.id === profileId);
+        if (profile) {
+            profile.daily_message = message;
+            profile.message_date = today;
+        }
+        
+        // Haritadaki mesaj kutusunu güncelle
+        updateProfileMessageOnMap(profileId, message);
+        
+        // Modal'daki mesajı güncelle ve görüntüleme moduna geç
+        const messageDisplay = document.getElementById('detail-message-display');
+        const messageInputContainer = document.getElementById('detail-message-input-container');
+        const editMessageBtn = document.getElementById('edit-daily-message-btn');
+        
+        if (messageDisplay) {
+            messageDisplay.textContent = message;
+            messageDisplay.style.display = 'block';
+        }
+        
+        if (messageInputContainer) {
+            messageInputContainer.style.display = 'none';
+        }
+        
+        if (editMessageBtn) {
+            editMessageBtn.style.display = 'flex';
+        }
+        
+        showAlert('Günlük mesaj başarıyla kaydedildi!', 'Başarılı', 'success');
+    } catch (error) {
+        console.error('Günlük mesaj güncelleme hatası:', error);
+        showAlert('Mesaj güncellenirken bir hata oluştu.', 'Hata', 'error');
+    }
+}
+
+// Haritadaki profil mesaj kutusunu güncelle
+function updateProfileMessageOnMap(profileId, message) {
+    const profile = mapState.profiles.find(p => p.id === profileId);
+    if (!profile) return;
+    
+    // Mevcut mesaj grubunu bul ve kaldır
+    const profileGroup = svg.querySelector(`#${profileId}`);
+    if (profileGroup) {
+        const existingMessageGroup = profileGroup.querySelector(`#message-group-${profileId}`);
+        if (existingMessageGroup) {
+            existingMessageGroup.remove();
+        }
+        
+        // Yeni mesaj kutusunu ekle
+        const today = new Date().toISOString().split('T')[0];
+        profile.daily_message = message;
+        profile.message_date = today;
+        
+        // Mesaj kutusunu yeniden oluştur (profil group içinde, transform ile scale edilecek)
+        const messageGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        messageGroup.id = `message-group-${profileId}`;
+        messageGroup.classList.add('profile-message-group');
+        
+        // Başlangıçta gizli olsun (Zoom kontrolü açacak)
+        messageGroup.style.display = 'none'; 
+        messageGroup.style.opacity = '0';
+        
+        const messageBox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        messageBox.setAttribute('class', 'profile-message-box');
+        
+        const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        messageText.setAttribute('class', 'profile-message-text');
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'profile-message-content';
+        messageDiv.textContent = message;
+        messageText.appendChild(messageDiv);
+        
+        messageGroup.appendChild(messageBox);
+        messageGroup.appendChild(messageText);
+        profileGroup.appendChild(messageGroup);
+        
+        // Mesaj kutusunu güncelle (zoom seviyesine göre)
+        updateProfileSizes(); // Mesaj kutularını güncelle
+    }
+}
+
 // Profile click handler - show detail modal
 function handleProfileClick(profileId) {
     const profile = mapState.profiles.find(p => p.id === profileId);
     if (!profile) {
         console.warn('Profil bulunamadı:', profileId);
         return;
+    }
+    
+    // ✅ SPAM KONTROLÜ (SessionStorage ile aynı oturumda tekrar sayma)
+    const viewedKey = `viewed_${profileId}`;
+    const clickedKey = `clicked_${profileId}`;
+    const hasViewed = sessionStorage.getItem(viewedKey);
+    const hasClicked = sessionStorage.getItem(clickedKey);
+    
+    // Click Count: Sadece ilk tıklamada artır
+    if (!hasClicked) {
+        incrementClickCount(profileId);
+        sessionStorage.setItem(clickedKey, 'true');
+        // UI'da anlık geri bildirim için local state'i güncelle
+        if (profile.click_count !== undefined) {
+            profile.click_count = (profile.click_count || 0) + 1;
+        }
+    }
+    
+    // View Count: Sadece ilk görüntülemede artır
+    if (!hasViewed) {
+        incrementViewCount(profileId);
+        sessionStorage.setItem(viewedKey, 'true');
+        // UI'da anlık geri bildirim için local state'i güncelle
+        if (profile.view_count !== undefined) {
+            profile.view_count = (profile.view_count || 0) + 1;
+        }
     }
     
     // Show profile detail modal
@@ -2853,6 +3322,112 @@ function handleProfileClick(profileId) {
             detailSocial.innerHTML = socialHTML || '<div class="no-social">Sosyal medya hesabı eklenmemiş</div>';
         }
         
+        // Günlük mesaj bölümünü göster/gizle ve doldur
+        const messageSection = document.getElementById('detail-message-section');
+        const messageDisplay = document.getElementById('detail-message-display');
+        const messageInputContainer = document.getElementById('detail-message-input-container');
+        const dailyMessageInput = document.getElementById('daily-message-input');
+        const saveMessageBtn = document.getElementById('save-daily-message-btn');
+        const cancelMessageBtn = document.getElementById('cancel-daily-message-btn');
+        const editMessageBtn = document.getElementById('edit-daily-message-btn');
+        
+        if (messageSection && messageDisplay && messageInputContainer) {
+            // Kullanıcının kendi profilini kontrol et
+            getCurrentUser().then(user => {
+                const isOwnProfile = user && profile.user_id === user.id;
+                
+                // Bugünkü mesaj var mı kontrol et
+                const today = new Date().toISOString().split('T')[0];
+                const messageDate = profile.message_date ? new Date(profile.message_date).toISOString().split('T')[0] : null;
+                const hasTodayMessage = profile.daily_message && messageDate === today;
+                
+                if (hasTodayMessage || isOwnProfile) {
+                    messageSection.style.display = 'block';
+                    
+                    if (isOwnProfile) {
+                        // Kendi profili - başlangıçta görüntüleme modu
+                        if (hasTodayMessage) {
+                            messageDisplay.textContent = profile.daily_message;
+                            messageDisplay.style.display = 'block';
+                            messageInputContainer.style.display = 'none';
+                            // Düzenle butonunu göster
+                            if (editMessageBtn) {
+                                editMessageBtn.style.display = 'flex';
+                            }
+                        } else {
+                            // Mesaj yoksa direkt düzenleme modu
+                            messageDisplay.style.display = 'none';
+                            messageInputContainer.style.display = 'block';
+                            dailyMessageInput.value = '';
+                            if (editMessageBtn) {
+                                editMessageBtn.style.display = 'none';
+                            }
+                        }
+                        
+                        // Düzenle butonu
+                        if (editMessageBtn) {
+                            const newEditBtn = editMessageBtn.cloneNode(true);
+                            editMessageBtn.parentNode.replaceChild(newEditBtn, editMessageBtn);
+                            newEditBtn.addEventListener('click', () => {
+                                // Düzenleme moduna geç
+                                messageDisplay.style.display = 'none';
+                                messageInputContainer.style.display = 'block';
+                                dailyMessageInput.value = profile.daily_message || '';
+                                dailyMessageInput.focus();
+                                newEditBtn.style.display = 'none';
+                            });
+                        }
+                        
+                        // İptal butonu
+                        if (cancelMessageBtn) {
+                            const newCancelBtn = cancelMessageBtn.cloneNode(true);
+                            cancelMessageBtn.parentNode.replaceChild(newCancelBtn, cancelMessageBtn);
+                            newCancelBtn.addEventListener('click', () => {
+                                // Görüntüleme moduna geri dön
+                                messageDisplay.style.display = 'block';
+                                messageInputContainer.style.display = 'none';
+                                dailyMessageInput.value = profile.daily_message || '';
+                                if (editMessageBtn) {
+                                    editMessageBtn.style.display = 'flex';
+                                }
+                            });
+                        }
+                        
+                        // Mesaj kaydetme butonu
+                        if (saveMessageBtn) {
+                            const newSaveBtn = saveMessageBtn.cloneNode(true);
+                            saveMessageBtn.parentNode.replaceChild(newSaveBtn, saveMessageBtn);
+                            newSaveBtn.addEventListener('click', async () => {
+                                const messageText = dailyMessageInput.value.trim();
+                                if (messageText.length > 0 && messageText.length <= 100) {
+                                    await updateDailyMessage(profile.id, messageText);
+                                    // Görüntüleme moduna geç
+                                    messageDisplay.style.display = 'block';
+                                    messageInputContainer.style.display = 'none';
+                                    messageDisplay.textContent = messageText;
+                                    if (editMessageBtn) {
+                                        editMessageBtn.style.display = 'flex';
+                                    }
+                                } else {
+                                    showAlert('Mesaj 1-100 karakter arasında olmalıdır.', 'Uyarı', 'warning');
+                                }
+                            });
+                        }
+                    } else {
+                        // Başkasının profili - sadece mesajı göster
+                        messageDisplay.style.display = 'block';
+                        messageInputContainer.style.display = 'none';
+                        messageDisplay.textContent = profile.daily_message;
+                        if (editMessageBtn) {
+                            editMessageBtn.style.display = 'none';
+                        }
+                    }
+                } else {
+                    messageSection.style.display = 'none';
+                }
+            });
+        }
+        
         // Paylaş Butonunu Bul ve Bağla
         const shareBtn = document.getElementById('share-profile-btn');
         if (shareBtn) {
@@ -2877,6 +3452,9 @@ function handleProfileClick(profileId) {
                 openReportModal(profile.id);
             });
         }
+        
+        // ✅ İstatistikleri göster
+        displayProfileStats(profile);
         
         profileDetailModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -3216,10 +3794,14 @@ async function checkUserHasProfile(userId) {
 // Google ile giriş
 async function signInWithGoogle() {
     try {
-        // Production URL veya localhost
-        const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? `${window.location.origin}${window.location.pathname}`
-            : 'https://mapfy.vercel.app';
+        // TEST AMAÇLI: Her zaman localhost'a yönlendir
+        // Production'a geçerken bu satırı kaldır ve aşağıdaki yorum satırındaki kodu kullan
+        const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+        
+        // Production için (test bittiğinde yukarıdaki satırı kaldır ve bunu kullan):
+        // const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        //     ? `${window.location.origin}${window.location.pathname}`
+        //     : 'https://mapfy.vercel.app';
             
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -3744,6 +4326,10 @@ function checkUrlForDeepLink() {
 async function shareProfile(profileId) {
     if (!profileId) return;
 
+    // ✅ SPAM KONTROLÜ (SessionStorage ile aynı oturumda tekrar sayma)
+    const sharedKey = `shared_${profileId}`;
+    const hasShared = sessionStorage.getItem(sharedKey);
+
     // Link formatı: https://mapfy.vercel.app/?u=PROFIL_ID
     const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
         ? `${window.location.origin}${window.location.pathname}` 
@@ -3758,9 +4344,30 @@ async function shareProfile(profileId) {
                 text: 'Beni haritada bul!',
                 url: shareUrl
             });
+            
+            // ✅ Paylaşım başarılı oldu - Share Count artır
+            if (!hasShared) {
+                incrementShareCount(profileId);
+                sessionStorage.setItem(sharedKey, 'true');
+                // UI'da anlık geri bildirim için local state'i güncelle
+                const profile = mapState.profiles.find(p => p.id === profileId);
+                if (profile && profile.share_count !== undefined) {
+                    profile.share_count = (profile.share_count || 0) + 1;
+                    // Modal açıksa istatistikleri güncelle
+                    displayProfileStats(profile);
+                }
+            }
             return;
         } catch (err) {
             // Paylaşım iptal edilirse veya hata olursa panoya kopyalamayı dene
+            // İptal edilirse sayacı artırma
+            if (err.name !== 'AbortError') {
+                // Hata varsa sayacı artır (sadece gerçek paylaşımda)
+                if (!hasShared) {
+                    incrementShareCount(profileId);
+                    sessionStorage.setItem(sharedKey, 'true');
+                }
+            }
         }
     }
 
@@ -3768,6 +4375,19 @@ async function shareProfile(profileId) {
     try {
         await navigator.clipboard.writeText(shareUrl);
         showToast("Profil linki kopyalandı! 🔗");
+        
+        // ✅ Panoya kopyalama başarılı - Share Count artır
+        if (!hasShared) {
+            incrementShareCount(profileId);
+            sessionStorage.setItem(sharedKey, 'true');
+            // UI'da anlık geri bildirim için local state'i güncelle
+            const profile = mapState.profiles.find(p => p.id === profileId);
+            if (profile && profile.share_count !== undefined) {
+                profile.share_count = (profile.share_count || 0) + 1;
+                // Modal açıksa istatistikleri güncelle
+                displayProfileStats(profile);
+            }
+        }
     } catch (err) {
         console.error('Link kopyalanamadı:', err);
         // Fallback: Linki göster ve kopyalama talimatı ver

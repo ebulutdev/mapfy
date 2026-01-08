@@ -49,8 +49,7 @@ body {
 
 /* Harita sayfasında navbar'ı sadeleştir */
 .app-container.map-view .navbar-brand,
-.app-container.map-view .navbar-nav,
-.app-container.map-view .github-link {
+.app-container.map-view .navbar-nav {
     display: none !important;
 }
 
@@ -172,32 +171,6 @@ body {
     gap: 16px;
 }
 
-.github-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 12px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
-
-.github-link:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.github-link svg {
-    width: 18px;
-    height: 18px;
-}
-
-.github-stars {
-    font-size: 14px;
-}
 
 .btn-dashboard {
     background: rgba(62, 207, 142, 0.1);
@@ -441,19 +414,6 @@ body {
         gap: 5px;
     }
     
-    .github-link {
-        padding: 4px 5px;
-    }
-    
-    .github-link svg {
-        width: 14px;
-        height: 14px;
-    }
-    
-    .github-link span {
-        display: none;
-    }
-    
     .btn-dashboard {
         padding: 5px 10px;
         font-size: 10px;
@@ -518,15 +478,6 @@ body {
     .btn-dashboard {
         padding: 4px 8px;
         font-size: 9px;
-    }
-    
-    .github-link {
-        padding: 3px 4px;
-    }
-    
-    .github-link svg {
-        width: 12px;
-        height: 12px;
     }
 
     .controls-info {
@@ -653,6 +604,90 @@ body {
     /* filter kaldırıldı - profillerin net görünmesi için */
 }
 
+/* --- Mesaj Grubu Optimizasyonu --- */
+.profile-message-group {
+    /* Performans için GPU katmanı oluştur */
+    will-change: transform, opacity;
+    /* Tıklamaları arkaya geçir */
+    pointer-events: none; 
+    /* Geçişleri yumuşat */
+    transition: opacity 0.2s ease-out;
+}
+
+/* --- Kutu Tasarımı (Glassmorphism + Netlik) --- */
+.profile-message-box {
+    /* Yarı saydam koyu arka plan (Modern) */
+    fill: rgba(20, 20, 20, 0.90);
+    /* Çok ince beyaz kenarlık (Netlik katar) */
+    stroke: rgba(255, 255, 255, 0.2);
+    /* Mobilde derinlik hissi için gölge */
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+    
+    /* Vektör kenarlarını pürüzsüzleştir */
+    shape-rendering: geometricPrecision;
+}
+
+.profile-message-text {
+    pointer-events: none;
+    overflow: visible;
+}
+
+/* --- Metin Optimizasyonu (En Önemlisi) --- */
+.profile-message-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    /* Font Ayarları */
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    font-weight: 500; /* Biraz kalın font mobilde daha iyi okunur */
+    letter-spacing: 0.01em; /* Harfleri çok hafif aç */
+    
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    /* [KRİTİK] Yazı Netleştirme Kodları */
+    -webkit-font-smoothing: antialiased; /* MacOS/iOS için */
+    -moz-osx-font-smoothing: grayscale; /* Firefox için */
+    text-rendering: optimizeLegibility; /* Okunabilirliği artır */
+    
+    /* iOS Safari'de titremeyi önler */
+    transform: translateZ(0);
+    
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Açık Tema Desteği (İstersen) */
+@media (prefers-color-scheme: light) {
+    .profile-message-box {
+        fill: rgba(255, 255, 255, 0.95);
+        stroke: rgba(0, 0, 0, 0.1);
+    }
+    .profile-message-content {
+        color: #111;
+        font-weight: 600;
+    }
+}
+
+/* Karanlık Mod Desteği (Eğer varsa) */
+@media (prefers-color-scheme: dark) {
+    .profile-message-box {
+        fill: rgba(0, 0, 0, 0.5); /* Daha transparan siyah */
+        stroke: none; /* Çizgi yok */
+    }
+    .profile-message-content {
+        color: rgba(255, 255, 255, 0.95); /* Beyaz metin */
+    }
+}
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
@@ -800,11 +835,11 @@ body {
 /* Geri Butonu */
 .back-btn {
     position: absolute;
-    top: 15px;
-    left: 15px;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    top: 12px;
+    left: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.8);
@@ -857,15 +892,15 @@ body {
 
 .modal-close {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    font-size: 28px;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 18px;
     font-weight: 300;
     cursor: pointer;
     display: flex;
@@ -874,22 +909,23 @@ body {
     transition: all 0.2s ease;
     line-height: 1;
     z-index: 1001;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
 }
 
 .modal-close:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: scale(1.1) rotate(90deg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .modal-close:active {
-    transform: scale(0.95) rotate(90deg);
-    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .modal-title {
@@ -1352,10 +1388,182 @@ body {
 }
 
 .section-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 12px;
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Mesaj Bölümü Header */
+.message-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Düzenle Butonu */
+.btn-edit-message {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.btn-edit-message:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-edit-message svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+}
+
+/* Günlük Mesaj Stilleri */
+.daily-message-display {
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.daily-message-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.daily-message-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    resize: vertical;
+    min-height: 50px;
+    line-height: 1.5;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.daily-message-input:focus {
+    outline: none;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.1);
+}
+
+.daily-message-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+/* Mesaj Aksiyon Butonları */
+.message-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-save-message,
+.btn-cancel-message {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    border: none;
+}
+
+.btn-save-message {
+    background: #3ECF8E;
+    color: #000;
+}
+
+.btn-save-message:hover {
+    background: #2ebd7a;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(62, 207, 142, 0.3);
+}
+
+.btn-save-message:active {
+    transform: translateY(0);
+}
+
+.btn-cancel-message {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-cancel-message:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Mobil Responsive */
+@media (max-width: 768px) {
+    .section-title {
+        font-size: 14px;
+    }
+    
+    .btn-edit-message {
+        padding: 5px 10px;
+        font-size: 11px;
+        gap: 4px;
+    }
+    
+    .btn-edit-message svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .daily-message-display {
+        padding: 8px 12px;
+        font-size: 12px;
+        min-height: 36px;
+    }
+    
+    .daily-message-input {
+        padding: 8px 12px;
+        font-size: 12px;
+        min-height: 45px;
+    }
+    
+    .btn-save-message,
+    .btn-cancel-message {
+        padding: 7px 14px;
+        font-size: 11px;
+    }
+    
+    .message-actions {
+        gap: 6px;
+    }
 }
 
 .social-links {
@@ -1401,28 +1609,34 @@ body {
 /* Profil Paylaş Butonu */
 .share-btn {
     position: absolute;
-    top: 20px;
-    right: 60px; /* Kapat butonunun solunda */
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
+    top: 12px;
+    right: 48px; /* Kapat butonunun solunda */
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     z-index: 10;
+    padding: 0;
+}
+
+.share-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
 .share-btn:hover {
-    background: #3ECF8E;
-    color: #000;
-    border-color: #3ECF8E;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(62, 207, 142, 0.3);
+    background: rgba(62, 207, 142, 0.2);
+    color: #3ECF8E;
+    border-color: rgba(62, 207, 142, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(62, 207, 142, 0.2);
 }
 
 .share-btn:active {
@@ -1432,28 +1646,34 @@ body {
 /* Profil Şikayet Butonu */
 .report-btn {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 68, 68, 0.1);
-    border: 1px solid rgba(255, 68, 68, 0.3);
-    color: #ff4444;
+    top: 12px;
+    left: 48px; /* Geri butonunun sağında */
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 68, 68, 0.08);
+    border: 1px solid rgba(255, 68, 68, 0.2);
+    color: rgba(255, 68, 68, 0.8);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     z-index: 10;
+    padding: 0;
+}
+
+.report-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
 .report-btn:hover {
-    background: #ff4444;
-    color: #fff;
-    border-color: #ff4444;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+    background: rgba(255, 68, 68, 0.15);
+    color: #ff4444;
+    border-color: rgba(255, 68, 68, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.2);
 }
 
 .report-btn:active {
@@ -2612,15 +2832,15 @@ body {
 
 @media (max-width: 768px) {
     .back-btn {
-        top: 12px;
-        left: 12px;
-        width: 36px;
-        height: 36px;
+        top: 10px;
+        left: 10px;
+        width: 26px;
+        height: 26px;
     }
     
     .back-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 14px;
+        height: 14px;
     }
     
     .filter-back-btn {
@@ -2685,39 +2905,50 @@ body {
         display: none; /* Chrome, Safari, Opera */
     }
     
+    .back-btn {
+        top: 10px;
+        left: 10px;
+        width: 26px;
+        height: 26px;
+    }
+    
+    .back-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
     .modal-close {
-        top: 12px;
-        right: 12px;
-        width: 48px;
-        height: 48px;
-        font-size: 32px;
-        border-width: 2px;
+        top: 10px;
+        right: 10px;
+        width: 26px;
+        height: 26px;
+        font-size: 16px;
     }
     
     /* Share Button - Mobile */
     .share-btn {
-        top: 12px;
-        right: 50px;
-        width: 32px;
-        height: 32px;
+        top: 10px;
+        right: 44px;
+        width: 26px;
+        height: 26px;
     }
     
     .share-btn svg {
-        width: 16px;
-        height: 16px;
+        width: 13px;
+        height: 13px;
     }
     
     /* Report Button - Mobile */
     .report-btn {
-        top: 12px;
-        left: 12px;
-        width: 32px;
-        height: 32px;
+        top: 10px;
+        left: 44px;
+        width: 26px;
+        height: 26px;
     }
     
     .report-btn svg {
-        width: 16px;
-        height: 16px;
+        width: 13px;
+        height: 13px;
     }
     
     /* Homepage Button - Mobile */
@@ -3449,5 +3680,461 @@ body {
     .trust-badge svg {
         width: 12px;
         height: 12px;
+    }
+}
+
+/* ==================== PROFİL İSTATİSTİKLERİ ==================== */
+.profile-stats {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: rgba(62, 207, 142, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(62, 207, 142, 0.15);
+}
+
+.stats-container {
+    display: flex;
+    justify-content: space-around;
+    gap: 8px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+}
+
+.stat-icon {
+    width: 16px;
+    height: 16px;
+    color: #3ECF8E;
+    flex-shrink: 0;
+}
+
+.stat-label {
+    font-size: 10px;
+    color: #666;
+    font-weight: 500;
+    text-align: center;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.2;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #3ECF8E;
+    line-height: 1;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Mobil için istatistik stilleri */
+@media (max-width: 768px) {
+    .profile-stats {
+        padding: 8px 10px;
+        margin-bottom: 10px;
+    }
+    
+    .stats-container {
+        gap: 6px;
+    }
+    
+    .stat-icon {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .stat-label {
+        font-size: 9px;
+    }
+    
+    .stat-value {
+        font-size: 14px;
+    }
+}
+
+/* ==================== ABONELİK PAKETLERİ ==================== */
+.pricing-section {
+    width: 100%;
+    max-width: 1100px;
+    margin: 60px auto 0;
+    padding: 0 20px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pricing-title {
+    font-size: 26px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    text-align: center;
+    margin: 0 0 8px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.3px;
+}
+
+.pricing-subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    margin: 0 0 36px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 400;
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.pricing-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.pricing-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.pricing-card.featured {
+    border: 1px solid rgba(62, 207, 142, 0.25);
+    background: rgba(62, 207, 142, 0.03);
+}
+
+.pricing-card.featured:hover {
+    border-color: rgba(62, 207, 142, 0.4);
+    box-shadow: 0 4px 20px rgba(62, 207, 142, 0.15);
+}
+
+.pricing-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pricing-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 12px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pricing-badge.free {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.pricing-badge.silver {
+    background: rgba(192, 192, 192, 0.15);
+    color: #b0b0b0;
+}
+
+.pricing-badge.gold {
+    background: rgba(255, 215, 0, 0.15);
+    color: #e6c200;
+}
+
+.pricing-name {
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    margin: 0 0 8px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.2px;
+}
+
+.pricing-price {
+    font-size: 28px;
+    font-weight: 500;
+    color: #3ECF8E;
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.5px;
+}
+
+.pricing-price span {
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 4px;
+}
+
+.pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+    flex-grow: 1;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 400;
+}
+
+.feature-item.disabled {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.feature-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.feature-icon.check {
+    color: #3ECF8E;
+    stroke-width: 2;
+}
+
+.feature-item.disabled .feature-icon {
+    color: rgba(255, 255, 255, 0.15);
+}
+
+.feature-item strong {
+    color: #3ECF8E;
+    font-weight: 500;
+}
+
+.feature-item.disabled strong {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.pricing-btn {
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pricing-btn.free-btn {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: not-allowed;
+}
+
+.pricing-btn.silver-btn {
+    background: rgba(192, 192, 192, 0.12);
+    color: #b0b0b0;
+    border: 1px solid rgba(192, 192, 192, 0.25);
+}
+
+.pricing-btn.silver-btn:hover {
+    background: rgba(192, 192, 192, 0.18);
+    border-color: rgba(192, 192, 192, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(192, 192, 192, 0.15);
+}
+
+.pricing-btn.gold-btn {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ECF8E;
+    border: 1px solid rgba(62, 207, 142, 0.3);
+}
+
+.pricing-btn.gold-btn:hover {
+    background: rgba(62, 207, 142, 0.25);
+    border-color: rgba(62, 207, 142, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 12px rgba(62, 207, 142, 0.2);
+}
+
+.pricing-btn:active {
+    transform: translateY(0);
+}
+
+/* Mobil Responsive - Paketler yan yana kalacak */
+@media (max-width: 968px) {
+    .pricing-grid {
+        gap: 12px;
+    }
+    
+    .pricing-card.featured {
+        transform: none;
+    }
+    
+    .pricing-card.featured:hover {
+        transform: translateY(-2px);
+    }
+    
+    .pricing-title {
+        font-size: 22px;
+    }
+    
+    .pricing-subtitle {
+        font-size: 13px;
+    }
+    
+    .pricing-card {
+        padding: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .pricing-section {
+        margin-top: 40px;
+        padding: 0 12px;
+    }
+    
+    .pricing-grid {
+        gap: 10px;
+    }
+    
+    .pricing-title {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
+    
+    .pricing-subtitle {
+        font-size: 12px;
+        margin-bottom: 24px;
+    }
+    
+    .pricing-card {
+        padding: 14px;
+    }
+    
+    .pricing-header {
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+    }
+    
+    .pricing-badge {
+        font-size: 9px;
+        padding: 3px 8px;
+        margin-bottom: 8px;
+    }
+    
+    .pricing-name {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+    
+    .pricing-price {
+        font-size: 20px;
+    }
+    
+    .pricing-price span {
+        font-size: 11px;
+    }
+    
+    .pricing-features {
+        margin-bottom: 14px;
+    }
+    
+    .feature-item {
+        font-size: 11px;
+        padding: 5px 0;
+        gap: 7px;
+    }
+    
+    .feature-icon {
+        width: 13px;
+        height: 13px;
+        margin-top: 1px;
+    }
+    
+    .pricing-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pricing-section {
+        margin-top: 32px;
+        padding: 0 8px;
+    }
+    
+    .pricing-grid {
+        gap: 8px;
+    }
+    
+    .pricing-title {
+        font-size: 18px;
+    }
+    
+    .pricing-subtitle {
+        font-size: 11px;
+        margin-bottom: 18px;
+    }
+    
+    .pricing-card {
+        padding: 12px;
+    }
+    
+    .pricing-header {
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+    }
+    
+    .pricing-badge {
+        font-size: 8px;
+        padding: 2px 6px;
+        margin-bottom: 6px;
+    }
+    
+    .pricing-name {
+        font-size: 14px;
+    }
+    
+    .pricing-price {
+        font-size: 18px;
+    }
+    
+    .pricing-price span {
+        font-size: 10px;
+    }
+    
+    .pricing-features {
+        margin-bottom: 12px;
+    }
+    
+    .feature-item {
+        font-size: 10px;
+        padding: 4px 0;
+        gap: 6px;
+        line-height: 1.4;
+    }
+    
+    .feature-icon {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .pricing-btn {
+        padding: 7px 10px;
+        font-size: 10px;
     }
 }

@@ -70,12 +70,6 @@
                 </nav>
                 
                 <div class="navbar-actions">
-                    <a href="https://github.com" target="_blank" class="github-link">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
-                        </svg>
-                        <span class="github-stars">12.5K</span>
-                    </a>
                     <!-- User Profile Dropdown -->
                     <div class="nav-item dropdown" id="user-profile-dropdown" style="display: none;">
                         <a href="#" class="nav-link user-profile-link" id="user-profile-link">
@@ -155,6 +149,183 @@
                     <button id="hero-start-btn" class="hero-btn-primary">
                         Haritayı Keşfet
                     </button>
+                </div>
+                
+                <!-- Abonelik Paketleri -->
+                <div class="pricing-section">
+                    <h2 class="pricing-title">Abonelik Paketleri</h2>
+                    <p class="pricing-subtitle">Haritada görünür olmak için paket seçin</p>
+                    
+                    <div class="pricing-grid">
+                        <!-- Free Paket -->
+                        <div class="pricing-card">
+                            <div class="pricing-header">
+                                <div class="pricing-badge free">Ücretsiz</div>
+                                <h3 class="pricing-name">Free</h3>
+                            </div>
+                            <ul class="pricing-features">
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Liste Görünürlüğü <strong>(En Altta)</strong></span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Sadece belirli linklere erişim</span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Sadece Şehir Filtresi</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Harita Görünürlüğü</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Harita Mesajı (Status)</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Profil İstatistikleri</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Detaylı Filtreleme</span>
+                                </li>
+                            </ul>
+                            <button class="pricing-btn free-btn">Mevcut Plan</button>
+                        </div>
+                        
+                        <!-- Silver Paket -->
+                        <div class="pricing-card">
+                            <div class="pricing-header">
+                                <div class="pricing-badge silver">Önerilen</div>
+                                <h3 class="pricing-name">Silver</h3>
+                                <div class="pricing-price">₺89<span>/hafta</span></div>
+                            </div>
+                            <ul class="pricing-features">
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Liste Görünürlüğü <strong>(Orta Sırada)</strong></span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Tam linkleri görme</span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Sadece Şehir Filtresi</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Harita Görünürlüğü</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Harita Mesajı (Status)</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Profil İstatistikleri</span>
+                                </li>
+                                <li class="feature-item disabled">
+                                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>Detaylı Filtreleme</span>
+                                </li>
+                            </ul>
+                            <button class="pricing-btn silver-btn">Silver'a Geç</button>
+                        </div>
+                        
+                        <!-- Gold Paket -->
+                        <div class="pricing-card featured">
+                            <div class="pricing-header">
+                                <div class="pricing-badge gold">Premium</div>
+                                <h3 class="pricing-name">Gold</h3>
+                                <div class="pricing-price">₺129<span>/hafta</span></div>
+                            </div>
+                            <ul class="pricing-features">
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Harita Görünürlüğü <strong>(Haritada Yer Alır)</strong></span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Liste Görünürlüğü <strong>(Vitrin - En Üstte)</strong></span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Tam linkleri görme</span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Harita Mesajı (Status)</span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Profil İstatistikleri</span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Tüm Filtreler</span>
+                                </li>
+                                <li class="feature-item">
+                                    <svg class="feature-icon check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Filtre Sıralaması <strong>(En Başta)</strong></span>
+                                </li>
+                            </ul>
+                            <button class="pricing-btn gold-btn">Gold'a Geç</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="hero-trust-badges">
@@ -462,6 +633,31 @@
                     </button>
                 </div>
                 <div class="profile-detail-body">
+                    <div class="profile-detail-section" id="detail-message-section" style="display: none;">
+                        <div class="message-section-header">
+                            <h4 class="section-title">Günün Mesajı</h4>
+                            <button id="edit-daily-message-btn" class="btn-edit-message" style="display: none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                <span>Düzenle</span>
+                            </button>
+                        </div>
+                        <div class="daily-message-display" id="detail-message-display"></div>
+                        <div class="daily-message-input-container" id="detail-message-input-container" style="display: none;">
+                            <textarea 
+                                id="daily-message-input" 
+                                class="daily-message-input" 
+                                placeholder="Bugün nasıl geçiyor? Kısa bir cümle ile anlat..."
+                                maxlength="100"
+                                rows="2"></textarea>
+                            <div class="message-actions">
+                                <button id="cancel-daily-message-btn" class="btn-cancel-message">İptal</button>
+                                <button id="save-daily-message-btn" class="btn-save-message">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="profile-detail-section">
                         <h4 class="section-title">Sosyal Medya</h4>
                         <div class="social-links" id="detail-social"></div>
