@@ -1911,13 +1911,13 @@ function addProfileToMap(profile) {
             const messageBox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             messageBox.setAttribute('class', 'profile-message-box');
             
-            const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+            // Native SVG Text kullanıyoruz (iOS Safari için)
+            const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             messageText.setAttribute('class', 'profile-message-text');
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'profile-message-content';
-            messageDiv.textContent = profile.daily_message;
-            messageText.appendChild(messageDiv);
+            messageText.textContent = profile.daily_message;
+            messageText.setAttribute('text-anchor', 'middle');
+            messageText.setAttribute('dominant-baseline', 'middle');
+            messageText.setAttribute('dy', '1'); // Optik dikey ortalama için 1px aşağı it
             
             messageGroup.appendChild(messageBox);
             messageGroup.appendChild(messageText);
@@ -2065,9 +2065,8 @@ function updateProfileSizes() {
 
                 const messageBox = messageGroup.querySelector('.profile-message-box');
                 const messageText = messageGroup.querySelector('.profile-message-text');
-                const messageDiv = messageGroup.querySelector('.profile-message-content');
 
-                if (messageBox && messageText && messageDiv) {
+                if (messageBox && messageText) {
                     // --- KRİTİK NOKTA: TRANSFORM ---
                     // Grubu profilin tam üzerine taşıyoruz ve scale'i tersine çeviriyoruz.
                     // Böylece içindeki her şeyi normal pixel boyutunda (örn 14px) çizebiliriz.
@@ -2083,13 +2082,29 @@ function updateProfileSizes() {
 
                     // --- İÇERİK ÇİZİMİ (Artık sabit pixel değerleri kullanıyoruz) ---
                     
-                    // Genişlik hesabı
-                    const textLength = messageDiv.textContent.length;
-                    // Ortalama karakter genişliği tahmini
-                    const estimatedTextWidth = textLength * (msgConfig.fontSize * 0.65);
+                    // 1. Önce Ham Metni Al (Orijinal metni hafızada tutalım)
+                    let rawMessage = profileGroup.__rawMessage || messageText.textContent || '';
+                    if (!profileGroup.__rawMessage) {
+                        profileGroup.__rawMessage = rawMessage;
+                    }
+                    
+                    // 2. Karakter Genişliği Tahmini
+                    const charWidth = msgConfig.fontSize * 0.6; // Ortalama karakter genişliği
+                    
+                    // 3. Maksimum Karakter Sayısını Hesapla
+                    const maxChars = Math.floor((msgConfig.maxWidth - msgConfig.padding) / charWidth);
+                    
+                    // 4. Metni KES (Truncate) - ÖNCE KES, SONRA ÖLÇ
+                    let displayMessage = rawMessage;
+                    if (rawMessage.length > maxChars) {
+                        displayMessage = rawMessage.substring(0, maxChars) + '...';
+                    }
+                    
+                    // 5. Genişliği KESİLMİŞ METNE göre hesapla
+                    const textWidth = displayMessage.length * charWidth;
                     const totalWidth = Math.max(
                         msgConfig.minWidth, 
-                        Math.min(msgConfig.maxWidth, estimatedTextWidth + (msgConfig.padding * 2))
+                        Math.min(msgConfig.maxWidth, textWidth + (msgConfig.padding * 2))
                     );
 
                     // Koordinatlar (0,0 noktası artık profilin hemen üstü)
@@ -2126,16 +2141,18 @@ function updateProfileSizes() {
                     // Çizgi kalınlığı sabit kalsın (zaten counter-scale içindeyiz)
                     messageBox.setAttribute('stroke-width', '0.5'); 
 
-                    // Text (ForeignObject) Konumu
-                    messageText.setAttribute('x', boxLeft);
-                    messageText.setAttribute('y', boxTop);
-                    messageText.setAttribute('width', totalWidth);
-                    messageText.setAttribute('height', msgConfig.height);
+                    // SVG Text Konumlandırma - Kutunun tam ortasına
+                    const textCenterX = 0; // Transform'dan dolayı 0,0 merkez
+                    const textCenterY = boxTop + (msgConfig.height / 2) + (1 * counterScale); // Optik düzeltme
 
-                    // CSS Stilleri (Doğrudan pixel veriyoruz, hesaplama yok!)
-                    messageDiv.style.fontSize = `${msgConfig.fontSize}px`;
-                    messageDiv.style.lineHeight = `${msgConfig.height}px`;
-                    messageDiv.style.padding = `0 ${msgConfig.padding / 2}px`;
+                    messageText.setAttribute('x', textCenterX);
+                    messageText.setAttribute('y', textCenterY);
+                    
+                    // Font boyutunu direkt attribute olarak veriyoruz
+                    messageText.setAttribute('font-size', msgConfig.fontSize);
+                    
+                    // 6. Metni SVG'ye işle (Zaten kesilmiş halini yazıyoruz)
+                    messageText.textContent = displayMessage;
                 }
             }
         }
@@ -2195,9 +2212,8 @@ function resolveMessageBoxCollisions(messageBoxes) {
         // Path kullandığımız için tüm path'i yeniden oluşturmalıyız
         if (offsetY < 0 && messageBox) {
             const messageText = messageGroup.querySelector('.profile-message-text');
-            const messageDiv = messageGroup.querySelector('.profile-message-content');
             
-            if (messageText && messageDiv) {
+            if (messageText) {
                 // Mevcut path'i parse et ve yeni pozisyonla yeniden oluştur
                 const pathData = messageBox.getAttribute('d');
                 if (pathData) {
@@ -2209,8 +2225,8 @@ function resolveMessageBoxCollisions(messageBoxes) {
                     });
                     messageBox.setAttribute('d', newPath);
                     
-                    // Text pozisyonunu da güncelle
-                    const currentTextY = parseFloat(messageText.getAttribute('y'));
+                    // SVG Text pozisyonunu da güncelle
+                    const currentTextY = parseFloat(messageText.getAttribute('y')) || 0;
                     messageText.setAttribute('y', currentTextY + offsetY);
                 }
             }
@@ -3331,19 +3347,22 @@ function updateProfileMessageOnMap(profileId, message) {
         const messageBox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         messageBox.setAttribute('class', 'profile-message-box');
         
-        const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        // Native SVG Text kullanıyoruz (iOS Safari için)
+        const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         messageText.setAttribute('class', 'profile-message-text');
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'profile-message-content';
-        messageDiv.textContent = message;
-        messageText.appendChild(messageDiv);
+        messageText.textContent = message;
+        messageText.setAttribute('text-anchor', 'middle');
+        messageText.setAttribute('dominant-baseline', 'middle');
+        messageText.setAttribute('dy', '1'); // Optik dikey ortalama için 1px aşağı it
         
         messageGroup.appendChild(messageBox);
         messageGroup.appendChild(messageText);
         profileGroup.appendChild(messageGroup);
         
-        // Mesaj kutusunu güncelle (zoom seviyesine göre)
+        // Orijinal mesajı hafızada tut (truncation için)
+        profileGroup.__rawMessage = message;
+        
+        // Mesaj kutusunu güncelle (zoom seviyesine göre) - Kutu boyutunu yeni metne göre hesapla
         updateProfileSizes(); // Mesaj kutularını güncelle
     }
 }
