@@ -389,6 +389,18 @@ body {
     border: 1px solid rgba(62, 207, 142, 0.3);
 }
 
+.zoom-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.zoom-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
 .zoom-btn:hover {
     background: rgba(26, 26, 26, 0.95);
     transform: scale(1.08);
@@ -467,7 +479,23 @@ body {
     }
 
     .header {
+        position: fixed; /* Zaten eklemiştik ama emin olalım */
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 9999;
+        
+        /* Çentikli telefonlar için güvenli alan */
+        padding-top: env(safe-area-inset-top); 
+        height: auto;
+        min-height: 60px; /* Navbar kaybolmasın */
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Harita container'ı navbar'ın altında kalsın */
+    .hero-section, .map-container {
+        padding-top: 60px; /* Header yüksekliği kadar boşluk */
+        height: 100dvh; /* Dinamik viewport yüksekliği (adres çubuğu sorununu çözer) */
     }
 
     .navbar {
@@ -3745,9 +3773,10 @@ body {
 /* Hero Section - Mobile */
 @media (max-width: 768px) {
     .hero-section {
-        padding-top: 100px;
+        padding-top: 80px; /* Header için boşluk */
         padding-bottom: 40px;
-        min-height: auto;
+        min-height: 100dvh; /* Dinamik viewport yüksekliği */
+        height: 100dvh;
     }
     
     .hero-content {

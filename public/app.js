@@ -36,7 +36,6 @@ const mapContainer = document.getElementById('map-container');
 const loading = document.getElementById('loading');
 const zoomInBtn = document.getElementById('zoom-in');
 const zoomOutBtn = document.getElementById('zoom-out');
-const resetZoomBtn = document.getElementById('reset-zoom');
 
 // Modal elements
 const addProfileBtn = document.getElementById('add-profile-btn');
@@ -95,6 +94,31 @@ let editProfileModal, closeEditModalBtn, cancelEditBtn, saveEditBtn, deleteProfi
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // [YENİ] Deep Link Kontrolü (En Başta)
+    // Eğer URL'de ?u= veya ?id= varsa Hero'yu hemen gizle
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasDeepLink = urlParams.get('u') || urlParams.get('id');
+    
+    if (hasDeepLink) {
+        // Hero'yu CSS ile hemen gizle
+        const heroSection = document.getElementById('hero-section');
+        if (heroSection) heroSection.classList.add('hidden');
+        
+        // Haritayı hemen göster
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('visible');
+        
+        // App container'a map-view ekle
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) appContainer.classList.add('map-view');
+        
+        // Scroll kilidini kaldır (Hero gidince sayfa kayabilsin)
+        document.body.style.overflow = '';
+        
+        // Profilleri yüklemeyi başlat (Birazdan detaylı fonksiyonda yapılacak ama burada tetikleyelim)
+        // Not: loadMap() zaten çağrılacak, o yüzden burada sadece UI'ı hazırladık.
+    }
+
     loadMap();
     setupEventListeners();
     setupModalListeners();
@@ -374,6 +398,13 @@ async function loadMap() {
         loading.classList.add('hidden');
             loading.style.display = 'none';
         }
+        
+        // [YENİ] Eğer Deep Link varsa ve profiller henüz yüklenmediyse yükle
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('u') || urlParams.get('id')) {
+            // Profilleri hemen yükle (Hero'daki butona basılmasını bekleme)
+            loadProfilesFromSupabase();
+        }
     } catch (error) {
         console.error('SVG yükleme hatası:', error);
         console.error('Hata detayları:', {
@@ -605,11 +636,30 @@ function setupEventListeners() {
         const rect = mapContainer.getBoundingClientRect();
         zoom(0.8, rect.left + rect.width / 2, rect.top + rect.height / 2);
     });
-    resetZoomBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        resetView();
-    });
+
+    // Reset View Button (Haritayı ortala + sayfayı en üste kaydır)
+    const resetViewBtn = document.getElementById('reset-view-btn');
+    if (resetViewBtn) {
+        resetViewBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // 1. Haritayı varsayılan konuma ve zoom'a getir (Mevcut fonksiyon)
+            resetView(); 
+            
+            // 2. Sayfayı en üste kaydır (Navbar yukarıda kaldıysa düzelir)
+            window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+
+            // 3. Mobilde adres çubuğu gizlendiyse viewportu düzeltmeye zorla
+            setTimeout(() => {
+                document.body.style.height = window.innerHeight + 'px';
+            }, 100);
+        });
+    }
 
     // Mouse wheel zoom
     mapContainer.addEventListener('wheel', handleWheel, { passive: false });
@@ -4429,39 +4479,62 @@ function showHeroSection() {
 
 // 1. URL'de Profil ID'si Var mı Kontrol Et (Karşılama)
 function checkUrlForDeepLink() {
-    // URL'den 'u' veya 'id' parametresini al
     const urlParams = new URLSearchParams(window.location.search);
     const profileId = urlParams.get('u') || urlParams.get('id');
 
     if (profileId) {
-        console.log("🔗 Deep Link Tespit Edildi:", profileId);
-        // Hero bölümünü gizle ki modal üstte görünsün
-        // hideHeroSection içinde profiller yüklenecek
-        hideHeroSection();
+        console.log("🔗 Deep Link Kontrol Ediliyor:", profileId);
         
-        // Profillerin yüklenmesini bekle (hideHeroSection içinde profiller yüklenecek)
-        // Profiller yüklendikten sonra modalı aç
+        // DİKKAT: hideHeroSection() BURADAN KALDIRILDI (Sonsuz döngüyü önlemek için)
+        // Hero gizleme ve Harita açma işlemini zaten DOMContentLoaded'da yaptık.
+        
+        // Loading Göster (Kullanıcı haritanın yüklendiğini anlasın)
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.classList.remove('hidden');
+            loading.style.display = 'flex';
+            loading.textContent = 'Profil aranıyor...';
+        }
+
         let checkAttempts = 0;
-        const maxAttempts = 10; // Maksimum 5 saniye bekle (10 * 500ms)
+        const maxAttempts = 20; // 10 saniye bekle (daha uzun süre)
         
         const checkProfile = setInterval(() => {
             checkAttempts++;
+            // String çevirimi önemli (ID'ler bazen sayı bazen string gelebilir)
             const profile = mapState.profiles.find(p => String(p.id) === String(profileId));
             
             if (profile) {
                 clearInterval(checkProfile);
-                console.log("✓ Profil bulundu, detay modalı açılıyor:", profile.name);
-                // Sadece detay modalını aç (zoom yok)
+                
+                // Loading'i gizle
+                if (loading) {
+                    loading.classList.add('hidden');
+                    loading.style.display = 'none';
+                }
+
+                console.log("✓ Profil bulundu, açılıyor:", profile.name);
+                
+                // Haritada profile odaklan (Zoom yap)
+                zoomToProfile(profile);
+                
+                // Modalı aç
                 handleProfileClick(profile.id);
                 
-                // İsteğe bağlı: URL'yi temizle (kullanıcı gezinmeye devam ederse)
-                // window.history.replaceState({}, document.title, window.location.pathname);
             } else if (checkAttempts >= maxAttempts) {
                 clearInterval(checkProfile);
-                console.warn("⚠ Profil yüklenemedi veya bulunamadı:", profileId);
-                showToast("Aradığın profil bulunamadı veya silinmiş.");
+                console.warn("⚠ Profil bulunamadı:", profileId);
+                
+                if (loading) {
+                    loading.classList.add('hidden');
+                    loading.style.display = 'none';
+                }
+                
+                showAlert("Aradığın profil bulunamadı veya silinmiş olabilir.", "Profil Bulunamadı", "warning");
+                
+                // Profil bulunamazsa URL'yi temizle ki kullanıcı haritayı gezebilsin
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
-            // Eğer profil henüz bulunamadıysa ve max deneme sayısına ulaşılmadıysa, devam et
         }, 500); // Her 500ms'de bir kontrol et
         
         // Maksimum bekleme süresi sonunda temizle
