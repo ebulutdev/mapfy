@@ -1,5 +1,48 @@
 // Supabase Import
+// ÖNEMLİ: Supabase import'u - supabase-client.js'den önce yüklenmeli
 import { supabase } from './supabase-client.js';
+
+// Supabase hazır olana kadar bekle (çift başlatma önleme)
+let supabaseReady = false;
+
+// Supabase'in hazır olduğunu kontrol et
+async function waitForSupabase() {
+    if (supabaseReady) {
+        console.log('✅ Supabase already ready');
+        return;
+    }
+    
+    console.log('⏳ Waiting for Supabase to be ready...');
+    
+    // Supabase instance'ının hazır olmasını bekle
+    let retries = 0;
+    const maxRetries = 50; // 5 saniye
+    
+    while (retries < maxRetries) {
+        try {
+            // Supabase'in auth property'sine erişmeyi dene
+            if (supabase && typeof supabase.auth !== 'undefined' && supabase.auth !== null) {
+                // onAuthStateChange metodunu kontrol et
+                if (typeof supabase.auth.onAuthStateChange === 'function') {
+                    supabaseReady = true;
+                    console.log('✅ Supabase ready for app.js');
+                    return;
+                }
+            }
+        } catch (error) {
+            // Henüz hazır değil, bekle
+            if (retries % 10 === 0) {
+                console.log(`⏳ Retry ${retries + 1}/${maxRetries}...`);
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+    
+    console.warn('⚠️ Supabase initialization timeout - continuing anyway');
+    // Timeout olsa bile devam et (fallback)
+    supabaseReady = true;
+}
 
 // Map state
 let mapState = {
@@ -93,7 +136,9 @@ let userProfileDropdown, userProfileLink, userAvatar, userName, editProfileBtn, 
 let editProfileModal, closeEditModalBtn, cancelEditBtn, saveEditBtn, deleteProfileBtn;
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // ÖNEMLİ: Supabase hazır olana kadar bekle (çift başlatma önleme)
+    await waitForSupabase();
     // [YENİ] Deep Link Kontrolü (En Başta)
     // Eğer URL'de ?u= veya ?id= varsa Hero'yu hemen gizle
     const urlParams = new URLSearchParams(window.location.search);
@@ -155,12 +200,41 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Listen for auth changes
     supabase.auth.onAuthStateChange((event, session) => {
+        console.log('🔐 Auth state changed:', event, session ? 'Session exists' : 'No session');
         if (event === 'SIGNED_IN') {
+            console.log('✅ User signed in:', session?.user?.email);
             checkAuthState();
         } else if (event === 'SIGNED_OUT') {
+            console.log('❌ User signed out');
+            checkAuthState();
+        } else if (event === 'TOKEN_REFRESHED') {
+            console.log('🔄 Token refreshed');
             checkAuthState();
         }
     });
+    
+    // OAuth callback kontrolü - Domain değişikliği sonrası önemli
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasOAuthCallback = urlParams.get('code') || urlParams.has('access_token') || urlParams.has('refresh_token');
+    
+    if (hasOAuthCallback) {
+        console.log('🔍 OAuth callback detected, checking session...');
+        // OAuth callback sonrası session'ı kontrol et
+        setTimeout(async () => {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (session) {
+                console.log('✅ Session found after OAuth callback:', session.user.email);
+                checkAuthState();
+                // URL'den OAuth parametrelerini temizle
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            } else if (error) {
+                console.error('❌ Session error after OAuth callback:', error);
+            } else {
+                console.warn('⚠️ No session found after OAuth callback');
+            }
+        }, 1000); // 1 saniye bekle (Supabase session'ı yüklemek için)
+    }
     
     // Initialize filter icon state
     if (filterSidebar && filterToggleIcon) {
@@ -4116,29 +4190,36 @@ async function signOut() {
 
 // Auth state kontrolü
 async function checkAuthState() {
-    const user = await getCurrentUser();
-    const loginBtn = document.getElementById('login-btn');
-    const signupBtn = document.getElementById('signup-btn');
-    
-    if (user) {
-        // Kullanıcı giriş yapmış
-        if (userProfileDropdown) userProfileDropdown.style.display = 'block';
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (signupBtn) signupBtn.style.display = 'none';
+    try {
+        console.log('🔍 Checking auth state...');
+        const user = await getCurrentUser();
+        const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
         
-        // Kullanıcı bilgilerini göster
-        if (userAvatar) {
-            userAvatar.src = user.user_metadata?.avatar_url || 'https://via.placeholder.com/32';
-            userAvatar.style.display = 'block';
+        if (user) {
+            console.log('✅ User found:', user.email);
+            // Kullanıcı giriş yapmış
+            if (userProfileDropdown) userProfileDropdown.style.display = 'block';
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (signupBtn) signupBtn.style.display = 'none';
+            
+            // Kullanıcı bilgilerini göster
+            if (userAvatar) {
+                userAvatar.src = user.user_metadata?.avatar_url || user.user_metadata?.picture || 'https://via.placeholder.com/32';
+                userAvatar.style.display = 'block';
+            }
+            if (userName) {
+                userName.textContent = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Kullanıcı';
+            }
+        } else {
+            console.log('❌ No user found');
+            // Kullanıcı giriş yapmamış
+            if (userProfileDropdown) userProfileDropdown.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'block';
+            if (signupBtn) signupBtn.style.display = 'block';
         }
-        if (userName) {
-            userName.textContent = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
-        }
-    } else {
-        // Kullanıcı giriş yapmamış
-        if (userProfileDropdown) userProfileDropdown.style.display = 'none';
-        if (loginBtn) loginBtn.style.display = 'block';
-        if (signupBtn) signupBtn.style.display = 'block';
+    } catch (error) {
+        console.error('❌ Error checking auth state:', error);
     }
 }
 

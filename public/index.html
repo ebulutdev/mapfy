@@ -1152,6 +1152,7 @@
     </div>
 
     <!-- Environment Variables Loader (Vercel için) -->
+    <!-- ÖNEMLİ: Bu script supabase-client.js'den ÖNCE çalışmalı -->
     <script>
         // Vercel'de environment variables'ı yükle
         (async function() {
@@ -1163,9 +1164,12 @@
                         const env = await response.json();
                         window.ENV = env;
                         console.log('✅ Environment variables yüklendi');
+                        // ENV yüklendikten sonra event dispatch et
+                        window.dispatchEvent(new CustomEvent('env-loaded'));
                     } else {
                         console.warn('⚠️ Environment variables API\'den yüklenemedi, fallback kullanılıyor');
                         window.ENV = {};
+                        window.dispatchEvent(new CustomEvent('env-loaded'));
                     }
                 } else {
                     // Local development için .env dosyasından oku (gerekirse)
@@ -1174,10 +1178,12 @@
                         SUPABASE_ANON_KEY: ''
                     };
                     console.log('🔧 Local development modu');
+                    window.dispatchEvent(new CustomEvent('env-loaded'));
                 }
             } catch (error) {
                 console.error('❌ Environment variables yüklenirken hata:', error);
                 window.ENV = {};
+                window.dispatchEvent(new CustomEvent('env-loaded'));
             }
         })();
     </script>
@@ -1224,7 +1230,10 @@
         </div>
     </footer>
     
+    <!-- ÖNEMLİ: Script sıralaması kritik! -->
+    <!-- 1. Önce Supabase client'ı yükle (ENV yüklendikten sonra) -->
     <script type="module" src="supabase-client.js"></script>
+    <!-- 2. Sonra app.js'i yükle (Supabase hazır olduktan sonra) -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

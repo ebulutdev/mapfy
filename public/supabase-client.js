@@ -31,33 +31,73 @@ function getSupabaseConfig() {
 }
 
 // Supabase client instance (lazy initialization)
+// ÖNEMLİ: Sadece tek bir instance olsun (çift başlatma önleme)
 let supabaseInstance = null;
+let isInitializing = false;
 
 // Environment variables yüklenene kadar bekle ve client'ı oluştur
 function initSupabase() {
+    // Çift başlatma önleme
     if (supabaseInstance) {
         return supabaseInstance;
     }
     
+    // Eğer zaten başlatılıyorsa bekle
+    if (isInitializing) {
+        // Başlatma tamamlanana kadar bekle
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (supabaseInstance) {
+                    clearInterval(checkInterval);
+                    resolve(supabaseInstance);
+                }
+            }, 50);
+        });
+    }
+    
+    isInitializing = true;
+    
     const config = getSupabaseConfig();
     
     if (!config.url || !config.key) {
-        // Environment variables henüz yüklenmedi, bir süre bekle
+        // Environment variables henüz yüklenmedi, ENV yüklenene kadar bekle
+        console.log('⏳ Environment variables bekleniyor...');
+        
+        // ENV yüklendi event'ini dinle
+        const envLoadedHandler = () => {
+            const newConfig = getSupabaseConfig();
+            if (newConfig.url && newConfig.key) {
+                supabaseInstance = createClient(newConfig.url, newConfig.key);
+                console.log('✅ Supabase client initialized with environment variables');
+                isInitializing = false;
+                window.removeEventListener('env-loaded', envLoadedHandler);
+            }
+        };
+        
+        window.addEventListener('env-loaded', envLoadedHandler);
+        
+        // Fallback: Eğer ENV event gelmezse, interval ile kontrol et
         let retryCount = 0;
-        const maxRetries = 30; // 3 saniye (30 * 100ms)
+        const maxRetries = 60; // 6 saniye (60 * 100ms)
         
         const checkInterval = setInterval(() => {
             const newConfig = getSupabaseConfig();
             if (newConfig.url && newConfig.key) {
                 clearInterval(checkInterval);
-                supabaseInstance = createClient(newConfig.url, newConfig.key);
-                console.log('✅ Supabase client initialized with environment variables');
+                window.removeEventListener('env-loaded', envLoadedHandler);
+                if (!supabaseInstance) {
+                    supabaseInstance = createClient(newConfig.url, newConfig.key);
+                    console.log('✅ Supabase client initialized (fallback)');
+                }
+                isInitializing = false;
             } else if (retryCount >= maxRetries) {
                 clearInterval(checkInterval);
+                window.removeEventListener('env-loaded', envLoadedHandler);
                 console.error('❌ SUPABASE_ANON_KEY environment variable bulunamadı!');
                 console.error('Vercel Dashboard > Settings > Environment Variables bölümünden SUPABASE_URL ve SUPABASE_ANON_KEY ekleyin.');
                 // Boş bir client oluştur (hata yönetimi için)
                 supabaseInstance = createClient('', '');
+                isInitializing = false;
             }
             retryCount++;
         }, 100);
@@ -66,19 +106,42 @@ function initSupabase() {
         const immediateConfig = getSupabaseConfig();
         if (immediateConfig.url && immediateConfig.key) {
             clearInterval(checkInterval);
+            window.removeEventListener('env-loaded', envLoadedHandler);
             supabaseInstance = createClient(immediateConfig.url, immediateConfig.key);
-            console.log('✅ Supabase client initialized');
+            console.log('✅ Supabase client initialized (immediate)');
+            isInitializing = false;
         }
     } else {
         supabaseInstance = createClient(config.url, config.key);
         console.log('✅ Supabase client initialized');
+        isInitializing = false;
     }
     
     return supabaseInstance;
 }
 
-// Initialize immediately
-initSupabase();
+// Initialize - ENV yüklendikten sonra
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // ENV yüklendi event'ini bekle veya hemen başlat
+        if (window.ENV && window.ENV.SUPABASE_URL && window.ENV.SUPABASE_ANON_KEY) {
+            initSupabase();
+        } else {
+            window.addEventListener('env-loaded', () => {
+                initSupabase();
+            }, { once: true });
+        }
+    });
+} else {
+    // DOM zaten yüklü
+    if (window.ENV && window.ENV.SUPABASE_URL && window.ENV.SUPABASE_ANON_KEY) {
+        initSupabase();
+    } else {
+        window.addEventListener('env-loaded', () => {
+            initSupabase();
+        }, { once: true });
+    }
+}
 
 // Export supabase client
 export const supabase = new Proxy({}, {
