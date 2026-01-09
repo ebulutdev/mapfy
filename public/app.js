@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     // OAuth callback kontrolü - Domain değişikliği sonrası önemli
-    const urlParams = new URLSearchParams(window.location.search);
+    // NOT: urlParams zaten yukarıda tanımlı (satır 144), tekrar tanımlamaya gerek yok
     const hasOAuthCallback = urlParams.get('code') || urlParams.has('access_token') || urlParams.has('refresh_token');
     
     if (hasOAuthCallback) {
