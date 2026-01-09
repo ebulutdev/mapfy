@@ -1060,6 +1060,36 @@
         </div>
     </div>
 
+    <!-- Environment Variables Loader (Vercel için) -->
+    <script>
+        // Vercel'de environment variables'ı yükle
+        (async function() {
+            try {
+                // Production'da API endpoint'ten al
+                if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    const response = await fetch('/api/env');
+                    if (response.ok) {
+                        const env = await response.json();
+                        window.ENV = env;
+                        console.log('✅ Environment variables yüklendi');
+                    } else {
+                        console.warn('⚠️ Environment variables API\'den yüklenemedi, fallback kullanılıyor');
+                        window.ENV = {};
+                    }
+                } else {
+                    // Local development için .env dosyasından oku (gerekirse)
+                    window.ENV = {
+                        SUPABASE_URL: '',
+                        SUPABASE_ANON_KEY: ''
+                    };
+                    console.log('🔧 Local development modu');
+                }
+            } catch (error) {
+                console.error('❌ Environment variables yüklenirken hata:', error);
+                window.ENV = {};
+            }
+        })();
+    </script>
     <script type="module" src="supabase-client.js"></script>
     <script type="module" src="app.js"></script>
 </body>

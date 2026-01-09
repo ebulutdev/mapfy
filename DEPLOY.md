@@ -98,9 +98,14 @@ vercel --prod
 3. Aşağıdaki değişkenleri ekleyin:
 
 ```
-SUPABASE_URL = https://zwlyucqzjnqtrcztzhcs.supabase.co
-SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bHl1Y3F6am5xdHJjenR6aGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MzU1MDMsImV4cCI6MjA8MzMxMTUwM30.81LUbnaHkd5BznVsnu_mFU0WmosoR8AJKKs-aOnIffI
+SUPABASE_URL = your_supabase_project_url
+SUPABASE_ANON_KEY = your_supabase_anon_key
 ```
+
+**⚠️ ÖNEMLİ:** Yukarıdaki değerleri Supabase Dashboard'dan alın:
+1. [Supabase Dashboard](https://supabase.com/dashboard) → Projenizi seçin
+2. Settings → API → Project URL ve anon public key'i kopyalayın
+3. Bu değerleri Vercel Environment Variables'a ekleyin
 
 4. Her bir environment için seçin:
    - ☑️ Production
@@ -109,20 +114,14 @@ SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 
 5. **Save** butonuna tıklayın
 
-### 3.2. Supabase Config Güncellemesi (Opsiyonel)
+### 3.2. Environment Variables Kullanımı
 
-Eğer runtime'da environment variables kullanmak isterseniz, `public/supabase-client.js` dosyasını güncelleyin:
+✅ **Artık kod otomatik olarak Vercel Environment Variables'ı kullanıyor!**
 
-```javascript
-// Supabase Client
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-// Environment variables'dan al (Vercel'de otomatik)
-const supabaseUrl = window.SUPABASE_URL || 'https://zwlyucqzjnqtrcztzhcs.supabase.co';
-const supabaseAnonKey = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-```
+- `api/env.js` endpoint'i environment variables'ı frontend'e güvenli şekilde iletir
+- `public/supabase-client.js` otomatik olarak environment variables'dan okur
+- Production'da hardcoded key'ler kullanılmaz
+- Local development için `.env.local` dosyası oluşturabilirsiniz (opsiyonel)
 
 ## ✅ Adım 4: Deployment Sonrası Kontroller
 
