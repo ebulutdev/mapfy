@@ -2006,7 +2006,7 @@ function addProfileToMap(profile) {
     }
     
     // Profile base size (küçük Snapchat-style - şık görünüm için)
-    const baseSize = 10; // İlk açılışta daha küçük boyut
+    const baseSize = 8; // İlk açılışta daha küçük boyut
     profile.baseSize = baseSize;
     
     // Create clip path for circular image
@@ -4624,6 +4624,20 @@ function setupHeroListeners() {
         heroStartBtn.addEventListener('click', () => {
             // Direkt hero section'ı gizle, haritayı göster
             hideHeroSection();
+        });
+    }
+    
+    // "Haritada Keşfet" linkine tıklandığında da hero'yu gizle
+    const mapSectionLink = document.querySelector('a[href="#map-section"]');
+    if (mapSectionLink) {
+        mapSectionLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideHeroSection();
+            // Smooth scroll to map section
+            const mapSection = document.getElementById('map-section');
+            if (mapSection) {
+                mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     }
 }

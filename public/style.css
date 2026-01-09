@@ -3971,6 +3971,69 @@ body {
     margin-bottom: 32px;
 }
 
+.hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    animation: heroFadeIn 1s ease-out 0.9s both;
+    margin-bottom: 32px;
+}
+
+.cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.cta-button.primary {
+    background: linear-gradient(135deg, #3ECF8E 0%, #2ebd7a 100%);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(62, 207, 142, 0.3);
+}
+
+.cta-button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(62, 207, 142, 0.4);
+}
+
+.cta-button.primary:active {
+    transform: translateY(0);
+}
+
+.cta-button.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.cta-button.secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.cta-button.secondary:active {
+    transform: translateY(0);
+}
+
+.cta-button svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
 .hero-btn-primary {
     padding: 14px 32px;
     background: linear-gradient(135deg, #3ECF8E 0%, #2ebd7a 100%);
