@@ -2,7 +2,11 @@
 
 ## Canlı Site URL'i
 
-**Production:** [https://mapfy.vercel.app](https://mapfy.vercel.app)
+**Production:** [https://maphypee.com](https://maphypee.com)
+
+## İletişim
+
+**E-posta:** destek@maphypee.com
 
 ## URL Kullanım Yerleri
 
@@ -30,9 +34,9 @@
 Supabase Dashboard > Authentication > URL Configuration:
 
 ```
-https://mapfy.vercel.app
-https://mapfy.vercel.app/
-https://mapfy.vercel.app/?u=*
+https://maphypee.com
+https://maphypee.com/
+https://maphypee.com/?u=*
 ```
 
 ## Google OAuth Redirect URI
@@ -46,6 +50,6 @@ https://zwlyucqzjnqtrcztzhcs.supabase.co/auth/v1/callback
 ## Domain Ayarları
 
 Vercel Dashboard > Settings > Domains:
-- Production domain: `mapfy.vercel.app` (otomatik)
-- Custom domain eklenebilir (opsiyonel)
+- Production domain: `maphypee.com` (özel domain)
+- Vercel otomatik domain: `maphypee.vercel.app` (yedek)
 

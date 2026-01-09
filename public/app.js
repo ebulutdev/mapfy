@@ -4074,11 +4074,17 @@ async function checkUserHasProfile(userId) {
 // Google ile giriş
 async function signInWithGoogle() {
     try {
+        // [YENİ] prompt: 'select_account' ekledik.
+        // Bu kod, Google'a "Her seferinde hesap seçme ekranını göster" der.
         // Vercel production için: Supabase otomatik olarak doğru URL'ye yönlendirecek
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + window.location.pathname
+                redirectTo: window.location.origin + window.location.pathname,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'select_account' // <-- İŞTE BU SATIR SORUNU ÇÖZER: Her seferinde hesap seçme ekranını gösterir
+                }
             }
         });
 
@@ -4680,10 +4686,10 @@ async function shareProfile(profileId) {
     const sharedKey = `shared_${profileId}`;
     const hasShared = sessionStorage.getItem(sharedKey);
 
-    // Link formatı: https://mapfy.vercel.app/?u=PROFIL_ID
+    // Link formatı: https://maphypee.com/?u=PROFIL_ID
     const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
         ? `${window.location.origin}${window.location.pathname}` 
-        : 'https://mapfy.vercel.app';
+        : 'https://maphypee.com';
     const shareUrl = `${baseUrl}?u=${profileId}`;
 
     // Mobil Cihazlar İçin Native Paylaşım Menüsü
@@ -5262,7 +5268,7 @@ const legalContents = {
             <p>MapHypee; paket fiyatlarını, kapsamını veya özelliklerini dilediği zaman güncelleme hakkını saklı tutar. Fiyat değişiklikleri, mevcut abonelik döneminiz bittikten sonraki ilk yenilemede geçerli olur ve öncesinde size bildirim yapılır.</p>
             
             <h2>8. İLETİŞİM</h2>
-            <p>Abonelik, iptal veya ödeme sorunları ile ilgili destek almak için: <strong>destek@maphypee.app</strong></p>
+            <p>Abonelik, iptal veya ödeme sorunları ile ilgili destek almak için: <strong>destek@maphypee.com</strong></p>
         `
     },
     faq: {
@@ -5528,7 +5534,7 @@ const legalContents = {
             
             <h2>İletişim ve Destek</h2>
             <p>MapHypee hakkında sorularınız, önerileriniz veya teknik destek ihtiyacınız için:</p>
-            <p><strong>E-posta:</strong> destek@maphypee.app</p>
+            <p><strong>E-posta:</strong> destek@maphypee.com</p>
             <p>E-postalarınıza 2-3 iş günü içinde yanıt veriyoruz.</p>
             
             <h2>Sonuç</h2>

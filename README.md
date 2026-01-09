@@ -131,9 +131,11 @@ Belirli bir şehir bilgisi döndürür.
 
 ## 🌍 Canlı Demo
 
-🌐 **Canlı Site:** [https://mapfy.vercel.app](https://mapfy.vercel.app)
+🌐 **Canlı Site:** [https://maphypee.com](https://maphypee.com)
 
-Deploy edildikten sonra otomatik olarak bu URL'de yayınlanır.
+## 📧 İletişim
+
+📧 **E-posta:** destek@maphypee.com
 
 ## 📄 Lisans
 

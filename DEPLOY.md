@@ -129,8 +129,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ### 4.1. Site URL'ini Kontrol Edin
 
 Deploy tamamlandıktan sonra:
-- **Production URL:** [https://mapfy.vercel.app](https://mapfy.vercel.app)
-- Özel domain ekleyebilirsiniz: Settings > Domains
+- **Production URL:** [https://maphypee.com](https://maphypee.com)
+- Özel domain ayarları: Vercel Dashboard > Settings > Domains
 
 ### 4.2. Test Edin
 
@@ -173,13 +173,14 @@ git push
 
 Artık siteniz canlıda! 🚀
 
-- **🌐 Canlı URL:** [https://mapfy.vercel.app](https://mapfy.vercel.app)
+- **🌐 Canlı URL:** [https://maphypee.com](https://maphypee.com)
 - **📦 GitHub:** Otomatik sync
 - **🚀 Deploy:** Her push'ta otomatik
 
 ## 📞 Destek
 
 Sorun yaşarsanız:
+- **📧 E-posta:** destek@maphypee.com
 - Vercel [Dokümantasyon](https://vercel.com/docs)
 - Vercel [Discord](https://vercel.com/discord)
 

@@ -181,9 +181,9 @@ npm install @supabase/supabase-js
     http://127.0.0.1:5173
     http://127.0.0.1:8080
     ```
-    ⚠️ **ÖNEMLİ**: Eğer canlı bir domain kullanıyorsan (örn: `https://mapfy.vercel.app`), onu da ekle:
+    ⚠️ **ÖNEMLİ**: Eğer canlı bir domain kullanıyorsan (örn: `https://maphypee.com`), onu da ekle:
     ```
-    https://mapfy.vercel.app
+    https://maphypee.com
     ```
 11. **Create** butonuna tıkla
 12. **Client ID** ve **Client Secret** değerlerini kopyala (bir daha gösterilmeyecek!)
