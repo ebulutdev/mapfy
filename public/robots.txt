@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://maphypee.com/sitemap.xml
+
+# Vercel altyapısı hızlı olduğu için crawl-delay kaldırıldı
+# Google'ın sitenizi daha hızlı taraması için optimize edildi
+
+# Disallow specific paths if needed
+# Disallow: /api/
+# Disallow: /admin/
