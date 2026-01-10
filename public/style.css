@@ -83,17 +83,20 @@ body {
 
 /* Map-view'da butonlar alt sağ köşede L şeklinde */
 .app-container.map-view .zoom-controls {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px !important;
     top: auto;
 }
 
 .app-container.map-view .filter-toggle-icon {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px !important;
     top: auto;
 }
 
 .app-container.map-view .add-profile-btn {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px !important;
     top: auto;
 }
 
@@ -126,8 +129,9 @@ body {
     user-select: none;
     -webkit-user-select: none;
     border: 1px solid rgba(62, 207, 142, 0.3);
-    z-index: 99; /* Diğer butonlarla aynı z-index */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    z-index: 9999; /* En üstte olduğundan emin ol */
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px;
     left: 20px; /* Sol alt köşe */
     right: auto;
     top: auto;
@@ -163,7 +167,8 @@ body {
 /* Hypee butonu harita görünümünde sol alt köşede */
 .app-container.map-view .hypee-btn {
     display: flex !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px !important;
     left: 20px;
     right: auto;
 }
@@ -515,8 +520,8 @@ body {
 .zoom-controls {
     position: fixed;
     right: 20px;
-    /* Alt sağ köşe (safe-area + boşluk) */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px;
     top: auto;
     display: flex;
     flex-direction: column;
@@ -614,8 +619,8 @@ body {
 /* Responsive - Tablet */
 @media (max-width: 1024px) {
     .zoom-controls {
-        /* Alt sağ köşe (safe-area + boşluk) */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 15px);
+        /* Mobilde adres çubuğunun üstüne çıkması için extra boşluk */
+        bottom: calc(env(safe-area-inset-bottom, 20px) + 80px) !important;
         right: 15px;
         top: auto;
         gap: 8px;
@@ -871,8 +876,8 @@ body {
     
     /* Harita sayfasında butonlar alt sağda L şeklinde */
     .app-container.map-view .filter-toggle-icon {
-        /* Alt sağ köşe - Zoom controls'un solunda */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+        /* Mobilde adres çubuğunun üstüne çıkması için extra boşluk */
+        bottom: calc(env(safe-area-inset-bottom, 20px) + 80px) !important;
         right: 54px; /* Zoom controls'un solunda (32px buton + 6px gap + 6px gap + 10px ekstra) */
         top: auto;
         width: 32px;
@@ -880,8 +885,8 @@ body {
     }
     
     .app-container.map-view .add-profile-btn {
-        /* Alt sağ köşe - Filter toggle'un solunda */
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+        /* Mobilde adres çubuğunun üstüne çıkması için extra boşluk */
+        bottom: calc(env(safe-area-inset-bottom, 20px) + 80px) !important;
         right: 94px; /* Filter toggle'un solunda (32px zoom + 6px + 32px filter + 6px + 32px profil + 6px + 10px ekstra) */
         top: auto;
         width: 32px;
@@ -900,11 +905,12 @@ body {
         top: auto;
     }
     
-    /* Hypee butonu mobilde (sol alt köşe) */
+    /* Hypee butonu mobilde (sol alt köşe) - Adres çubuğunun üstünde */
     .hypee-btn {
         width: 32px;
         height: 32px;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+        /* Mobilde adres çubuğunun üstüne çıkması için extra boşluk */
+        bottom: calc(env(safe-area-inset-bottom, 20px) + 80px) !important;
         left: 10px; /* Sol alt köşe */
         right: auto;
     }
@@ -1210,7 +1216,8 @@ body {
 .filter-toggle-icon {
     position: fixed;
     /* Alt sağ köşe - Zoom butonlarının solunda, L şeklinde */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px;
     right: 68px; /* Zoom controls'un solunda (36px buton + 8px gap + 8px gap + 16px ekstra) */
     top: auto;
     width: 36px;
@@ -1255,7 +1262,8 @@ body {
 .add-profile-btn {
     position: fixed;
     /* Alt sağ köşe - Filter'ın solunda, L şeklinde */
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    /* Masaüstü (Varsayılan) - Daha yere yakın, kibar */
+    bottom: 30px;
     right: 112px; /* Filter toggle'un solunda (36px filter + 8px gap + 36px profil + 8px gap + 24px ekstra) */
     top: auto;
     width: 36px;
