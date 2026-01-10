@@ -157,6 +157,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const appContainer = document.querySelector('.app-container');
         if (appContainer) appContainer.classList.add('map-view');
         
+        // Hypee butonunu göster
+        if (typeof updateHypeeButtonVisibility === 'function') {
+            updateHypeeButtonVisibility();
+        }
+        
         // Scroll kilidini kaldır (Hero gidince sayfa kayabilsin)
         document.body.style.overflow = '';
         
