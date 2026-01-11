@@ -1091,17 +1091,10 @@ function setupModalListeners() {
     
     // Yaş input validasyonu - 18 altında değer girilmesini engelle
     if (ageInput) {
-        ageInput.addEventListener('input', (e) => {
-            const value = parseInt(e.target.value);
-            if (!isNaN(value) && value < 18) {
-                e.target.value = '';
-                showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
-            }
-        });
-        
+        // Yaş validasyonunu sadece blur ve submit'te yap (her input'ta değil)
         ageInput.addEventListener('blur', (e) => {
             const value = parseInt(e.target.value);
-            if (!isNaN(value) && value < 18) {
+            if (!isNaN(value) && value < 18 && value > 0) {
                 e.target.value = '';
                 showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
             }
@@ -3874,20 +3867,41 @@ function selectFilterGender(gender) {
     applyFilters();
 }
 
-// Get all 81 cities from cities.json
+// Get all 81 cities from cities.json or mapState
 async function getAllCities() {
+    // Önce haritadaki şehirleri kontrol et (daha hızlı)
+    if (mapState.cities && mapState.cities.length > 0) {
+        console.log(`✅ Haritadan ${mapState.cities.length} şehir bulundu`);
+        return mapState.cities.map(city => ({
+            id: city.id || city.name.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c'),
+            name: city.name
+        }));
+    }
+    
+    // Eğer haritada şehir yoksa, cities.json'dan yükle
     try {
         const response = await fetch('/data/cities.json');
         if (!response.ok) {
             throw new Error('Şehir listesi yüklenemedi');
         }
         const cities = await response.json();
-        return cities.map(city => ({
+        const mappedCities = cities.map(city => ({
             id: city.name.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c'),
             name: city.name
         }));
+        console.log(`✅ cities.json'dan ${mappedCities.length} şehir yüklendi`);
+        return mappedCities;
     } catch (error) {
-        console.error('Şehir listesi yüklenirken hata:', error);
+        console.warn('⚠️ cities.json yüklenemedi, haritadaki şehirleri kontrol ediliyor...', error);
+        // Son çare: Haritadan şehirleri tekrar kontrol et
+        if (mapState.cities && mapState.cities.length > 0) {
+            console.log(`✅ Fallback: Haritadan ${mapState.cities.length} şehir bulundu`);
+            return mapState.cities.map(city => ({
+                id: city.id || city.name.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c'),
+                name: city.name
+            }));
+        }
+        console.error('❌ Şehir listesi yüklenemedi');
         return [];
     }
 }
@@ -4303,9 +4317,60 @@ async function openEditProfileModal() {
     if (document.getElementById('edit-username-input')) {
         document.getElementById('edit-username-input').value = profile.name || '';
     }
-    if (document.getElementById('edit-city-input')) {
-        document.getElementById('edit-city-input').value = profile.city_name || '';
+    
+    // Şehir select'ini güncelle
+    const editCitySelect = document.getElementById('edit-city-select');
+    const editCityInput = document.getElementById('edit-city-input');
+    const currentCityName = profile.city_name || '';
+    
+    if (editCitySelect) {
+        // Select'i başlangıçta disabled yap (yükleme sırasında)
+        editCitySelect.disabled = true;
+        editCitySelect.innerHTML = '<option value="">Yükleniyor...</option>';
+        
+        // Önce şehirleri yükle, sonra değeri ayarla
+        loadCitiesForEditSelect(editCitySelect).then(() => {
+            // Şehirler yüklendikten sonra mevcut şehri seç
+            if (currentCityName) {
+                // Şehir adını normalize et (Türkçe karakterler için)
+                const normalizedCityName = currentCityName.trim();
+                
+                // Select'te şehri bul ve seç
+                const options = editCitySelect.querySelectorAll('option');
+                let found = false;
+                options.forEach(opt => {
+                    if (opt.value === normalizedCityName) {
+                        opt.selected = true;
+                        found = true;
+                    }
+                });
+                
+                // Eğer şehir listede yoksa, ekle
+                if (!found && normalizedCityName) {
+                    const newOption = document.createElement('option');
+                    newOption.value = normalizedCityName;
+                    newOption.textContent = normalizedCityName;
+                    newOption.selected = true;
+                    editCitySelect.appendChild(newOption);
+                }
+                
+                editCitySelect.value = normalizedCityName;
+                if (editCityInput) {
+                    editCityInput.value = normalizedCityName;
+                }
+            }
+            
+            // Select'i tekrar aktif yap
+            editCitySelect.disabled = false;
+        }).catch(err => {
+            console.error('Şehirler yüklenirken hata:', err);
+            editCitySelect.innerHTML = '<option value="">Şehir yüklenemedi</option>';
+            editCitySelect.disabled = false;
+        });
+    } else if (editCityInput) {
+        editCityInput.value = currentCityName;
     }
+    
     if (document.getElementById('edit-district-input')) {
         document.getElementById('edit-district-input').value = profile.district || '';
     }
@@ -4411,7 +4476,20 @@ async function updateProfile() {
     
     // Form verilerini al
     const name = document.getElementById('edit-username-input')?.value.trim();
-    const city = document.getElementById('edit-city-input')?.value.trim();
+    
+    // Şehir select'ten veya input'tan al
+    const editCitySelect = document.getElementById('edit-city-select');
+    const city = (editCitySelect?.value || document.getElementById('edit-city-input')?.value.trim() || '').trim();
+    
+    // Şehir kontrolü - Zorunlu
+    if (!city) {
+        await showAlert('Lütfen bir şehir seçin.', 'Eksik Bilgi', 'warning');
+        if (editCitySelect) {
+            editCitySelect.focus();
+        }
+        return;
+    }
+    
     const district = document.getElementById('edit-district-input')?.value.trim();
     
     // Yaş kontrolü (18+) - Zorunlu
@@ -4539,6 +4617,77 @@ async function deleteProfile() {
     }
 }
 
+// Şehirleri edit select dropdown'ına yükle (Alfabetik sıralı)
+async function loadCitiesForEditSelect(selectElement) {
+    if (!selectElement) {
+        console.error('Select element bulunamadı');
+        return;
+    }
+    
+    try {
+        // Önce haritadaki şehirleri kontrol et
+        let allCities = [];
+        
+        if (mapState.cities && mapState.cities.length > 0) {
+            // Haritadan şehirleri al
+            allCities = mapState.cities.map(city => ({
+                id: city.id || city.name.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c'),
+                name: city.name
+            }));
+            console.log(`✅ Haritadan ${allCities.length} şehir yüklendi`);
+        } else {
+            // getAllCities fonksiyonunu kullan (cities.json veya fallback)
+            allCities = await getAllCities();
+        }
+        
+        if (!allCities || allCities.length === 0) {
+            console.warn('⚠️ Şehir listesi boş, harita yükleniyor olabilir...');
+            // Harita henüz yüklenmemiş olabilir, bir süre bekle ve tekrar dene
+            setTimeout(async () => {
+                if (mapState.cities && mapState.cities.length > 0) {
+                    await loadCitiesForEditSelect(selectElement);
+                } else {
+                    selectElement.innerHTML = '<option value="">Şehirler yükleniyor, lütfen bekleyin...</option>';
+                }
+            }, 500);
+            return;
+        }
+        
+        // Önce mevcut option'ları temizle
+        selectElement.innerHTML = '';
+        
+        // Varsayılan option'ı ekle
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Şehir seçin...';
+        selectElement.appendChild(defaultOpt);
+        
+        // Alfabetik sırala
+        const sortedCities = allCities.slice().sort((a, b) => {
+            return a.name.localeCompare(b.name, 'tr');
+        });
+        
+        // Option'ları ekle
+        sortedCities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.name;
+            option.textContent = city.name;
+            if (city.id) {
+                option.setAttribute('data-city-id', city.id);
+            }
+            selectElement.appendChild(option);
+        });
+        
+        console.log(`✅ ${sortedCities.length} şehir dropdown'a yüklendi`);
+    } catch (err) {
+        console.error('Şehir listesi yüklenirken hata:', err);
+        selectElement.innerHTML = '<option value="">Şehir yüklenirken hata oluştu</option>';
+        // Hata durumunda select'i tekrar aktif yap
+        selectElement.disabled = false;
+        throw err;
+    }
+}
+
 // Setup edit profile listeners
 function setupEditProfileListeners() {
     if (closeEditModalBtn) {
@@ -4599,22 +4748,28 @@ function setupEditProfileListeners() {
         });
     }
     
-    // Yaş input validasyonu - 18 altında değer girilmesini engelle
+    // Yaş input validasyonu - Sadece blur ve submit'te kontrol et
     const editAgeInput = document.getElementById('edit-age-input');
     if (editAgeInput) {
-        editAgeInput.addEventListener('input', (e) => {
+        // Yaş validasyonunu sadece blur ve submit'te yap (her input'ta değil)
+        editAgeInput.addEventListener('blur', (e) => {
             const value = parseInt(e.target.value);
-            if (!isNaN(value) && value < 18) {
+            if (!isNaN(value) && value < 18 && value > 0) {
                 e.target.value = '';
                 showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
             }
         });
-        
-        editAgeInput.addEventListener('blur', (e) => {
-            const value = parseInt(e.target.value);
-            if (!isNaN(value) && value < 18) {
-                e.target.value = '';
-                showAlert('Platformu kullanmak için 18 yaş ve üzeri olmanız gerekmektedir.', 'Yaş Sınırı', 'warning');
+    }
+    
+    // Edit city select dropdown - Sadece change event listener'ını ekle
+    // Şehirleri modal açıldığında yükleyeceğiz (openEditProfileModal içinde)
+    const editCitySelect = document.getElementById('edit-city-select');
+    if (editCitySelect) {
+        // Şehir seçildiğinde hidden input'u güncelle
+        editCitySelect.addEventListener('change', (e) => {
+            const cityInput = document.getElementById('edit-city-input');
+            if (cityInput) {
+                cityInput.value = e.target.value || '';
             }
         });
     }
