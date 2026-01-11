@@ -23,6 +23,36 @@ CREATE INDEX IF NOT EXISTS idx_stories_created_at ON stories(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_stories_created_at_gt ON stories(created_at) WHERE created_at > NOW() - INTERVAL '24 hours';
 
 -- ============================================================
+-- PERFORMANS İYİLEŞTİRMESİ: FUNCTIONAL INDEX'LER
+-- ============================================================
+-- get_nearby_stories fonksiyonunda LOWER(TRIM(city_name)) ve LOWER(TRIM(district))
+-- kullanıldığı için, bu işlemleri her sorguda yapmak yerine
+-- önceden hesaplanmış indeksler kullanılır (10x-100x hızlanma)
+
+-- Profiles tablosu için functional index'ler (Eğer profiles tablosu varsa)
+-- Not: Bu index'ler profiles tablosunda city_name ve district sütunları varsa çalışır
+DO $$
+BEGIN
+    -- city_name için functional index
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'profiles' AND column_name = 'city_name'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_profiles_city_lower 
+        ON profiles (LOWER(TRIM(COALESCE(city_name, ''))));
+    END IF;
+    
+    -- district için functional index
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'profiles' AND column_name = 'district'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_profiles_district_lower 
+        ON profiles (LOWER(TRIM(COALESCE(district, ''))));
+    END IF;
+END $$;
+
+-- ============================================================
 -- 2. ADIM: GÜVENLİK VE RLS (TEMİZ BAŞLANGIÇ)
 -- ============================================================
 

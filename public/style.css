@@ -5600,6 +5600,19 @@ body {
     opacity: 0.9;
 }
 
+/* İzlendi (Seen) Durumu - Gri Halka (Priority ne olursa olsun) */
+.story-circle.story-circle-viewed {
+    border: 2px solid rgba(120, 120, 120, 0.4);
+    background: linear-gradient(135deg, rgba(100, 100, 100, 0.15) 0%, rgba(80, 80, 80, 0.1) 100%);
+    opacity: 0.7; /* Biraz soluk görünsün */
+}
+
+.story-item:hover .story-circle-viewed {
+    border-color: rgba(120, 120, 120, 0.6);
+    box-shadow: 0 0 10px rgba(120, 120, 120, 0.2);
+    opacity: 0.85; /* Hover'da biraz daha belirgin */
+}
+
 /* Kendi Hikayen İçin Gradient Neon Çerçeve + Pulse Animasyonu */
 .story-circle.add-story {
     background: transparent;

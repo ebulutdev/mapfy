@@ -169,6 +169,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Not: loadMap() zaten çağrılacak, o yüzden burada sadece UI'ı hazırladık.
     }
 
+    // URL Hash Kontrolü (Sayfa yenilendiğinde kaldığı yerden devam et)
+    const hash = window.location.hash;
+    if (hash === '#map') {
+        // Hero'yu gizle, Haritayı aç
+        const heroSection = document.getElementById('hero-section');
+        const appContainer = document.querySelector('.app-container');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (heroSection) heroSection.classList.add('hidden');
+        if (mainContent) mainContent.classList.add('visible');
+        if (appContainer) {
+            appContainer.classList.add('map-view');
+            appContainer.style.opacity = '1';
+        }
+        
+        document.body.style.overflow = '';
+        
+        // Hypee butonunu göster (Eğer varsa)
+        if (typeof updateHypeeButtonVisibility === 'function') {
+            updateHypeeButtonVisibility();
+        }
+    } else {
+        // Hash yoksa veya #home ise Hero bölümünü göster (Varsayılan)
+        // Hiçbir şey yapmana gerek yok, HTML zaten Hero ile başlıyor.
+    }
+
     loadMap();
     setupEventListeners();
     setupModalListeners();
@@ -4783,7 +4809,7 @@ function setupHeroListeners() {
     if (heroStartBtn) {
         heroStartBtn.addEventListener('click', () => {
             // Direkt hero section'ı gizle, haritayı göster
-            hideHeroSection();
+            showMapView();
         });
     }
     
@@ -4800,6 +4826,13 @@ function setupHeroListeners() {
             }
         });
     }
+}
+
+// Show Map View (Alias for hideHeroSection with URL hash)
+function showMapView() {
+    hideHeroSection();
+    // URL'in sonuna #map ekle (Sayfa yenilenmez)
+    window.location.hash = "map";
 }
 
 // Hide hero section
@@ -4861,6 +4894,11 @@ function showHeroSection() {
     // App container'dan map-view class'ını kaldır (navbar'ı tam göster)
     if (appContainer) {
         appContainer.classList.remove('map-view');
+    }
+    
+    // Hash'i temizle (Hero'ya dönüldüğünde)
+    if (window.location.hash) {
+        history.pushState("", document.title, window.location.pathname + window.location.search);
     }
 }
 
