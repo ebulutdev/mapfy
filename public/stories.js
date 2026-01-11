@@ -498,6 +498,8 @@ async function openStoryViewer(story) {
     const storyViewerTime = document.getElementById('story-viewer-time');
     const progressContainer = document.getElementById('story-progress-container');
     const storyDeleteBtn = document.getElementById('story-viewer-delete-btn');
+    const compatibilityBadge = document.getElementById('story-compatibility-badge');
+    const compatibilityText = document.getElementById('story-compatibility-text');
     
     if (!storyViewerModal) return;
     
@@ -532,6 +534,83 @@ async function openStoryViewer(story) {
     
     storyViewerUsername.textContent = story.username || 'Kullanıcı';
     storyViewerTime.textContent = 'Az önce'; // İleride zaman hesaplanabilir
+    
+    // Uyumluluk Badge'ini Güncelle
+    if (compatibilityBadge && compatibilityText) {
+        try {
+            // Kullanıcının kendi hikayesi mi kontrol et
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            // Hikayenin user_id'sini al
+            let storyUserId = story.user_id;
+            if (!storyUserId && story.id) {
+                const { data: storyData } = await supabase
+                    .from('stories')
+                    .select('user_id')
+                    .eq('id', story.id)
+                    .single();
+                if (storyData) {
+                    storyUserId = storyData.user_id;
+                }
+            }
+            
+            // Kendi hikayesi ise badge'i gizle
+            if (user && storyUserId && user.id === storyUserId) {
+                compatibilityBadge.style.display = 'none';
+                compatibilityBadge.classList.remove('visible');
+                return; // Kendi hikayesinde badge gösterme
+            }
+            
+            // Priority level'a göre uyumluluk metnini belirle
+            const priorityLevel = story.priorityLevel || 3;
+            let compatibilityMessage = "";
+            let badgeClass = "";
+            
+            if (priorityLevel === 1) {
+                // Aynı şehir ve ilçe
+                compatibilityMessage = "Aynı İlçe";
+                badgeClass = "compatibility-high";
+            } else if (priorityLevel === 2) {
+                // Sadece aynı şehir
+                compatibilityMessage = "Aynı Şehir";
+                badgeClass = "compatibility-medium";
+            } else {
+                // Farklı şehir - Şehir adını göster
+                // Hikaye sahibinin şehir bilgisini çek
+                let storyCity = "";
+                if (storyUserId) {
+                    const { data: storyProfile } = await supabase
+                        .from('profiles')
+                        .select('city_name')
+                        .eq('user_id', storyUserId)
+                        .single();
+                    if (storyProfile && storyProfile.city_name) {
+                        storyCity = storyProfile.city_name;
+                    }
+                }
+                compatibilityMessage = storyCity || "Farklı Konum";
+                badgeClass = "compatibility-low";
+            }
+            
+            // Badge'i göster ve güncelle (animasyon için visible class'ı ekle)
+            compatibilityText.textContent = compatibilityMessage;
+            compatibilityBadge.className = `story-compatibility-badge ${badgeClass}`;
+            compatibilityBadge.style.display = 'flex';
+            
+            // Animasyon için kısa bir gecikme sonra visible class'ını ekle
+            setTimeout(() => {
+                compatibilityBadge.classList.add('visible');
+            }, 50);
+            
+        } catch (error) {
+            console.error('Uyumluluk bilgisi yüklenirken hata:', error);
+            // Hata durumunda badge'i gizle
+            if (compatibilityBadge) {
+                compatibilityBadge.style.display = 'none';
+                compatibilityBadge.classList.remove('visible');
+            }
+        }
+    }
     
     // Çöp kutusu butonunu kontrol et - Sadece kullanıcının kendi hikayesinde görünsün
     if (storyDeleteBtn) {
@@ -591,6 +670,13 @@ function closeStoryViewer() {
         storyDeleteBtn.removeAttribute('data-story-id');
         storyDeleteBtn.disabled = false;
         storyDeleteBtn.style.opacity = '1';
+    }
+    
+    // Uyumluluk badge'ini gizle
+    const compatibilityBadge = document.getElementById('story-compatibility-badge');
+    if (compatibilityBadge) {
+        compatibilityBadge.style.display = 'none';
+        compatibilityBadge.classList.remove('visible');
     }
     
     // Timer'ları temizle
@@ -2020,6 +2106,7 @@ function displayHypeeStories(stories) {
             // (Burada stories dizisini map ediyoruz, DOM'u değil. Daha hızlı ve güvenli)
             const viewerList = stories.map(s => ({
                 id: s.id,
+                user_id: s.user_id, // user_id'yi ekle (badge için gerekli)
                 mediaUrl: s.media_url,
                 username: s.username,
                 avatar: s.avatar_url, // Avatar bilgisini de taşıyalım
@@ -2062,6 +2149,7 @@ function openHypeeStoryViewer(storyList, startIndex) {
         if (firstStory && typeof window.openStoryViewer === 'function') {
             window.openStoryViewer({
                 id: firstStory.id,
+                user_id: firstStory.user_id, // user_id'yi ekle (badge için gerekli)
                 mediaUrl: firstStory.mediaUrl,
                 username: firstStory.username,
                 priorityLevel: firstStory.priorityLevel,

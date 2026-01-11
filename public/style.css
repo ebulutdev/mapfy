@@ -5958,6 +5958,62 @@ body {
     background: rgba(0, 0, 0, 0.7);
 }
 
+/* Story Compatibility Badge (Sağ Üst) */
+.story-compatibility-badge {
+    position: fixed;
+    top: 70px; /* Kapat butonunun altında */
+    right: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #fff;
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none; /* Tıklamayı engelle */
+    user-select: none;
+    -webkit-user-select: none;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+    /* Animasyonlu giriş için başlangıç durumu */
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s; /* 0.3s gecikmeli başla */
+}
+
+/* Visible class eklendiğinde animasyonlu görünür hale gelir */
+.story-compatibility-badge.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Yüksek Uyumluluk (Aynı İlçe) */
+.story-compatibility-badge.compatibility-high {
+    background: rgba(62, 207, 142, 0.2);
+    border-color: rgba(62, 207, 142, 0.4);
+    color: #3ECF8E;
+}
+
+/* Orta Uyumluluk (Aynı Şehir) */
+.story-compatibility-badge.compatibility-medium {
+    background: rgba(255, 252, 0, 0.15);
+    border-color: rgba(255, 252, 0, 0.3);
+    color: #FFFC00;
+}
+
+/* Düşük Uyumluluk (Uzak) */
+.story-compatibility-badge.compatibility-low {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.6);
+}
+
 .story-viewer-container {
     width: 100%;
     height: 100%;
@@ -6153,6 +6209,13 @@ body {
         right: 10px;
         width: 36px;
         height: 36px;
+    }
+    
+    .story-compatibility-badge {
+        top: 56px; /* Mobilde kapat butonunun altında */
+        right: 10px;
+        font-size: 8px;
+        padding: 4px 8px;
     }
     
     .story-progress-container {
