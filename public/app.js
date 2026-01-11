@@ -505,10 +505,12 @@ async function loadMap() {
             loading.style.display = 'none';
         }
         
-        // [YENİ] Eğer Deep Link varsa ve profiller henüz yüklenmediyse yükle
+        // [YENİ] Eğer Deep Link varsa veya hash #map ise profilleri yükle
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('u') || urlParams.get('id')) {
+        const hash = window.location.hash;
+        if (urlParams.get('u') || urlParams.get('id') || hash === '#map') {
             // Profilleri hemen yükle (Hero'daki butona basılmasını bekleme)
+            console.log('✓ Hash veya deep link tespit edildi, profiller yükleniyor...');
             loadProfilesFromSupabase();
         }
     } catch (error) {
@@ -836,6 +838,32 @@ function setupNavbarListeners() {
         });
     }
     
+    // Premium linki (Yardım dropdown içinde)
+    const premiumLink = document.getElementById('premium-link');
+    if (premiumLink) {
+        premiumLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Eğer harita görünümündeysek hero'ya dön
+            const heroSection = document.getElementById('hero-section');
+            if (heroSection && heroSection.classList.contains('hidden')) {
+                showHeroSection();
+                // Hero yüklendikten sonra scroll yap
+                setTimeout(() => {
+                    const pricingSection = document.getElementById('pricing');
+                    if (pricingSection) {
+                        pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 300);
+            } else {
+                // Zaten hero'dayız, direkt scroll yap
+                const pricingSection = document.getElementById('pricing');
+                if (pricingSection) {
+                    pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+    }
+    
     // Yardım dropdown linkleri
     const helpLink = document.getElementById('help-link');
     if (helpLink) {
@@ -1138,28 +1166,39 @@ function setupModalListeners() {
         genderFemaleBtn.addEventListener('click', () => selectFilterGender('female'));
     }
     
-    if (ageMinInput) {
-        ageMinInput.addEventListener('input', applyFilters);
-    }
-    if (ageMaxInput) {
-        ageMaxInput.addEventListener('input', applyFilters);
-    }
+    // Input event listener'ları kaldırıldı - sadece "Sonuçları Göster" butonunda filtreleme yapılacak
+    // if (ageMinInput) {
+    //     ageMinInput.addEventListener('input', applyFilters);
+    // }
+    // if (ageMaxInput) {
+    //     ageMaxInput.addEventListener('input', applyFilters);
+    // }
     if (filterCityInput) {
         filterCityInput.addEventListener('input', handleFilterCityInput);
     }
-    if (filterDistrictInput) {
-        filterDistrictInput.addEventListener('input', applyFilters);
-    }
+    // if (filterDistrictInput) {
+    //     filterDistrictInput.addEventListener('input', applyFilters);
+    // }
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', clearAllFilters);
     }
     
-    // Search filter button
+    // Search filter button - Premium kontrolü burada yapılıyor
     if (searchFilterBtn) {
-        searchFilterBtn.addEventListener('click', applyFilters);
+        searchFilterBtn.addEventListener('click', async (e) => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                // Free kullanıcılar için tüm profilleri göster (filtreleme olmadan)
+                renderFilterResults(mapState.profiles);
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Tüm profilleri görüntülüyorsunuz. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Bilgi', 'info');
+                return;
+            }
+            // Premium kullanıcılar için filtreleme yap
+            applyFilters();
+        });
     }
     
-    // Filter toggle icon (open/close sidebar from map)
+    // Filter toggle icon (open/close sidebar from map) - Tüm kullanıcılar açabilir
     if (filterToggleIcon) {
         filterToggleIcon.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1210,7 +1249,7 @@ function setupModalListeners() {
         });
     }
     
-    // Mobil Filtre Toggle
+    // Mobil Filtre Toggle - Tüm kullanıcılar açabilir
     const mobileFilterBtn = document.getElementById('mobile-filter-toggle');
     if (mobileFilterBtn && filterSidebar) {
         mobileFilterBtn.addEventListener('click', (e) => {
@@ -1255,7 +1294,7 @@ function setupModalListeners() {
         });
     }
     
-    // Filter toggle button (collapse/expand from sidebar)
+    // Filter toggle button (collapse/expand from sidebar) - Tüm kullanıcılar açabilir
     if (toggleFilterBtn) {
         toggleFilterBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2029,6 +2068,9 @@ function addProfileToMap(profile) {
         }
     }
     
+    // Premium durumuna göre görünüm belirle
+    const isPremium = profile.is_premium || false;
+    
     // Profile base size (küçük Snapchat-style - şık görünüm için)
     const baseSize = 8; // İlk açılışta daha küçük boyut
     profile.baseSize = baseSize;
@@ -2104,65 +2146,33 @@ function addProfileToMap(profile) {
     profileGroup.appendChild(borderCircle);
     profileGroup.appendChild(clickArea); // Click area en üstte
     
-    // Günlük mesaj kutusu ekle (eğer bugünkü mesaj varsa)
-    if (profile.daily_message && profile.message_date) {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugünün tarihi
+    // Günlük mesaj kutusu ekle (sadece PREMIUM ve bugünkü mesaj varsa)
+    if (isPremium && profile.daily_message && profile.message_date) {
+        const today = new Date().toISOString().split('T')[0];
         const messageDate = new Date(profile.message_date).toISOString().split('T')[0];
         
-        // Sadece bugünkü mesajı göster
         if (messageDate === today) {
             const messageGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             messageGroup.id = `message-group-${profile.id}`;
             messageGroup.classList.add('profile-message-group');
-            
-            // Başlangıçta gizli olsun (Zoom kontrolü açacak)
-            messageGroup.style.display = 'none'; 
+            messageGroup.style.display = 'none';
             messageGroup.style.opacity = '0';
 
             const messageBox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             messageBox.setAttribute('class', 'profile-message-box');
             
-            // Native SVG Text kullanıyoruz (iOS Safari için)
             const messageText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             messageText.setAttribute('class', 'profile-message-text');
             messageText.textContent = profile.daily_message;
             messageText.setAttribute('text-anchor', 'middle');
             messageText.setAttribute('dominant-baseline', 'middle');
-            messageText.setAttribute('dy', '1'); // Optik dikey ortalama için 1px aşağı it
+            messageText.setAttribute('dy', '1');
             
             messageGroup.appendChild(messageBox);
             messageGroup.appendChild(messageText);
             profileGroup.appendChild(messageGroup);
         }
     }
-    
-    // Sadece profil görseline (image, border, click area) tıklanınca açılsın
-    // Profile group'a click handler ekleme - sadece direkt elementlere tıklanınca çalışsın
-    
-    // Image için click handler - sadece profil görseline basılınca
-    image.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        console.log('Profil tıklandı (image):', profile.id, profile.name);
-        handleProfileClick(profile.id);
-    });
-    
-    // Border için click handler - sadece profil border'ına basılınca
-    borderCircle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        console.log('Profil tıklandı (border):', profile.id, profile.name);
-        handleProfileClick(profile.id);
-    });
-    
-    // Click area için handler - sadece profil görselinin içine basılınca (etrafına değil)
-    // Click area boyutu sadece profil görselinin yarıçapı kadar, zoom'da da aynı
-    clickArea.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        console.log('Profil tıklandı (click area):', profile.id, profile.name);
-        handleProfileClick(profile.id);
-    });
     
     profilesGroup.appendChild(profileGroup);
     
@@ -2594,10 +2604,8 @@ async function loadProfilesFromSupabase() {
         
         console.log('📡 Supabase\'den profiller yükleniyor...');
         
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
+        // Hem FREE hem PREMIUM profilleri yükle (get_all_profiles_for_directory RPC fonksiyonu)
+        const { data, error } = await supabase.rpc('get_all_profiles_for_directory');
         
         if (error) {
             console.error('Supabase profil yükleme hatası:', error);
@@ -2711,6 +2719,7 @@ async function loadProfilesFromSupabase() {
                             gender: profileData.gender || null,
                             daily_message: profileData.daily_message || null,
                             message_date: profileData.message_date || null,
+                            is_premium: profileData.is_premium || false, // Premium durumu
                         };
                         
                         // Debug: Profil oluşturulduğunu logla
@@ -2723,10 +2732,15 @@ async function loadProfilesFromSupabase() {
                             imageUrl: profile.imageUrl ? 'Var' : 'Yok'
                         });
                         
-                        // State'e ve haritaya ekle
-                        mapState.profiles.push(profile);
-                        addProfileToMap(profile);
-                        profilesAdded++;
+                        // Sadece PREMIUM profilleri haritaya ekle
+                        if (profile.is_premium) {
+                            mapState.profiles.push(profile);
+                            addProfileToMap(profile);
+                            profilesAdded++;
+                        } else {
+                            // FREE kullanıcıları sadece filtre listesine ekle (haritada görünmez)
+                            mapState.profiles.push(profile);
+                        }
             });
                 } else {
                     console.warn(`⚠ Şehir geometrisi bulunamadı: ${cityId}, ${cityProfiles.length} profil atlanıyor`);
@@ -2933,7 +2947,15 @@ let modalState = {
     cropEndY: 0,
     isCropping: false,
     cropImageSrc: null, // Crop için kullanılan görsel kaynağı
-    selectedGender: null
+    selectedGender: null,
+    aspectRatio: 1,           // Varsayılan 1:1 (Kare)
+    isDragging: false,        // Sürükleme durumu
+    dragStartX: 0,            // Mouse ilk tıklama X
+    dragStartY: 0,            // Mouse ilk tıklama Y
+    currentCropX: 0,          // Güncel kutu X
+    currentCropY: 0,          // Güncel kutu Y
+    cropWidth: 0,             // Kutu genişliği
+    cropHeight: 0             // Kutu yüksekliği
 };
 
 // Edit Modal state
@@ -2957,11 +2979,52 @@ let filterState = {
 };
 
 // Open add profile modal
-function openAddProfileModal() {
+async function openAddProfileModal() {
     if (addProfileModal) {
         addProfileModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         resetModalForm();
+        await updatePremiumInfoInModal();
+    }
+}
+
+// Premium info mesajını modal'da göster/gizle
+async function updatePremiumInfoInModal() {
+    const premiumInfoDiv = document.getElementById('profile-premium-info');
+    if (!premiumInfoDiv) return;
+    
+    const user = await getCurrentUser();
+    if (!user) {
+        premiumInfoDiv.style.display = 'none';
+        return;
+    }
+    
+    const hasProfile = await checkUserHasProfile(user.id);
+    
+    // Eğer profil yoksa, mesajı göster (yeni profil eklenirken)
+    if (!hasProfile) {
+        premiumInfoDiv.style.display = 'block';
+        return;
+    }
+    
+    // Kullanıcının premium durumunu kontrol et
+    const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('is_premium')
+        .eq('user_id', user.id)
+        .single();
+    
+    if (error || !profileData) {
+        // Hata durumunda da mesajı göster (güvenli taraf)
+        premiumInfoDiv.style.display = 'block';
+        return;
+    }
+    
+    // Eğer premium değilse mesajı göster
+    if (!profileData.is_premium) {
+        premiumInfoDiv.style.display = 'block';
+    } else {
+        premiumInfoDiv.style.display = 'none';
     }
 }
 
@@ -3044,41 +3107,49 @@ function setupCropCanvas(img, imageSrc) {
     cropCanvas.width = width;
     cropCanvas.height = height;
     cropCanvas.classList.remove('hidden');
-    cropCanvas.style.cursor = 'crosshair'; // Tıklama için cursor
+    cropCanvas.style.cursor = 'grab';
     
-    // Görsel kaynağını sakla (handleCropClick için)
+    // Görsel kaynağını sakla
     modalState.cropImageSrc = imageSrc;
     
-    const ctx = cropCanvas.getContext('2d');
-    
-    // Önce fotoğrafı çiz (karartma yok)
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(img, 0, 0, width, height);
+    // Aspect ratio'yu varsayılan olarak 1:1 yap
+    modalState.aspectRatio = 1;
     
     // Show crop controls
     if (cropControls) {
         cropControls.classList.remove('hidden');
+        // Aspect ratio butonlarını aktif duruma getir
+        document.querySelectorAll('.ratio-btn').forEach(btn => {
+            const btnRatio = parseFloat(btn.dataset.ratio);
+            btn.classList.toggle('active', Math.abs(btnRatio - 1) < 0.01);
+        });
     }
     
-    // Başlangıçta merkez kare (biraz küçük)
-    const size = Math.min(width, height) * 0.8;
-    const x = (width - size) / 2;
-    const y = (height - size) / 2;
+    // Aspect ratio butonlarına event listener ekle
+    document.querySelectorAll('.ratio-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            const ratio = parseFloat(btn.dataset.ratio);
+            setAspectRatio(ratio);
+        };
+    });
     
-    // Draw crop overlay
-    drawCropOverlay(ctx, width, height, x, y, size);
+    // İlk kutuyu hesapla
+    recalculateCropBox();
     
-    // Store crop coordinates
-    modalState.cropStartX = x;
-    modalState.cropStartY = y;
-    modalState.cropEndX = x + size;
-    modalState.cropEndY = y + size;
+    // Event listener'ları ekle (Sürükleme için)
+    cropCanvas.onmousedown = handleDragStart;
+    cropCanvas.onmousemove = handleDragMove;
+    cropCanvas.onmouseup = handleDragEnd;
+    cropCanvas.onmouseleave = handleDragEnd;
     
-    // Fotoğraf üzerine tıklanınca kareyi oraya taşı
-    cropCanvas.removeEventListener('click', handleCropClick); // Önceki listener'ı temizle
-    cropCanvas.removeEventListener('mousemove', handleCropHover); // Önceki listener'ı temizle
-    cropCanvas.addEventListener('click', handleCropClick);
-    cropCanvas.addEventListener('mousemove', handleCropHover);
+    // Dokunmatik ekran desteği (Mobil için)
+    cropCanvas.ontouchstart = handleDragStart;
+    cropCanvas.ontouchmove = handleDragMove;
+    cropCanvas.ontouchend = handleDragEnd;
+    
+    // Canvas'ı çiz
+    drawCanvas();
 }
 
 // Draw crop overlay - karartma kaldırıldı, sadece kare çizgisi gösteriliyor
@@ -3183,36 +3254,39 @@ function handleCropHover(e) {
 function applyCrop() {
     if (!cropCanvas || !modalState.selectedFile) return;
     
-    // Kullanıcının seçtiği kareyi kullan
-    const size = modalState.cropEndX - modalState.cropStartX;
-    const x = modalState.cropStartX;
-    const y = modalState.cropStartY;
+    // Koordinatları modalState'den al
+    const x = modalState.currentCropX;
+    const y = modalState.currentCropY;
+    const width = modalState.cropWidth;
+    const height = modalState.cropHeight;
     
     // Orijinal görseli yükle ve crop uygula
     const img = new Image();
     img.onload = () => {
-        // Orijinal görseli canvas'a çiz (overlay olmadan)
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = cropCanvas.width;
-        tempCanvas.height = cropCanvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(img, 0, 0, cropCanvas.width, cropCanvas.height);
-        
-        // Get cropped image data from temp canvas
-        const imageData = tempCtx.getImageData(x, y, size, size);
-        
+        // Scale faktörünü bul (Orijinal resim / Canvas'a çizilen boyut)
+        const scaleX = img.width / cropCanvas.width;
+        const scaleY = img.height / cropCanvas.height;
+
+        const realX = x * scaleX;
+        const realY = y * scaleY;
+        const realW = width * scaleX;
+        const realH = height * scaleY;
+
         // Create new canvas for cropped image
         const croppedCanvas = document.createElement('canvas');
-        croppedCanvas.width = size;
-        croppedCanvas.height = size;
+        croppedCanvas.width = width;  // Çıktı boyutu
+        croppedCanvas.height = height;
         const croppedCtx = croppedCanvas.getContext('2d');
-        croppedCtx.putImageData(imageData, 0, 0);
-        
+
+        // drawImage ile direkt kırpma (daha hızlıdır)
+        // parametreler: (source, srcX, srcY, srcW, srcH, destX, destY, destW, destH)
+        croppedCtx.drawImage(img, realX, realY, realW, realH, 0, 0, width, height);
+
         // Convert to blob
         croppedCanvas.toBlob((blob) => {
             modalState.croppedImage = blob;
             
-            // Update preview - kırpılmış görseli göster, fotoğraf yükleme alanını tekrar gösterme
+            // Update preview - kırpılmış görseli göster
             if (uploadPreview) {
                 uploadPreview.innerHTML = `<img src="${croppedCanvas.toDataURL()}" alt="Cropped" class="preview-image">`;
             }
@@ -3222,12 +3296,14 @@ function applyCrop() {
             if (cropCanvas) {
                 cropCanvas.classList.add('hidden');
                 // Event listener'ları temizle
-                cropCanvas.removeEventListener('click', handleCropClick);
-                cropCanvas.removeEventListener('mousemove', handleCropHover);
+                cropCanvas.onmousedown = null;
+                cropCanvas.onmousemove = null;
+                cropCanvas.onmouseup = null;
+                cropCanvas.onmouseleave = null;
+                cropCanvas.ontouchstart = null;
+                cropCanvas.ontouchmove = null;
+                cropCanvas.ontouchend = null;
             }
-            
-            // photo-upload-area'yı gizleme - preview zaten gösteriliyor
-            // Kullanıcı kırpılmış görseli görebilir, tekrar fotoğraf yükleme alanı çıkmaz
         }, 'image/png', 0.95);
     };
     
@@ -3244,6 +3320,198 @@ function applyCrop() {
     }
 }
 
+// Set aspect ratio
+window.setAspectRatio = function(ratio) {
+    modalState.aspectRatio = ratio;
+    
+    // Butonların aktiflik durumunu güncelle
+    document.querySelectorAll('.ratio-btn').forEach(btn => {
+        const btnRatio = parseFloat(btn.dataset.ratio);
+        btn.classList.toggle('active', Math.abs(btnRatio - ratio) < 0.01);
+    });
+
+    // Canvas varsa yeniden çiz
+    if (cropCanvas && !cropCanvas.classList.contains('hidden')) {
+        recalculateCropBox();
+        drawCanvas();
+    }
+};
+
+// Recalculate crop box based on aspect ratio
+function recalculateCropBox() {
+    if (!cropCanvas) return;
+    
+    const canvasW = cropCanvas.width;
+    const canvasH = cropCanvas.height;
+    const ratio = modalState.aspectRatio;
+
+    // Canvas'ın %80'ini kaplayacak şekilde başla
+    let boxWidth, boxHeight;
+
+    if (ratio === 1) { // Kare
+        const size = Math.min(canvasW, canvasH) * 0.8;
+        boxWidth = size;
+        boxHeight = size;
+    } else { // 9:16 (Dikdörtgen)
+        // Yüksekliği baz al
+        boxHeight = canvasH * 0.8;
+        boxWidth = boxHeight * ratio;
+
+        // Eğer genişlik canvas'tan taşarsa, genişliği baz al
+        if (boxWidth > canvasW * 0.9) {
+            boxWidth = canvasW * 0.8;
+            boxHeight = boxWidth / ratio;
+        }
+    }
+
+    modalState.cropWidth = boxWidth;
+    modalState.cropHeight = boxHeight;
+    
+    // Merkeze yerleştir
+    modalState.currentCropX = (canvasW - boxWidth) / 2;
+    modalState.currentCropY = (canvasH - boxHeight) / 2;
+    
+    // Eski sistem için de uyumluluk
+    modalState.cropStartX = modalState.currentCropX;
+    modalState.cropStartY = modalState.currentCropY;
+    modalState.cropEndX = modalState.currentCropX + boxWidth;
+    modalState.cropEndY = modalState.currentCropY + boxHeight;
+}
+
+// Handle drag start
+function handleDragStart(e) {
+    e.preventDefault();
+    
+    // Koordinatları al (Mouse veya Touch)
+    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    
+    if (!clientX || !clientY) return;
+    
+    const rect = cropCanvas.getBoundingClientRect();
+    const scaleX = cropCanvas.width / rect.width;
+    const scaleY = cropCanvas.height / rect.height;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    // Tıklanan yer kutunun içinde mi?
+    if (x >= modalState.currentCropX && 
+        x <= modalState.currentCropX + modalState.cropWidth &&
+        y >= modalState.currentCropY && 
+        y <= modalState.currentCropY + modalState.cropHeight) {
+            
+        modalState.isDragging = true;
+        modalState.dragStartX = x - modalState.currentCropX;
+        modalState.dragStartY = y - modalState.currentCropY;
+        if (cropCanvas) cropCanvas.style.cursor = 'grabbing';
+    }
+}
+
+// Handle drag move
+function handleDragMove(e) {
+    if (!modalState.isDragging) return;
+    e.preventDefault();
+
+    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    
+    if (!clientX || !clientY) return;
+    
+    const rect = cropCanvas.getBoundingClientRect();
+    const scaleX = cropCanvas.width / rect.width;
+    const scaleY = cropCanvas.height / rect.height;
+    const mouseX = (clientX - rect.left) * scaleX;
+    const mouseY = (clientY - rect.top) * scaleY;
+
+    // Yeni pozisyonu hesapla
+    let newX = mouseX - modalState.dragStartX;
+    let newY = mouseY - modalState.dragStartY;
+
+    // Sınırları kontrol et (Canvas dışına çıkmasın)
+    newX = Math.max(0, Math.min(newX, cropCanvas.width - modalState.cropWidth));
+    newY = Math.max(0, Math.min(newY, cropCanvas.height - modalState.cropHeight));
+
+    modalState.currentCropX = newX;
+    modalState.currentCropY = newY;
+    
+    // Eski sistem için de uyumluluk
+    modalState.cropStartX = modalState.currentCropX;
+    modalState.cropStartY = modalState.currentCropY;
+    modalState.cropEndX = modalState.currentCropX + modalState.cropWidth;
+    modalState.cropEndY = modalState.currentCropY + modalState.cropHeight;
+
+    drawCanvas();
+}
+
+// Handle drag end
+function handleDragEnd() {
+    modalState.isDragging = false;
+    if (cropCanvas) cropCanvas.style.cursor = 'grab';
+}
+
+// Draw grid (Rule of thirds)
+function drawGrid(ctx, x, y, w, h) {
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 1;
+
+    // Dikey çizgiler
+    ctx.moveTo(x + w/3, y);
+    ctx.lineTo(x + w/3, y + h);
+    ctx.moveTo(x + (w/3)*2, y);
+    ctx.lineTo(x + (w/3)*2, y + h);
+
+    // Yatay çizgiler
+    ctx.moveTo(x, y + h/3);
+    ctx.lineTo(x + w, y + h/3);
+    ctx.moveTo(x, y + (h/3)*2);
+    ctx.lineTo(x + w, y + (h/3)*2);
+
+    ctx.stroke();
+}
+
+// Draw canvas with Instagram-style overlay
+function drawCanvas() {
+    if (!cropCanvas || !modalState.cropImageSrc) return;
+    
+    const ctx = cropCanvas.getContext('2d');
+    const width = cropCanvas.width;
+    const height = cropCanvas.height;
+
+    // Resmi temizle
+    ctx.clearRect(0, 0, width, height);
+
+    // Resmi çiz
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Karartma efekti (Overlay)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, width, height);
+
+        // Seçili alanı "oyma" (Composite Operation)
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = 'black';
+        ctx.fillRect(modalState.currentCropX, modalState.currentCropY, modalState.cropWidth, modalState.cropHeight);
+        
+        // Modu normale döndür ve resmi seçili alana tekrar çiz
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.drawImage(img, 0, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Çerçevenin kenarlıklarını çiz
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(modalState.currentCropX, modalState.currentCropY, modalState.cropWidth, modalState.cropHeight);
+
+        // Izgara çizgileri (Üçler kuralı - Grid)
+        drawGrid(ctx, modalState.currentCropX, modalState.currentCropY, modalState.cropWidth, modalState.cropHeight);
+    };
+    
+    img.src = modalState.cropImageSrc;
+}
+
 // Cancel crop
 function cancelCrop() {
     if (cropControls) cropControls.classList.add('hidden');
@@ -3252,11 +3520,17 @@ function cancelCrop() {
         const ctx = cropCanvas.getContext('2d');
         ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
         // Event listener'ları temizle
-        cropCanvas.removeEventListener('click', handleCropClick);
-        cropCanvas.removeEventListener('mousemove', handleCropHover);
+        cropCanvas.onmousedown = null;
+        cropCanvas.onmousemove = null;
+        cropCanvas.onmouseup = null;
+        cropCanvas.onmouseleave = null;
+        cropCanvas.ontouchstart = null;
+        cropCanvas.ontouchmove = null;
+        cropCanvas.ontouchend = null;
     }
     modalState.croppedImage = null;
     modalState.cropImageSrc = null;
+    modalState.isDragging = false;
     // Fotoğraf yükleme alanını tekrar gösterme - mevcut preview'ı koru
     // uploadPreview'ı sıfırlamıyoruz, kullanıcı zaten fotoğraf seçmiş
 }
@@ -3856,9 +4130,27 @@ function closeProfileDetailModal() {
 }
 
 // Update filter visibility based on zoom level - Artık kullanılmıyor, scroll ile kontrol ediliyor
-function updateFilterVisibility() {
-    // Filtre artık harita dışında ve scroll ile kontrol ediliyor
-    // Bu fonksiyon boş bırakıldı, eski kod uyumluluğu için
+async function updateFilterVisibility() {
+    // Premium kontrolü - Sadece "Sonuçları Göster" butonunu kontrol et
+    const isPremium = await checkUserIsPremium();
+    
+    if (searchFilterBtn) {
+        if (isPremium) {
+            searchFilterBtn.style.opacity = '1';
+            searchFilterBtn.style.cursor = 'pointer';
+            searchFilterBtn.disabled = false;
+        } else {
+            // Free kullanıcılar için buton görsel olarak farklı ama tıklanabilir (uyarı gösterecek)
+            searchFilterBtn.style.opacity = '0.7';
+            searchFilterBtn.style.cursor = 'pointer';
+            searchFilterBtn.disabled = false;
+        }
+    }
+    
+    // Free kullanıcılar için tüm profilleri göster (filtreleme olmadan)
+    if (!isPremium) {
+        renderFilterResults(mapState.profiles);
+    }
 }
 
 // Select profile gender (in add profile modal)
@@ -3876,7 +4168,7 @@ function selectProfileGender(gender) {
     }
 }
 
-// Select filter gender
+// Select filter gender - Premium kontrolü yok, sadece "Sonuçları Göster" butonunda kontrol var
 function selectFilterGender(gender) {
     filterState.gender = gender;
     
@@ -3890,7 +4182,8 @@ function selectFilterGender(gender) {
         genderFemaleBtn.classList.toggle('active', gender === 'female');
     }
     
-    applyFilters();
+    // Otomatik filtreleme yapma, sadece "Sonuçları Göster" butonunda yapılacak
+    // applyFilters(); // Kaldırıldı - sadece butona basıldığında çalışacak
 }
 
 // Get all 81 cities from cities.json or mapState
@@ -4000,7 +4293,23 @@ async function handleFilterCityInput(e) {
 
 
 // Apply filters
-function applyFilters() {
+async function applyFilters() {
+    // Premium kontrolü - Eğer premium değilse, filtreleme yapma, sadece tüm profilleri göster
+    const isPremium = await checkUserIsPremium();
+    if (!isPremium) {
+        // Free kullanıcılar için tüm profilleri göster (filtreleme olmadan)
+        renderFilterResults(mapState.profiles);
+        // Haritada tüm premium profilleri göster (zaten sadece premium'lar haritada)
+        mapState.profiles.forEach(profile => {
+            const profileElement = document.getElementById(profile.id);
+            if (profileElement && profile.is_premium) {
+                profileElement.style.display = 'block';
+            }
+        });
+        return;
+    }
+    
+    // Premium kullanıcılar için filtreleme yap
     // Update filter state from inputs
     if (ageMinInput) {
         filterState.ageMin = ageMinInput.value ? parseInt(ageMinInput.value) : null;
@@ -4130,7 +4439,7 @@ function zoomToProfile(profile) {
     updateTransform();
 }
 
-// Clear all filters
+// Clear all filters - Premium kontrolü yok, sadece formu temizle
 function clearAllFilters() {
     filterState = {
         gender: 'all',
@@ -4149,7 +4458,8 @@ function clearAllFilters() {
     if (filterCityInput) filterCityInput.value = '';
     if (filterDistrictInput) filterDistrictInput.value = '';
     
-    applyFilters();
+    // Otomatik filtreleme yapma, sadece "Sonuçları Göster" butonunda yapılacak
+    // applyFilters(); // Kaldırıldı - sadece butona basıldığında çalışacak
 }
 
 // ==================== AUTH FUNCTIONS ====================
@@ -4186,6 +4496,32 @@ async function checkUserHasProfile(userId) {
         return !!data;
     } catch (error) {
         console.error('Profil kontrolü hatası:', error);
+        return false;
+    }
+}
+
+// Check if user is premium
+async function checkUserIsPremium() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) {
+            return false;
+        }
+        
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('is_premium')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (error && error.code !== 'PGRST116') {
+            console.error('Premium kontrolü hatası:', error);
+            return false;
+        }
+        
+        return data?.is_premium || false;
+    } catch (error) {
+        console.error('Premium kontrolü hatası:', error);
         return false;
     }
 }
@@ -4281,6 +4617,56 @@ function closeAuthModal() {
     if (authModal) {
         authModal.classList.add('hidden');
         document.body.style.overflow = '';
+    }
+}
+
+// ==================== PREMIUM PURCHASE FUNCTIONS ====================
+
+// Premium satın alma fonksiyonu
+async function handlePremiumPurchase() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) {
+            alert('Premium paketi satın almak için önce giriş yapmalısınız.');
+            openAuthModal();
+            return;
+        }
+        
+        const hasProfile = await checkUserHasProfile(user.id);
+        if (!hasProfile) {
+            alert('Premium paketi satın almak için önce bir profiliniz olmalı.');
+            closeAddProfileModal();
+            openAddProfileModal();
+            return;
+        }
+        
+        const confirmed = confirm('Premium paketi satın almak istediğinize emin misiniz? (₺129/hafta)');
+        if (!confirmed) {
+            return;
+        }
+        
+        const { data, error } = await supabase.rpc('activate_premium', {
+            p_user_id: user.id,
+            p_duration_days: 7
+        });
+        
+        if (error) {
+            console.error('Premium aktivasyon hatası:', error);
+            alert('Premium paketi aktivasyonu sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+            return;
+        }
+        
+        if (data && data.success) {
+            alert('Premium paketiniz başarıyla aktifleştirildi! Artık haritada görünecek ve tüm premium özellikleri kullanabileceksiniz.');
+            
+            // Profilleri yeniden yükle
+            loadProfilesFromSupabase();
+        } else {
+            alert(data?.error || 'Premium paketi aktivasyonu başarısız oldu.');
+        }
+    } catch (error) {
+        console.error('Premium satın alma hatası:', error);
+        alert('Premium paketi satın alma işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.');
     }
 }
 
@@ -4426,6 +4812,62 @@ async function openEditProfileModal() {
     } else if (profile.gender === 'female' && document.getElementById('edit-gender-female')) {
         document.getElementById('edit-gender-female').classList.add('active');
         document.getElementById('edit-gender-male')?.classList.remove('active');
+    }
+    
+    // Premium durumu göster
+    const premiumStatusContainer = document.getElementById('edit-premium-status');
+    if (premiumStatusContainer) {
+        const isPremium = profile.is_premium || false;
+        if (isPremium) {
+            // Premium üye - Premium olduğunu göster
+            premiumStatusContainer.innerHTML = `
+                <div class="premium-status-badge premium-active">
+                    <span style="display: flex; align-items: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        Premium Üye
+                    </span>
+                    <span class="premium-badge-text">Haritada görünüyorsunuz</span>
+                </div>
+            `;
+        } else {
+            // Premium değil - Premium'a Geç butonu göster
+            premiumStatusContainer.innerHTML = `
+                <div class="premium-status-badge premium-inactive">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; opacity: 0.7;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <span>Premium üyesi değilsiniz</span>
+                    </div>
+                    <button type="button" class="btn-premium-upgrade" id="edit-premium-upgrade-btn">
+                        Premium'a Geç
+                    </button>
+                </div>
+            `;
+            
+            // Premium'a Geç butonuna event listener ekle
+            const upgradeBtn = document.getElementById('edit-premium-upgrade-btn');
+            if (upgradeBtn) {
+                upgradeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    closeEditProfileModal();
+                    // Hero section'a dön ve pricing section'a scroll yap
+                    showHeroSection();
+                    setTimeout(() => {
+                        const pricingSection = document.getElementById('pricing');
+                        if (pricingSection) {
+                            pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 300);
+                });
+            }
+        }
     }
     
     // Mevcut fotoğrafı göster
@@ -4818,12 +5260,16 @@ function setupHeroListeners() {
     if (mapSectionLink) {
         mapSectionLink.addEventListener('click', (e) => {
             e.preventDefault();
-            hideHeroSection();
-            // Smooth scroll to map section
-            const mapSection = document.getElementById('map-section');
-            if (mapSection) {
-                mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            showMapView();
+        });
+    }
+    
+    // Premium butonuna tıklandığında handlePremiumPurchase fonksiyonunu çağır
+    const premiumPurchaseBtn = document.getElementById('premium-purchase-btn');
+    if (premiumPurchaseBtn) {
+        premiumPurchaseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handlePremiumPurchase();
         });
     }
 }
@@ -6328,19 +6774,20 @@ function showAlert(message, title = 'Bilgi', type = 'info') {
 
         // İkon tipine göre stil ayarla
         iconEl.className = 'custom-alert-icon';
+        iconEl.classList.add(type); // type class'ını ekle (error, success, warning, info)
         if (type === 'error') {
             iconEl.classList.add('error');
             iconEl.innerHTML = `
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
                 </svg>
             `;
         } else if (type === 'success') {
             iconEl.classList.add('success');
             iconEl.innerHTML = `
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
@@ -6348,15 +6795,16 @@ function showAlert(message, title = 'Bilgi', type = 'info') {
         } else if (type === 'warning') {
             iconEl.classList.add('warning');
             iconEl.innerHTML = `
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                     <line x1="12" y1="9" x2="12" y2="13"></line>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
             `;
         } else {
+            iconEl.classList.add('info');
             iconEl.innerHTML = `
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
