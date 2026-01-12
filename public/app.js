@@ -4085,11 +4085,56 @@ function updateProfileMessageOnMap(profileId, message) {
 }
 
 // Profile click handler - show detail modal
-function handleProfileClick(profileId) {
-    const profile = mapState.profiles.find(p => p.id === profileId);
+async function handleProfileClick(profileId) {
+    let profile = mapState.profiles.find(p => p.id === profileId);
+    
+    // Profil mapState.profiles'te yoksa veritabanından yükle
     if (!profile) {
-        console.warn('Profil bulunamadı:', profileId);
-        return;
+        try {
+            const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('id, user_id, name, image_url, city_id, city_name, snapchat_username, instagram_username, facebook_username, twitter_username, pinterest_username, age, district, gender, daily_message, message_date, is_premium')
+                .eq('id', profileId)
+                .single();
+            
+            if (error || !profileData || !profileData.id) {
+                console.warn('Profil bulunamadı:', profileId);
+                return;
+            }
+            
+            // Profile nesnesini oluştur (handleProfileClick'in beklediği formata)
+            profile = {
+                id: profileData.id,
+                user_id: profileData.user_id,
+                name: profileData.name,
+                imageUrl: profileData.image_url,
+                cityId: profileData.city_id,
+                city: profileData.city_name,
+                x: 0, // Modal için gerekli değil
+                y: 0, // Modal için gerekli değil
+                snapchat_username: profileData.snapchat_username || null,
+                instagram_username: profileData.instagram_username || null,
+                facebook_username: profileData.facebook_username || null,
+                twitter_username: profileData.twitter_username || null,
+                pinterest_username: profileData.pinterest_username || null,
+                age: profileData.age || null,
+                district: profileData.district || null,
+                gender: profileData.gender || null,
+                daily_message: profileData.daily_message || null,
+                message_date: profileData.message_date || null,
+                is_premium: profileData.is_premium || false,
+            };
+            
+            // mapState.profiles'e ekle (tekrar aramayı önlemek için)
+            const exists = mapState.profiles.find(p => p.id === profile.id);
+            if (!exists) {
+                mapState.profiles.push(profile);
+            }
+        } catch (error) {
+            console.error('Profil yükleme hatası:', error);
+            console.warn('Profil bulunamadı:', profileId);
+            return;
+        }
     }
     
     // ✅ SPAM KONTROLÜ (SessionStorage ile aynı oturumda tekrar sayma)
@@ -4624,7 +4669,9 @@ function renderFilterResults(profiles) {
         };
 
         // Eğer resim yoksa varsayılan avatar
-        const imgUrl = profile.imageUrl || 'https://via.placeholder.com/150';
+        // Default avatar (data URI - internet gerektirmez)
+        const DEFAULT_AVATAR_150 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzUiIHI9Ijc1IiBmaWxsPSIjMjYyNjI2Ii8+CjxwYXRoIGQ9Ik03NSA0MEM2NS4wNzUgNDAgNTcgNDguMDc1IDU3IDU4QzU3IDY3LjkyNSA2NS4wNzUgNzYgNzUgNzZDNjQuOTI1IDc2IDczIDY3LjkyNSA3MyA1OEM3MyA0OC4wNzUgNjQuOTI1IDQwIDc1IDQwWk03NSA5MEM2NS4wNzUgOTAgNTcgOTguMDc1IDU3IDEwOEw1NyAxMjBDOTMgMTIwIDkzIDEwOCA5MyAxMDhDOTMgOTguMDc1IDg0LjkyNSA5MCA3NSA5MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+';
+        const imgUrl = profile.imageUrl || DEFAULT_AVATAR_150;
 
         card.innerHTML = `
             <img src="${imgUrl}" alt="${profile.name}" class="result-avatar">
@@ -4804,7 +4851,9 @@ async function checkAuthState() {
             
             // Kullanıcı bilgilerini göster
             if (userAvatar) {
-                userAvatar.src = user.user_metadata?.avatar_url || user.user_metadata?.picture || 'https://via.placeholder.com/32';
+        // Default avatar (data URI)
+        const DEFAULT_AVATAR_32 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTE2IDEwQzEzLjc5IDEwIDEyIDExLjc5IDEyIDE0QzEyIDE2LjIxIDEzLjc5IDE4IDE2IDE4QzE4LjIxIDE4IDIwIDE2LjIxIDIwIDE0QzIwIDExLjc5IDE4LjIxIDEwIDE2IDEwWk0xNiAyMEMxMy43OSAyMCAxMiAyMS43OSAxMiAyNEwxMiAyOEMyMCAyOCAyMCAyNCAyMCAyNEMyMCAyMS43OSAxOC4yMSAyMCAxNiAyMFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+';
+                userAvatar.src = user.user_metadata?.avatar_url || user.user_metadata?.picture || DEFAULT_AVATAR_32;
                 userAvatar.style.display = 'block';
             }
             if (userName) {

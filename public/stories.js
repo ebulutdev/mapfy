@@ -313,10 +313,10 @@ async function toggleStoriesContainer() {
             if (profile && profile.image_url) {
                 myStoryAvatar.src = profile.image_url;
             } else {
-                myStoryAvatar.src = 'https://via.placeholder.com/64?text=Hikaye';
+                myStoryAvatar.src = DEFAULT_AVATAR_64;
             }
         } else if (myStoryAvatar) {
-            myStoryAvatar.src = 'https://via.placeholder.com/64?text=Hikaye';
+            myStoryAvatar.src = DEFAULT_AVATAR_64;
         }
     } else if (myStoryItem) {
         myStoryItem.style.display = 'none';
@@ -513,14 +513,14 @@ async function loadStories() {
             const storyUserAttr = storyUserId ? `data-user-id="${storyUserId}"` : '';
             
             const storyHTML = `
-                <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}')" ${storyUserAttr}>
-                    <div class="story-circle" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">
-                        <img src="${story.avatar_url || 'https://via.placeholder.com/64'}" 
+                <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}', ${story.priority_level || 3})" data-priority="${story.priority_level || 3}" ${storyUserAttr}>
+                    <div class="${circleClass}" oncontextmenu="event.preventDefault(); event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}'); return false;" title="Sol tık: Hikaye | Sağ tık: Profil">
+                        <img src="${story.avatar_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDIwQzI3LjU4IDIwIDI0IDIzLjU4IDI0IDI4QzI0IDMyLjQyIDI3LjU4IDM2IDMyIDM2QzM2LjQyIDM2IDQwIDMyLjQyIDQwIDI4QzQwIDIzLjU4IDM2LjQyIDIwIDMyIDIwWk0zMiA0MEMyNy41OCA0MCAyNCA0My41OCAyNCA0OEwyNCA1NkM0MCA1NiA0MCA0OCA0MCA0OEM0MCA0My41OCAzNi40MiA0MCAzMiA0MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'}" 
                              alt="${escapedUsername}" 
                              class="story-avatar"
-                             onerror="this.src='https://via.placeholder.com/64'">
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDIwQzI3LjU4IDIwIDI0IDIzLjU4IDI0IDI4QzI0IDMyLjQyIDI3LjU4IDM2IDMyIDM2QzM2LjQyIDM2IDQwIDMyLjQyIDQwIDI4QzQwIDIzLjU4IDM2LjQyIDIwIDMyIDIwWk0zMiA0MEMyNy41OCA0MCAyNCA0My41OCAyNCA0OEwyNCA1NkM0MCA1NiA0MCA0OCA0MCA0OEM0MCA0My41OCAzNi40MiA0MCAzMiA0MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; this.onerror=null;">
                     </div>
-                    <span class="story-username" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">${escapedUsername}</span>
+                    <span class="story-username" oncontextmenu="event.preventDefault(); event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}'); return false;" title="Sol tık: Hikaye | Sağ tık: Profil">${escapedUsername}</span>
                 </div>
             `;
                 storiesWrapper.innerHTML += storyHTML;
@@ -569,13 +569,13 @@ async function loadStories() {
             
             const storyHTML = `
                 <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}', ${story.priority_level || 3})" data-priority="${story.priority_level || 3}" ${storyUserAttr}>
-                    <div class="${circleClass}" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">
-                        <img src="${story.avatar_url || 'https://via.placeholder.com/64'}" 
+                    <div class="${circleClass}" oncontextmenu="event.preventDefault(); event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}'); return false;" title="Sol tık: Hikaye | Sağ tık: Profil">
+                        <img src="${story.avatar_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDIwQzI3LjU4IDIwIDI0IDIzLjU4IDI0IDI4QzI0IDMyLjQyIDI3LjU4IDM2IDMyIDM2QzM2LjQyIDM2IDQwIDMyLjQyIDQwIDI4QzQwIDIzLjU4IDM2LjQyIDIwIDMyIDIwWk0zMiA0MEMyNy41OCA0MCAyNCA0My41OCAyNCA0OEwyNCA1NkM0MCA1NiA0MCA0OCA0MCA0OEM0MCA0My41OCAzNi40MiA0MCAzMiA0MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'}" 
                              alt="${escapedUsername}" 
                              class="story-avatar"
-                             onerror="this.src='https://via.placeholder.com/64'">
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDIwQzI3LjU4IDIwIDI0IDIzLjU4IDI0IDI4QzI0IDMyLjQyIDI3LjU4IDM2IDMyIDM2QzM2LjQyIDM2IDQwIDMyLjQyIDQwIDI4QzQwIDIzLjU4IDM2LjQyIDIwIDMyIDIwWk0zMiA0MEMyNy41OCA0MCAyNCA0My41OCAyNCA0OEwyNCA1NkM0MCA1NiA0MCA0OCA0MCA0OEM0MCA0My41OCAzNi40MiA0MCAzMiA0MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; this.onerror=null;">
                     </div>
-                    <span class="story-username" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">${escapedUsername}</span>
+                    <span class="story-username" oncontextmenu="event.preventDefault(); event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}'); return false;" title="Sol tık: Hikaye | Sağ tık: Profil">${escapedUsername}</span>
                 </div>
             `;
             storiesWrapper.innerHTML += storyHTML;
@@ -728,10 +728,16 @@ async function openStoryViewer(story) {
     const storyViewerTime = document.getElementById('story-viewer-time');
     const progressContainer = document.getElementById('story-progress-container');
     const storyDeleteBtn = document.getElementById('story-viewer-delete-btn');
+    const storyMessageBtn = document.getElementById('story-viewer-message-btn');
+    const storyMessagesBtn = document.getElementById('story-viewer-messages-btn');
     const compatibilityBadge = document.getElementById('story-compatibility-badge');
     const compatibilityText = document.getElementById('story-compatibility-text');
     
     if (!storyViewerModal) return;
+    
+    // Butonları başlangıçta gizle
+    if (storyMessageBtn) storyMessageBtn.style.display = 'none';
+    if (storyMessagesBtn) storyMessagesBtn.style.display = 'none';
     
     // Hikayeyi izlendi olarak işaretle
     if (story.id) {
@@ -932,6 +938,152 @@ async function openStoryViewer(story) {
             }
         })(),
         
+        // Mesajlaşma butonunu kontrol et (HYPE KEŞFET'ten gelen günlük hikayeler için)
+        (async () => {
+            console.log('🔍 Mesaj butonu kontrolü başlatıldı');
+            console.log('   storyMessageBtn:', storyMessageBtn);
+            console.log('   story.fromHypeeDiscover:', story.fromHypeeDiscover);
+            console.log('   story:', story);
+            
+            if (storyMessageBtn) {
+                try {
+                    // Sadece HYPE KEŞFET'ten gelen hikayelerde göster
+                    if (!story.fromHypeeDiscover) {
+                        console.log('⚠️ fromHypeeDiscover false/undefined, buton gizleniyor');
+                        storyMessageBtn.style.display = 'none';
+                        return;
+                    }
+                    
+                    console.log('✅ fromHypeeDiscover true, buton kontrolü devam ediyor');
+                    
+                    // Günlük hikaye kontrolü (bugünkü hikayeler)
+                    let storyCreatedAt = story.created_at;
+                    if (!storyCreatedAt && story.id) {
+                        const { data: storyData } = await supabase
+                            .from('stories')
+                            .select('created_at')
+                            .eq('id', story.id)
+                            .single();
+                        if (storyData && storyData.created_at) {
+                            storyCreatedAt = storyData.created_at;
+                        }
+                    }
+                    
+                    if (storyCreatedAt) {
+                        // Türkiye saatine göre bugünün tarihini al
+                        const now = new Date();
+                        const turkeyTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Istanbul"}));
+                        const today = new Date(turkeyTime.getFullYear(), turkeyTime.getMonth(), turkeyTime.getDate());
+                        
+                        const storyDate = new Date(storyCreatedAt);
+                        const storyDateTurkey = new Date(storyDate.toLocaleString("en-US", {timeZone: "Europe/Istanbul"}));
+                        const storyDay = new Date(storyDateTurkey.getFullYear(), storyDateTurkey.getMonth(), storyDateTurkey.getDate());
+                        
+                        // Eğer hikaye bugünden değilse gizle
+                        if (storyDay.getTime() !== today.getTime()) {
+                            storyMessageBtn.style.display = 'none';
+                            return;
+                        }
+                    }
+                    
+                    // Kullanıcı bilgilerini al
+                    let storyUserId = story.user_id;
+                    let storyUsername = story.username;
+                    let storyAvatar = story.avatar;
+                    
+                    if (!storyUserId && story.id) {
+                        const { data: storyData } = await supabase
+                            .from('stories')
+                            .select('user_id')
+                            .eq('id', story.id)
+                            .single();
+                        if (storyData && storyData.user_id) {
+                            storyUserId = storyData.user_id;
+                        }
+                    }
+                    
+                    if (!storyAvatar && storyUserId) {
+                        // Avatar'ı profile'den al
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('image_url')
+                            .eq('user_id', storyUserId)
+                            .single();
+                        if (profile && profile.image_url) {
+                            storyAvatar = profile.image_url;
+                        }
+                    }
+                    
+                    // Kullanıcı kontrolü
+                    const { data: { user } } = await supabase.auth.getUser();
+                    console.log('👤 Kullanıcı kontrolü:', { user_id: user?.id, story_user_id: storyUserId });
+                    
+                    if (user && storyUserId && user.id === storyUserId) {
+                        // Kendi hikayesi - hikaye mesajları butonunu göster
+                        console.log('📬 Kendi hikayesi - hikaye mesajları butonu gösteriliyor');
+                        storyMessageBtn.style.display = 'none';
+                        if (storyMessagesBtn && story.id) {
+                            console.log('✅ storyMessagesBtn gösteriliyor, story.id:', story.id);
+                            storyMessagesBtn.style.display = 'flex';
+                            storyMessagesBtn.setAttribute('data-story-id', story.id);
+                            
+                            // Önceki event listener'ları temizle
+                            const newMessagesBtn = storyMessagesBtn.cloneNode(true);
+                            storyMessagesBtn.parentNode.replaceChild(newMessagesBtn, storyMessagesBtn);
+                            const messagesBtnEl = document.getElementById('story-viewer-messages-btn');
+                            
+                            if (messagesBtnEl) {
+                                messagesBtnEl.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (typeof openStoryMessagesModal === 'function') {
+                                        openStoryMessagesModal(story.id);
+                                    }
+                                });
+                            }
+                        }
+                        return;
+                    }
+                    
+                    // Başka kullanıcının hikayesi - mesaj butonunu göster (hikaye mesajları butonu gizli)
+                    if (storyMessagesBtn) {
+                        storyMessagesBtn.style.display = 'none';
+                        storyMessagesBtn.removeAttribute('data-story-id');
+                    }
+                    
+                    // Mesaj butonunu göster ve event listener ekle
+                    if (storyUserId && storyUsername) {
+                        console.log('💬 Başka kullanıcının hikayesi - mesaj butonu gösteriliyor');
+                        console.log('   storyUserId:', storyUserId, 'storyUsername:', storyUsername);
+                        storyMessageBtn.style.display = 'flex';
+                        
+                        // Önceki event listener'ları temizle
+                        const newMessageBtn = storyMessageBtn.cloneNode(true);
+                        storyMessageBtn.parentNode.replaceChild(newMessageBtn, storyMessageBtn);
+                        const messageBtnEl = document.getElementById('story-viewer-message-btn');
+                        
+                        if (messageBtnEl) {
+                            messageBtnEl.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (typeof handleMessageButtonClick === 'function') {
+                                    // Hikayeden geliyorsa story.id'yi geç (hikayeye özel mesaj için)
+                                    handleMessageButtonClick(storyUserId, storyUsername, storyAvatar || '', story.id);
+                                }
+                            });
+                        }
+                    } else {
+                        storyMessageBtn.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Mesaj butonu kontrolü hatası:', error);
+                    if (storyMessageBtn) {
+                        storyMessageBtn.style.display = 'none';
+                    }
+                }
+            }
+        })(),
+        
         // Çöp kutusu butonunu kontrol et (lazy load)
         (async () => {
             if (storyDeleteBtn) {
@@ -993,11 +1145,29 @@ function closeStoryViewer() {
         storyDeleteBtn.style.opacity = '1';
     }
     
+    // Mesajlaşma butonunu gizle
+    const storyMessageBtn = document.getElementById('story-viewer-message-btn');
+    if (storyMessageBtn) {
+        storyMessageBtn.style.display = 'none';
+    }
+    
+    // Hikaye mesajları butonunu gizle
+    const storyMessagesBtn = document.getElementById('story-viewer-messages-btn');
+    if (storyMessagesBtn) {
+        storyMessagesBtn.style.display = 'none';
+        storyMessagesBtn.removeAttribute('data-story-id');
+    }
+    
     // Uyumluluk badge'ini gizle
     const compatibilityBadge = document.getElementById('story-compatibility-badge');
     if (compatibilityBadge) {
         compatibilityBadge.style.display = 'none';
         compatibilityBadge.classList.remove('visible');
+    }
+    
+    // DM modal'ı kapat (hikaye kalktığında DM kutusu da kalkacak)
+    if (typeof window.closeDMModal === 'function') {
+        window.closeDMModal();
     }
     
     // Timer'ları temizle
@@ -1483,6 +1653,8 @@ window.viewStory = viewStory;
 window.nextStory = nextStory;
 window.prevStory = prevStory;
 window.closeStoryViewer = closeStoryViewer;
+window.pauseStoryTimer = pauseStoryTimer;
+window.resumeStoryTimer = resumeStoryTimer;
 
 // Global getTimeAgo fonksiyonu (Hypee'den erişilebilir)
 window.getTimeAgo = getTimeAgo;
@@ -2078,36 +2250,49 @@ function initStoryViewer() {
             return; // Story viewer kapalı, hiçbir şey yapma
         }
         
+        // Eğer kullanıcı bir input, textarea veya contenteditable element içindeyse, klavye kısayollarını devre dışı bırak
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.isContentEditable ||
+            activeElement.contentEditable === 'true'
+        );
+        
         // Story viewer açık - ok tuşlarını işle (öncelik: story viewer > navbar stories)
         if (e.key === 'Escape') {
+            // Escape tuşu her zaman çalışmalı (modal'ı kapatmak için)
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
             closeStoryViewer();
             return false;
-        } else if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            prevStory();
-            return false;
-        } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            nextStory();
-            return false;
-        } else if (e.key === ' ' || e.key === 'Spacebar') {
-            // Boşluk tuşu ile durdur/devam et
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            if (isPaused) {
-                resumeStoryTimer();
-            } else {
-                pauseStoryTimer();
+        } else if (!isInputFocused) {
+            // Input alanı aktif değilse klavye kısayollarını çalıştır
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                prevStory();
+                return false;
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                nextStory();
+                return false;
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                // Boşluk tuşu ile durdur/devam et (sadece input alanı aktif değilse)
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                if (isPaused) {
+                    resumeStoryTimer();
+                } else {
+                    pauseStoryTimer();
+                }
+                return false;
             }
-            return false;
         }
     };
     
@@ -2550,9 +2735,9 @@ function displayHypeeStories(stories) {
         storyItem.innerHTML = `
             ${mediaHTML}
             <div class="hypee-story-overlay">
-                <img src="${story.avatar_url || 'https://via.placeholder.com/64'}" 
+                <img src="${story.avatar_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDIwQzI3LjU4IDIwIDI0IDIzLjU4IDI0IDI4QzI0IDMyLjQyIDI3LjU4IDM2IDMyIDM2QzM2LjQyIDM2IDQwIDMyLjQyIDQwIDI4QzQwIDIzLjU4IDM2LjQyIDIwIDMyIDIwWk0zMiA0MEMyNy41OCA0MCAyNCA0My41OCAyNCA0OEwyNCA1NkM0MCA1NiA0MCA0OCA0MCA0OEM0MCA0My41OCAzNi40MiA0MCAzMiA0MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'}" 
                      class="hypee-story-avatar"
-                     onerror="this.src='https://via.placeholder.com/64'">
+                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDIwQzI3LjU4IDIwIDI0IDIzLjU4IDI0IDI4QzI0IDMyLjQyIDI3LjU4IDM2IDMyIDM2QzM2LjQyIDM2IDQwIDMyLjQyIDQwIDI4QzQwIDIzLjU4IDM2LjQyIDIwIDMyIDIwWk0zMiA0MEMyNy41OCA0MCAyNCA0My41OCAyNCA0OEwyNCA1NkM0MCA1NiA0MCA0OCA0MCA0OEM0MCA0My41OCAzNi40MiA0MCAzMiA0MFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; this.onerror=null;">
                 <span class="hypee-story-username">${escapedUsername}</span>
             </div>
         `;
@@ -2569,7 +2754,8 @@ function displayHypeeStories(stories) {
                 avatar: s.avatar_url, // Avatar bilgisini de taşıyalım
                 priorityLevel: s.priority_level || 3,
                 created_at: s.created_at, // created_at'i ekle (zaman hesaplaması için)
-                time: s.created_at ? getTimeAgo(s.created_at) : 'Az önce' // Gerçek zaman farkı
+                time: s.created_at ? getTimeAgo(s.created_at) : 'Az önce', // Gerçek zaman farkı
+                fromHypeeDiscover: true // HYPE KEŞFET'ten geldiğini işaretle (mesaj butonu için)
             }));
             
             // 2. Tıklanan hikayenin index'i zaten elimizde: "index"
@@ -2613,7 +2799,8 @@ function openHypeeStoryViewer(storyList, startIndex) {
                 priorityLevel: firstStory.priorityLevel,
                 avatar: firstStory.avatar, // Avatar bilgisini de geçelim
                 created_at: firstStory.created_at, // created_at'i ekle (zaman hesaplaması için)
-                time: firstStory.time // Zaman bilgisini de geçelim
+                time: firstStory.time, // Zaman bilgisini de geçelim
+                fromHypeeDiscover: true // HYPE KEŞFET'ten geldiğini işaretle
             });
             
             // Hypee modal'ı kapat
@@ -2676,12 +2863,12 @@ async function loadHypeMatches() {
                 
                 const cardHTML = `
                     <div class="hype-card" style="animation-delay: ${index * 0.1}s;">
-                        <div class="hype-avatar" style="cursor: pointer;" onclick="handleProfileClick('${match.user_id}')">
-                            <img src="${match.image_url || 'https://via.placeholder.com/48'}" 
+                        <div class="hype-avatar" style="cursor: pointer;" onclick="handleHypeProfileClick('${match.user_id}')">
+                            <img src="${match.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTI0IDE1QzIwLjY5IDE1IDE4IDE3LjY5IDE4IDIxQzE4IDI0LjMxIDIwLjY5IDI3IDI0IDI3QzI3LjMxIDI3IDMwIDI0LjMxIDMwIDIxQzMwIDE3LjY5IDI3LjMxIDE1IDI0IDE1Wk0yNCAzMEMyMC42OSAzMCAxOCAzMi42OSAxOCAzNkwxOCA0MkMzMCA0MiAzMCAzNiAzMCAzNkMzMCAzMi42OSAyNy4zMSAzMCAyNCAzMFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'}" 
                                  alt="${escapedName}" 
-                                 onerror="this.src='https://via.placeholder.com/48'">
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTI0IDE1QzIwLjY5IDE1IDE4IDE3LjY5IDE4IDIxQzE4IDI0LjMxIDIwLjY5IDI3IDI0IDI3QzI3LjMxIDI3IDMwIDI0LjMxIDMwIDIxQzMwIDE3LjY5IDI3LjMxIDE1IDI0IDE1Wk0yNCAzMEMyMC42OSAzMCAxOCAzMi42OSAxOCAzNkwxOCA0MkMzMCA0MiAzMCAzNiAzMCAzNkMzMCAzMi42OSAyNy4zMSAzMCAyNCAzMFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; this.onerror=null;">
                         </div>
-                        <div class="hype-content" style="cursor: pointer;" onclick="handleProfileClick('${match.user_id}')">
+                        <div class="hype-content" style="cursor: pointer;" onclick="handleHypeProfileClick('${match.user_id}')">
                             <div class="hype-header">
                                 <span class="hype-name">${escapedName}</span>
                                 <span class="hype-time">%${match.match_score} Eşleşme</span>
@@ -2767,8 +2954,92 @@ window.handleStoryProfileClick = async function(storyId, userId) {
     }
 };
 
+// Hype matches'ten profil detaylarını aç
+window.handleHypeProfileClick = async function(userId) {
+    if (!userId) {
+        if (typeof showAlert === 'function') {
+            showAlert('Kullanıcı bilgisi bulunamadı.', 'Bilgi', 'info');
+        }
+        return;
+    }
+    
+    // Önce mapState.profiles'te bu user_id'ye sahip profil var mı kontrol et
+    if (typeof mapState !== 'undefined' && mapState.profiles) {
+        const existingProfile = mapState.profiles.find(p => p.user_id === userId);
+        if (existingProfile && existingProfile.id) {
+            // Profil zaten yüklü, direkt aç
+            if (typeof handleProfileClick === 'function') {
+                handleProfileClick(existingProfile.id);
+                return;
+            }
+        }
+    }
+    
+    // Profil yüklü değilse, veritabanından yükle
+    try {
+        const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('id, user_id, name, image_url, city_id, city_name, snapchat_username, instagram_username, facebook_username, twitter_username, pinterest_username, age, district, gender, daily_message, message_date, is_premium')
+            .eq('user_id', userId)
+            .single();
+        
+        if (error || !profileData || !profileData.id) {
+            if (typeof showAlert === 'function') {
+                showAlert('Profil bulunamadı.', 'Bilgi', 'info');
+            }
+            return;
+        }
+        
+        // Profile nesnesini oluştur (handleProfileClick'in beklediği formata)
+        const profile = {
+            id: profileData.id,
+            user_id: profileData.user_id,
+            name: profileData.name,
+            imageUrl: profileData.image_url,
+            cityId: profileData.city_id,
+            city: profileData.city_name,
+            x: 0, // Modal için gerekli değil ama yapı için ekliyoruz
+            y: 0, // Modal için gerekli değil ama yapı için ekliyoruz
+            snapchat_username: profileData.snapchat_username || null,
+            instagram_username: profileData.instagram_username || null,
+            facebook_username: profileData.facebook_username || null,
+            twitter_username: profileData.twitter_username || null,
+            pinterest_username: profileData.pinterest_username || null,
+            age: profileData.age || null,
+            district: profileData.district || null,
+            gender: profileData.gender || null,
+            daily_message: profileData.daily_message || null,
+            message_date: profileData.message_date || null,
+            is_premium: profileData.is_premium || false,
+        };
+        
+        // mapState.profiles'e ekle (eğer mapState tanımlıysa)
+        if (typeof mapState !== 'undefined' && mapState.profiles) {
+            // Zaten varsa ekleme
+            const exists = mapState.profiles.find(p => p.id === profile.id);
+            if (!exists) {
+                mapState.profiles.push(profile);
+            }
+        }
+        
+        // Profil detaylarını aç
+        if (typeof handleProfileClick === 'function') {
+            handleProfileClick(profile.id);
+        } else {
+            if (typeof showAlert === 'function') {
+                showAlert('Profil detayları açılamadı.', 'Hata', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Profil bulunamadı:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('Profil bulunamadı.', 'Bilgi', 'info');
+        }
+    }
+};
+
 // Mesaj butonuna tıklama (Premium kontrolü ile)
-window.handleMessageButtonClick = async function(userId, username, avatar) {
+window.handleMessageButtonClick = async function(userId, username, avatar, storyId) {
     // Premium kontrolü
     const isPremium = await checkUserIsPremium();
     if (!isPremium) {
@@ -2787,19 +3058,20 @@ window.handleMessageButtonClick = async function(userId, username, avatar) {
         return;
     }
     
-    // Premium ise DM modal'ını aç
-    openDMModal(userId, username, avatar);
+    // Premium ise DM modal'ını aç (hikayeden geliyorsa storyId'yi geç)
+    openDMModal(userId, username, avatar, storyId);
 };
 
 // DM Modal Fonksiyonları
 let currentDMUserId = null;
 let currentDMUsername = null;
 let currentDMAvatar = null;
+let currentDMStoryId = null; // Hikayeye özel mesaj için story_id
 let dmRealtimeChannel = null;
 let unreadMessageCheckInterval = null;
 
 // DM Modal'ı Aç
-window.openDMModal = async function(userId, username, avatar) {
+window.openDMModal = async function(userId, username, avatar, storyId) {
     const modal = document.getElementById('dm-modal');
     const messagesContainer = document.getElementById('dm-messages-container');
     const dmUsername = document.getElementById('dm-username');
@@ -2830,11 +3102,20 @@ window.openDMModal = async function(userId, username, avatar) {
     // Kullanıcı bilgilerini kaydet
     currentDMUserId = userId;
     currentDMUsername = username;
-    currentDMAvatar = avatar || 'https://via.placeholder.com/40';
+    currentDMAvatar = avatar || DEFAULT_AVATAR_40;
+    currentDMStoryId = storyId || null; // Hikayeden geliyorsa storyId'yi kaydet
     
     // Modal'ı göster
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    
+    // Story viewer açıksa timer'ı durdur (mesajdan çıkana kadar beklesin)
+    const storyViewerModal = document.getElementById('story-viewer-modal');
+    if (storyViewerModal && !storyViewerModal.classList.contains('hidden')) {
+        if (typeof window.pauseStoryTimer === 'function') {
+            window.pauseStoryTimer();
+        }
+    }
     
     // Header bilgilerini güncelle
     if (dmUsername) dmUsername.textContent = username;
@@ -2881,9 +3162,18 @@ window.closeDMModal = function() {
     // Realtime subscription'ı kapat
     stopDMRealtimeSubscription();
     
+    // Story viewer açıksa timer'ı tekrar başlat (mesajdan çıkınca devam etsin)
+    const storyViewerModal = document.getElementById('story-viewer-modal');
+    if (storyViewerModal && !storyViewerModal.classList.contains('hidden')) {
+        if (typeof window.resumeStoryTimer === 'function') {
+            window.resumeStoryTimer();
+        }
+    }
+    
     currentDMUserId = null;
     currentDMUsername = null;
     currentDMAvatar = null;
+    currentDMStoryId = null;
 };
 
 // DM Mesajlarını Yükle
@@ -2972,21 +3262,70 @@ window.sendDM = async function() {
         }
         
         // Mesajı Supabase'e kaydet
-        const { data, error } = await supabase
-            .from('messages')
-            .insert([
-                {
-                    sender_id: user.id,
-                    receiver_id: currentDMUserId,
-                    content: messageText
+        let data, error;
+        
+        // Eğer hikayeye özel mesaj ise send_story_message RPC fonksiyonunu kullan
+        if (currentDMStoryId) {
+            console.log('📤 Hikaye mesajı gönderiliyor:', {
+                story_id: currentDMStoryId,
+                content: messageText,
+                sender_id: user.id
+            });
+            
+            const { data: rpcData, error: rpcError } = await supabase
+                .rpc('send_story_message', {
+                    p_story_id: currentDMStoryId,
+                    p_content: messageText
+                });
+            
+            if (rpcError) {
+                error = rpcError;
+                console.error('❌ Hikaye mesajı gönderme hatası:', rpcError);
+                console.error('   Hata detayları:', JSON.stringify(rpcError, null, 2));
+                showAlert('Mesaj gönderilemedi. Lütfen tekrar deneyin.', 'Hata', 'error');
+                if (sendBtn) sendBtn.disabled = false;
+                return;
+            } else {
+                console.log('✅ RPC başarılı, mesaj ID:', rpcData);
+                
+                // RPC fonksiyonu sadece ID döndürüyor, mesaj bilgilerini al
+                const { data: messageData, error: messageError } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('id', rpcData)
+                    .single();
+                
+                if (messageError) {
+                    console.error('❌ Mesaj bilgileri alınamadı:', messageError);
+                } else {
+                    console.log('✅ Mesaj bilgileri alındı:', messageData);
                 }
-            ])
-            .select()
-            .single();
+                
+                data = messageData;
+                error = messageError;
+            }
+        } else {
+            // Normal DM mesajı
+            const result = await supabase
+                .from('messages')
+                .insert([
+                    {
+                        sender_id: user.id,
+                        receiver_id: currentDMUserId,
+                        content: messageText
+                    }
+                ])
+                .select()
+                .single();
+            
+            data = result.data;
+            error = result.error;
+        }
         
         if (error) {
             console.error('Mesaj gönderme hatası:', error);
             showAlert('Mesaj gönderilemedi. Lütfen tekrar deneyin.', 'Hata', 'error');
+            if (sendBtn) sendBtn.disabled = false;
             return;
         }
         
@@ -3000,7 +3339,7 @@ window.sendDM = async function() {
                 <img src="${userAvatar}" 
                      alt="" 
                      class="dm-message-avatar"
-                     onerror="this.src='https://via.placeholder.com/32'">
+                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTE2IDEwQzEzLjc5IDEwIDEyIDExLjc5IDEyIDE0QzEyIDE2LjIxIDEzLjc5IDE4IDE2IDE4QzE4LjIxIDE4IDIwIDE2LjIxIDIwIDE0QzIwIDExLjc5IDE4LjIxIDEwIDE2IDEwWk0xNiAyMEMxMy43OSAyMCAxMiAyMS43OSAxMiAyNEwxMiAyOEMyMCAyOCAyMCAyNCAyMCAyNEMyMCAyMS43OSAxOC4yMSAyMCAxNiAyMFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; this.onerror=null;">
                 <div class="dm-message-content">
                     <div class="dm-message-bubble">${escapeHtml(messageText)}</div>
                     <div class="dm-message-time">${formatMessageTime(new Date().toISOString())}</div>
@@ -3045,7 +3384,7 @@ function formatMessageTime(timestamp) {
 async function getCurrentUserAvatar() {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return 'https://via.placeholder.com/32';
+        if (!user) return DEFAULT_AVATAR_32;
         
         const { data: profile } = await supabase
             .from('profiles')
@@ -3053,9 +3392,9 @@ async function getCurrentUserAvatar() {
             .eq('user_id', user.id)
             .single();
         
-        return profile?.image_url || 'https://via.placeholder.com/32';
+        return profile?.image_url || DEFAULT_AVATAR_32;
     } catch (error) {
-        return 'https://via.placeholder.com/32';
+        return DEFAULT_AVATAR_32;
     }
 }
 
@@ -3070,7 +3409,7 @@ async function appendMessageToUI(message, isSent, userAvatar) {
             <img src="${avatar}" 
                  alt="" 
                  class="dm-message-avatar"
-                 onerror="this.src='https://via.placeholder.com/32'">
+                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTE2IDEwQzEzLjc5IDEwIDEyIDExLjc5IDEyIDE0QzEyIDE2LjIxIDEzLjc5IDE4IDE2IDE4QzE4LjIxIDE4IDIwIDE2LjIxIDIwIDE0QzIwIDExLjc5IDE4LjIxIDEwIDE2IDEwWk0xNiAyMEMxMy43OSAyMCAxMiAyMS43OSAxMiAyNEwxMiAyOEMyMCAyOCAyMCAyNCAyMCAyNEMyMCAyMS43OSAxOC4yMSAyMCAxNiAyMFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; this.onerror=null;">
             <div class="dm-message-content">
                 <div class="dm-message-bubble">${escapeHtml(message.content)}</div>
                 <div class="dm-message-time">${formatMessageTime(message.created_at)}</div>
@@ -3302,4 +3641,221 @@ document.addEventListener('click', (e) => {
             closeDMModal();
         }
     }
+    
+    const storyMessagesModal = document.getElementById('story-messages-modal');
+    if (storyMessagesModal && !storyMessagesModal.classList.contains('hidden')) {
+        if (e.target === storyMessagesModal) {
+            closeStoryMessagesModal();
+        }
+    }
 });
+
+// Hikaye Mesajları Modal Fonksiyonları
+let currentStoryMessagesId = null;
+
+// Hikaye Mesajları Modal'ı Aç
+window.openStoryMessagesModal = async function(storyId) {
+    console.log('📬 Hikaye mesajları modal açılıyor, storyId:', storyId);
+    
+    const modal = document.getElementById('story-messages-modal');
+    const messagesContainer = document.getElementById('story-messages-container');
+    const countEl = document.getElementById('story-messages-count');
+    
+    if (!modal) {
+        console.error('❌ Story messages modal bulunamadı');
+        return;
+    }
+    
+    currentStoryMessagesId = storyId;
+    
+    // Story viewer timer'ı durdur (mesajdan çıkana kadar beklesin)
+    const storyViewerModal = document.getElementById('story-viewer-modal');
+    if (storyViewerModal && !storyViewerModal.classList.contains('hidden')) {
+        if (typeof window.pauseStoryTimer === 'function') {
+            window.pauseStoryTimer();
+        }
+    }
+    
+    // Modal'ı göster
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Mesajları yükle
+    await loadStoryMessages(storyId, messagesContainer, countEl);
+};
+
+// Hikaye Mesajları Modal'ı Kapat
+window.closeStoryMessagesModal = function() {
+    const modal = document.getElementById('story-messages-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Story viewer açıksa timer'ı tekrar başlat
+    const storyViewerModal = document.getElementById('story-viewer-modal');
+    if (storyViewerModal && !storyViewerModal.classList.contains('hidden')) {
+        if (typeof window.resumeStoryTimer === 'function') {
+            window.resumeStoryTimer();
+        }
+    }
+    
+    currentStoryMessagesId = null;
+};
+
+// Hikaye Mesajlarını Yükle
+async function loadStoryMessages(storyId, container, countEl) {
+    console.log('📥 Hikaye mesajları yükleniyor, storyId:', storyId);
+    
+    if (!container) {
+        console.error('❌ Container bulunamadı');
+        return;
+    }
+    
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.warn('⚠️ Kullanıcı giriş yapmamış');
+            return;
+        }
+        
+        console.log('👤 Kullanıcı ID:', user.id);
+        console.log('🔍 RPC fonksiyonu çağrılıyor: get_story_messages');
+        
+        // Hikaye mesajlarını yükle (RPC fonksiyonu kullan)
+        const { data: messages, error } = await supabase
+            .rpc('get_story_messages', { p_story_id: storyId });
+        
+        if (error) {
+            console.error('❌ Hikaye mesajları yükleme hatası:', error);
+            console.error('   Hata detayları:', JSON.stringify(error, null, 2));
+            container.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">Mesajlar yüklenemedi.</div>';
+            if (countEl) countEl.textContent = '0 mesaj';
+            return;
+        }
+        
+        console.log('✅ Mesajlar başarıyla yüklendi');
+        console.log('📊 Toplam mesaj sayısı:', messages ? messages.length : 0);
+        console.log('📋 Mesajlar:', messages);
+        
+        // Mesaj sayısını güncelle
+        if (countEl) {
+            countEl.textContent = `${messages ? messages.length : 0} mesaj`;
+        }
+        
+        // Container'ı temizle
+        container.innerHTML = '';
+        
+        if (messages && messages.length > 0) {
+            // Mesajları gönderen kullanıcıya göre grupla
+            const messagesBySender = {};
+            messages.forEach(msg => {
+                if (!messagesBySender[msg.sender_id]) {
+                    messagesBySender[msg.sender_id] = [];
+                }
+                messagesBySender[msg.sender_id].push(msg);
+            });
+            
+            console.log('👥 Gönderen sayısı:', Object.keys(messagesBySender).length);
+            console.log('📦 Gruplanmış mesajlar:', messagesBySender);
+            
+            // Her gönderen için bir kart oluştur
+            Object.keys(messagesBySender).forEach(senderId => {
+                const senderMessages = messagesBySender[senderId];
+                const firstMessage = senderMessages[0];
+                const senderName = firstMessage.sender_name || 'Kullanıcı';
+                const senderAvatar = firstMessage.sender_avatar || '';
+                
+                console.log('💬 Gönderen ID:', senderId, 'Mesaj sayısı:', senderMessages.length, 'İsim:', senderName);
+                
+                const senderCard = document.createElement('div');
+                senderCard.className = 'story-message-sender-card';
+                senderCard.style.cssText = 'background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);';
+                
+                const senderHeader = document.createElement('div');
+                senderHeader.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 12px; cursor: pointer;';
+                senderHeader.onclick = () => {
+                    // DM modal'ını aç (hikaye sahibi bu kullanıcıya cevap verebilir)
+                    if (typeof openDMModal === 'function') {
+                        closeStoryMessagesModal();
+                        openDMModal(senderId, senderName, senderAvatar);
+                    }
+                };
+                
+                const avatarImg = document.createElement('img');
+                avatarImg.src = senderAvatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTIwIDEyQzE3LjIzIDEyIDE1IDE0LjIzIDE1IDE3QzE1IDE5Ljc3IDE3LjIzIDIyIDIwIDIyQzIyLjc3IDIyIDI1IDE5Ljc3IDI1IDE3QzI1IDE0LjIzIDIyLjc3IDEyIDIwIDEyWk0yMCAyNEMxNy4yMyAyNCAxNSAyNi4yMyAxNSAyOUwxNSAzNUMxNSAzNSAyMCAzNSAyMCAzNUMxNSAzNSAxNSAyOSAxNSAyOUMxNSAyNi4yMyAxNy4yMyAyNCAyMCAyNFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+';
+                avatarImg.alt = senderName;
+                avatarImg.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover;';
+                avatarImg.onerror = function() { this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTIwIDEyQzE3LjIzIDEyIDE1IDE4LjIzIDE1IDE3QzE1IDE5Ljc3IDE3LjIzIDIyIDIwIDIyQzIyLjc3IDIyIDI1IDE5Ljc3IDI1IDE3QzI1IDE0LjIzIDIyLjc3IDEyIDIwIDEyWk0yMCAyNEMxNy4yMyAyNCAxNSAyNi4yMyAxNSAyOUwxNSAzNUMxNSAzNSAyMCAzNSAyMCAzNUMxNSAzNSAxNSAyOSAxNSAyOUMxNSAyNi4yMyAxNy4yMyAyNCAyMCAyNFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+'; };
+                
+                const senderInfo = document.createElement('div');
+                senderInfo.style.cssText = 'flex: 1;';
+                
+                const senderNameEl = document.createElement('div');
+                senderNameEl.textContent = senderName;
+                senderNameEl.style.cssText = 'font-weight: 600; color: #fff; margin-bottom: 4px;';
+                
+                const messageCountEl = document.createElement('div');
+                messageCountEl.textContent = `${senderMessages.length} mesaj`;
+                messageCountEl.style.cssText = 'font-size: 12px; color: rgba(255,255,255,0.6);';
+                
+                senderInfo.appendChild(senderNameEl);
+                senderInfo.appendChild(messageCountEl);
+                
+                const replyBtn = document.createElement('button');
+                replyBtn.textContent = 'Cevap Ver';
+                replyBtn.style.cssText = 'background: #3ECF8E; color: #000; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 14px;';
+                replyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    closeStoryMessagesModal();
+                    if (typeof openDMModal === 'function') {
+                        openDMModal(senderId, senderName, senderAvatar);
+                    }
+                };
+                
+                senderHeader.appendChild(avatarImg);
+                senderHeader.appendChild(senderInfo);
+                senderHeader.appendChild(replyBtn);
+                
+                const messagesList = document.createElement('div');
+                messagesList.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+                
+                senderMessages.forEach((msg, index) => {
+                    console.log(`   📨 Mesaj ${index + 1}/${senderMessages.length}:`, {
+                        id: msg.id,
+                        content: msg.content,
+                        sender_id: msg.sender_id,
+                        created_at: msg.created_at
+                    });
+                    
+                    const messageEl = document.createElement('div');
+                    messageEl.style.cssText = 'background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.5;';
+                    messageEl.textContent = msg.content;
+                    
+                    const timeEl = document.createElement('div');
+                    timeEl.style.cssText = 'font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px;';
+                    timeEl.textContent = getTimeAgo(msg.created_at);
+                    messageEl.appendChild(timeEl);
+                    
+                    messagesList.appendChild(messageEl);
+                });
+                
+                senderCard.appendChild(senderHeader);
+                senderCard.appendChild(messagesList);
+                container.appendChild(senderCard);
+            });
+            
+            // En alta scroll
+            container.scrollTop = container.scrollHeight;
+            console.log('✅ Tüm mesajlar başarıyla gösterildi');
+        } else {
+            console.log('ℹ️ Henüz mesaj yok');
+            container.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 40px 20px;"><p style="margin-bottom: 8px;">Henüz mesaj yok</p><p style="font-size: 14px; color: rgba(255,255,255,0.4);">Hikayene gelen mesajlar burada görünecek</p></div>';
+        }
+    } catch (error) {
+        console.error('❌ Hikaye mesajları yükleme hatası:', error);
+        console.error('   Hata stack:', error.stack);
+        container.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">Mesajlar yüklenemedi.</div>';
+        if (countEl) countEl.textContent = '0 mesaj';
+    }
+}

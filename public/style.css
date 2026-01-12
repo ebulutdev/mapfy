@@ -6398,6 +6398,37 @@ body {
     font-size: 12px;
 }
 
+/* Story Message Button (Mesajlaşma Butonu) */
+.story-viewer-message-btn {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.story-viewer-message-btn:hover {
+    background: rgba(62, 207, 142, 0.8);
+    transform: scale(1.1);
+}
+
+.story-viewer-message-btn:active {
+    transform: scale(0.95);
+}
+
+.story-viewer-message-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Story Delete Button (Çöp Kutusu) */
 .story-viewer-delete-btn {
     margin-left: auto;
@@ -6497,6 +6528,16 @@ body {
         left: 5px;
         right: 5px;
         padding: 0 10px;
+    }
+    
+    .story-viewer-message-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .story-viewer-message-btn svg {
+        width: 18px;
+        height: 18px;
     }
     
     .story-viewer-delete-btn {
