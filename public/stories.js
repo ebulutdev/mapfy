@@ -2846,12 +2846,120 @@ async function loadHypeMatches() {
             return;
         }
         
+        // 2. Hikayede mesajlaşılan kullanıcıları al ve ekle
+        const { data: { user } } = await supabase.auth.getUser();
+        let allMatches = matches || [];
+        const existingUserIds = new Set((matches || []).map(m => m.user_id));
+        
+        if (user) {
+            // Kullanıcının kendi hikayelerine mesaj gönderen kullanıcıları al
+            const { data: myStories } = await supabase
+                .from('stories')
+                .select('id')
+                .eq('user_id', user.id);
+            
+            if (myStories && myStories.length > 0) {
+                const myStoryIds = myStories.map(s => s.id);
+                
+                // Bu hikayelere mesaj gönderen kullanıcıları al
+                const { data: messagesToMyStories } = await supabase
+                    .from('messages')
+                    .select('sender_id')
+                    .in('story_id', myStoryIds)
+                    .not('story_id', 'is', null)
+                    .not('sender_id', 'is', null);
+                
+                if (messagesToMyStories) {
+                    const senderIds = [...new Set(messagesToMyStories.map(m => m.sender_id).filter(Boolean))];
+                    
+                    // Bu kullanıcıların profil bilgilerini al
+                    if (senderIds.length > 0) {
+                        const { data: senderProfiles } = await supabase
+                            .from('profiles')
+                            .select('user_id, name, image_url')
+                            .in('user_id', senderIds)
+                            .not('image_url', 'is', null)
+                            .not('name', 'is', null);
+                        
+                        if (senderProfiles) {
+                            senderProfiles.forEach(profile => {
+                                if (!existingUserIds.has(profile.user_id)) {
+                                    allMatches.push({
+                                        user_id: profile.user_id,
+                                        name: profile.name,
+                                        image_url: profile.image_url,
+                                        match_score: 100, // Hikayede mesajlaşılanlar en üstte
+                                        match_reason: `💬 ${profile.name} ile hikayende mesajlaştınız`
+                                    });
+                                    existingUserIds.add(profile.user_id);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Kullanıcının başkalarının hikayelerine mesaj attığı kullanıcıları al
+            const { data: messagesFromMe } = await supabase
+                .from('messages')
+                .select('story_id')
+                .eq('sender_id', user.id)
+                .not('story_id', 'is', null);
+            
+            if (messagesFromMe) {
+                const storyIds = [...new Set(messagesFromMe.map(m => m.story_id).filter(Boolean))];
+                
+                if (storyIds.length > 0) {
+                    // Bu hikayelerin sahiplerini al
+                    const { data: storyOwners } = await supabase
+                        .from('stories')
+                        .select('user_id')
+                        .in('id', storyIds);
+                    
+                    if (storyOwners) {
+                        const ownerIds = [...new Set(storyOwners.map(s => s.user_id).filter(Boolean))];
+                        
+                        if (ownerIds.length > 0) {
+                            const { data: ownerProfiles } = await supabase
+                                .from('profiles')
+                                .select('user_id, name, image_url')
+                                .in('user_id', ownerIds)
+                                .not('image_url', 'is', null)
+                                .not('name', 'is', null);
+                            
+                            if (ownerProfiles) {
+                                ownerProfiles.forEach(profile => {
+                                    if (!existingUserIds.has(profile.user_id)) {
+                                        allMatches.push({
+                                            user_id: profile.user_id,
+                                            name: profile.name,
+                                            image_url: profile.image_url,
+                                            match_score: 100, // Hikayede mesajlaşılanlar en üstte
+                                            match_reason: `💬 ${profile.name} ile hikayesinde mesajlaştınız`
+                                        });
+                                        existingUserIds.add(profile.user_id);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Hikayede mesajlaşılanları en üste al (match_score 100 olanlar)
+        allMatches.sort((a, b) => {
+            if (a.match_score === 100 && b.match_score !== 100) return -1;
+            if (a.match_score !== 100 && b.match_score === 100) return 1;
+            return b.match_score - a.match_score;
+        });
+        
         // Loading gizle
         if (loading) loading.style.display = 'none';
         
-        // 2. HTML'i temizle ve yeni kartları ekle
-        if (matches && matches.length > 0) {
-            matches.forEach((match, index) => {
+        // 3. HTML'i temizle ve yeni kartları ekle
+        if (allMatches && allMatches.length > 0) {
+            allMatches.forEach((match, index) => {
                 // match_reason içindeki kullanıcı adını kalın yapalım
                 const formattedReason = match.match_reason.replace(
                     match.name, 
