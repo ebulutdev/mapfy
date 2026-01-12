@@ -432,6 +432,30 @@ async function loadStories() {
                 my_district: myDistrict || null
             });
         
+        // user_id bilgisini stories'e ekle (eğer yoksa)
+        if (stories && stories.length > 0) {
+            const storyIds = stories.map(s => s.id).filter(Boolean);
+            if (storyIds.length > 0) {
+                const { data: storiesWithUserId } = await supabase
+                    .from('stories')
+                    .select('id, user_id')
+                    .in('id', storyIds);
+                
+                if (storiesWithUserId) {
+                    const userIdMap = {};
+                    storiesWithUserId.forEach(s => {
+                        userIdMap[s.id] = s.user_id;
+                    });
+                    
+                    stories.forEach(story => {
+                        if (!story.user_id && userIdMap[story.id]) {
+                            story.user_id = userIdMap[story.id];
+                        }
+                    });
+                }
+            }
+        }
+        
         // 4. 24 saatten eski hikayeleri filtrele ve sil
         if (stories && stories.length > 0) {
             const validStories = [];
@@ -484,17 +508,21 @@ async function loadStories() {
             // Fallback hikayeleri ekle
             fallbackStories.forEach(story => {
                 const escapedUsername = (story.username || 'Kullanıcı').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const storyHTML = `
-                    <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}')">
-                        <div class="story-circle">
-                            <img src="${story.avatar_url || 'https://via.placeholder.com/64'}" 
-                                 alt="${escapedUsername}" 
-                                 class="story-avatar"
-                                 onerror="this.src='https://via.placeholder.com/64'">
-                        </div>
-                        <span class="story-username">${escapedUsername}</span>
+            // user_id'yi al (profil detayları için)
+            const storyUserId = story.user_id || null;
+            const storyUserAttr = storyUserId ? `data-user-id="${storyUserId}"` : '';
+            
+            const storyHTML = `
+                <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}')" ${storyUserAttr}>
+                    <div class="story-circle" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">
+                        <img src="${story.avatar_url || 'https://via.placeholder.com/64'}" 
+                             alt="${escapedUsername}" 
+                             class="story-avatar"
+                             onerror="this.src='https://via.placeholder.com/64'">
                     </div>
-                `;
+                    <span class="story-username" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">${escapedUsername}</span>
+                </div>
+            `;
                 storiesWrapper.innerHTML += storyHTML;
             });
             
@@ -535,15 +563,19 @@ async function loadStories() {
             }
             // priority_level === 2 için standart Instagram gradient kullanılır
             
+            // user_id'yi al (profil detayları için)
+            const storyUserId = story.user_id || null;
+            const storyUserAttr = storyUserId ? `data-user-id="${storyUserId}"` : '';
+            
             const storyHTML = `
-                <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}', ${story.priority_level || 3})" data-priority="${story.priority_level || 3}">
-                    <div class="${circleClass}">
+                <div class="story-item" onclick="viewStory('${story.id}', '${story.media_url.replace(/'/g, "\\'")}', '${escapedUsername}', ${story.priority_level || 3})" data-priority="${story.priority_level || 3}" ${storyUserAttr}>
+                    <div class="${circleClass}" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">
                         <img src="${story.avatar_url || 'https://via.placeholder.com/64'}" 
                              alt="${escapedUsername}" 
                              class="story-avatar"
                              onerror="this.src='https://via.placeholder.com/64'">
                     </div>
-                    <span class="story-username">${escapedUsername}</span>
+                    <span class="story-username" onclick="event.stopPropagation(); handleStoryProfileClick('${story.id}', '${storyUserId || ''}')">${escapedUsername}</span>
                 </div>
             `;
             storiesWrapper.innerHTML += storyHTML;
@@ -731,6 +763,84 @@ async function openStoryViewer(story) {
     }
     
     storyViewerUsername.textContent = story.username || 'Kullanıcı';
+    
+    // Avatar ve username'e tıklama event'i ekle (profil detayları için)
+    if (storyViewerAvatar && storyViewerUsername) {
+        // Önceki event listener'ları temizle
+        const newAvatar = storyViewerAvatar.cloneNode(true);
+        storyViewerAvatar.parentNode.replaceChild(newAvatar, storyViewerAvatar);
+        const newUsername = storyViewerUsername.cloneNode(true);
+        storyViewerUsername.parentNode.replaceChild(newUsername, storyViewerUsername);
+        
+        // Yeni referansları al
+        const avatarEl = document.getElementById('story-viewer-avatar-img');
+        const usernameEl = document.getElementById('story-viewer-username');
+        
+        // Profil detaylarını açma fonksiyonu
+        const openProfileFromStory = async () => {
+            let storyUserId = story.user_id;
+            
+            // user_id yoksa veritabanından al
+            if (!storyUserId && story.id) {
+                try {
+                    const { data: storyData } = await supabase
+                        .from('stories')
+                        .select('user_id')
+                        .eq('id', story.id)
+                        .single();
+                    if (storyData && storyData.user_id) {
+                        storyUserId = storyData.user_id;
+                    }
+                } catch (error) {
+                    console.error('Story user_id alınamadı:', error);
+                }
+            }
+            
+            if (storyUserId) {
+                // user_id'den profile_id'yi bul
+                try {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('user_id', storyUserId)
+                        .single();
+                    
+                    if (profile && profile.id) {
+                        // Profil detaylarını aç
+                        if (typeof handleProfileClick === 'function') {
+                            handleProfileClick(profile.id);
+                            // Story viewer'ı kapat
+                            closeStoryViewer();
+                        }
+                    } else {
+                        showAlert('Profil bulunamadı.', 'Bilgi', 'info');
+                    }
+                } catch (error) {
+                    console.error('Profil bulunamadı:', error);
+                    showAlert('Profil bulunamadı.', 'Bilgi', 'info');
+                }
+            } else {
+                showAlert('Kullanıcı bilgisi bulunamadı.', 'Bilgi', 'info');
+            }
+        };
+        
+        // Avatar ve username'e tıklama event'i ekle
+        if (avatarEl) {
+            avatarEl.style.cursor = 'pointer';
+            avatarEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openProfileFromStory();
+            });
+        }
+        
+        if (usernameEl) {
+            usernameEl.style.cursor = 'pointer';
+            usernameEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openProfileFromStory();
+            });
+        }
+    }
     
     // Hikaye zamanını göster (hızlı - önce mevcut bilgiyi göster)
     if (story.created_at) {
@@ -2238,6 +2348,9 @@ window.openHypeeDiscover = async function() {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
+    // Varsayılan olarak "Hypee Keşfet" sekmesini göster
+    switchHypeeTab('discover');
+    
     // Loading göster
     if (loading) loading.style.display = 'flex';
     if (empty) empty.style.display = 'none';
@@ -2248,6 +2361,34 @@ window.openHypeeDiscover = async function() {
     
     // Loading gizle
     if (loading) loading.style.display = 'none';
+}
+
+// Hypee Tab Değiştir
+window.switchHypeeTab = function(tabName) {
+    // Tüm tab'ları ve içerikleri güncelle
+    const tabs = document.querySelectorAll('.hypee-tab');
+    const contents = document.querySelectorAll('.hypee-tab-content');
+    
+    tabs.forEach(tab => {
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+    
+    contents.forEach(content => {
+        if (content.id === `hypee-tab-${tabName}`) {
+            content.classList.add('active');
+        } else {
+            content.classList.remove('active');
+        }
+    });
+    
+    // Eğer "matches" sekmesine geçildiyse eşleşmeleri yükle
+    if (tabName === 'matches') {
+        loadHypeMatches();
+    }
 }
 
 // Hypee Keşfet Modal'ı Kapat
@@ -2484,3 +2625,681 @@ function openHypeeStoryViewer(storyList, startIndex) {
         }
     }
 }
+
+// Hype Eşleşmelerini Getir ve Göster
+async function loadHypeMatches() {
+    const container = document.getElementById('hype-matches-list');
+    const loading = document.getElementById('hype-matches-loading');
+    const empty = document.getElementById('hype-matches-empty');
+    
+    if (!container) return;
+    
+    // Loading göster
+    if (loading) loading.style.display = 'flex';
+    if (empty) empty.style.display = 'none';
+    container.innerHTML = '';
+    
+    try {
+        // 1. Supabase RPC fonksiyonunu çağır (SQL'de yazdığımız)
+        const { data: matches, error } = await supabase
+            .rpc('get_hype_matches', { match_limit: 10 });
+        
+        if (error) {
+            console.error('Eşleşme hatası:', error);
+            if (empty) {
+                empty.style.display = 'flex';
+                empty.innerHTML = `
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <p style="margin-bottom: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.7);">Eşleşmeler yüklenirken bir hata oluştu.</p>
+                `;
+            }
+            return;
+        }
+        
+        // Loading gizle
+        if (loading) loading.style.display = 'none';
+        
+        // 2. HTML'i temizle ve yeni kartları ekle
+        if (matches && matches.length > 0) {
+            matches.forEach((match, index) => {
+                // match_reason içindeki kullanıcı adını kalın yapalım
+                const formattedReason = match.match_reason.replace(
+                    match.name, 
+                    `<strong>${match.name}</strong>`
+                );
+                
+                const escapedName = (match.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const escapedImageUrl = (match.image_url || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                const cardHTML = `
+                    <div class="hype-card" style="animation-delay: ${index * 0.1}s;">
+                        <div class="hype-avatar" style="cursor: pointer;" onclick="handleProfileClick('${match.user_id}')">
+                            <img src="${match.image_url || 'https://via.placeholder.com/48'}" 
+                                 alt="${escapedName}" 
+                                 onerror="this.src='https://via.placeholder.com/48'">
+                        </div>
+                        <div class="hype-content" style="cursor: pointer;" onclick="handleProfileClick('${match.user_id}')">
+                            <div class="hype-header">
+                                <span class="hype-name">${escapedName}</span>
+                                <span class="hype-time">%${match.match_score} Eşleşme</span>
+                            </div>
+                            <div class="hype-text">
+                                ${formattedReason}
+                            </div>
+                        </div>
+                        <button class="hype-message-btn" onclick="event.stopPropagation(); handleMessageButtonClick('${match.user_id}', '${escapedName}', '${escapedImageUrl}')" title="Mesaj Gönder">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+        } else {
+            // Eşleşme yoksa
+            if (empty) {
+                empty.style.display = 'flex';
+            }
+        }
+    } catch (error) {
+        console.error('Eşleşme yükleme hatası:', error);
+        if (empty) {
+            empty.style.display = 'flex';
+        }
+    } finally {
+        if (loading) loading.style.display = 'none';
+    }
+}
+
+// Global fonksiyon olarak export et
+window.loadHypeMatches = loadHypeMatches;
+
+// Story'den profil detaylarını aç
+window.handleStoryProfileClick = async function(storyId, userId) {
+    let storyUserId = userId;
+    
+    // user_id yoksa veritabanından al
+    if (!storyUserId && storyId) {
+        try {
+            const { data: storyData } = await supabase
+                .from('stories')
+                .select('user_id')
+                .eq('id', storyId)
+                .single();
+            if (storyData && storyData.user_id) {
+                storyUserId = storyData.user_id;
+            }
+        } catch (error) {
+            console.error('Story user_id alınamadı:', error);
+        }
+    }
+    
+    if (!storyUserId) {
+        showAlert('Kullanıcı bilgisi bulunamadı.', 'Bilgi', 'info');
+        return;
+    }
+    
+    // user_id'den profile_id'yi bul
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', storyUserId)
+            .single();
+        
+        if (profile && profile.id) {
+            // Profil detaylarını aç
+            if (typeof handleProfileClick === 'function') {
+                handleProfileClick(profile.id);
+            } else {
+                showAlert('Profil detayları açılamadı.', 'Hata', 'error');
+            }
+        } else {
+            showAlert('Profil bulunamadı.', 'Bilgi', 'info');
+        }
+    } catch (error) {
+        console.error('Profil bulunamadı:', error);
+        showAlert('Profil bulunamadı.', 'Bilgi', 'info');
+    }
+};
+
+// Mesaj butonuna tıklama (Premium kontrolü ile)
+window.handleMessageButtonClick = async function(userId, username, avatar) {
+    // Premium kontrolü
+    const isPremium = await checkUserIsPremium();
+    if (!isPremium) {
+        showAlert('Mesaj göndermek için Premium üyelik gereklidir. Premium paketlerimize göz atabilirsiniz.', 'Premium Gerekli', 'warning');
+        // Premium sayfasına yönlendirme butonu göster
+        setTimeout(() => {
+            if (confirm('Premium paketlerimizi görmek ister misiniz?')) {
+                // Premium modal'ını aç veya sayfaya yönlendir
+                if (typeof openPremiumModal === 'function') {
+                    openPremiumModal();
+                } else {
+                    window.location.hash = '#premium';
+                }
+            }
+        }, 500);
+        return;
+    }
+    
+    // Premium ise DM modal'ını aç
+    openDMModal(userId, username, avatar);
+};
+
+// DM Modal Fonksiyonları
+let currentDMUserId = null;
+let currentDMUsername = null;
+let currentDMAvatar = null;
+let dmRealtimeChannel = null;
+let unreadMessageCheckInterval = null;
+
+// DM Modal'ı Aç
+window.openDMModal = async function(userId, username, avatar) {
+    const modal = document.getElementById('dm-modal');
+    const messagesContainer = document.getElementById('dm-messages-container');
+    const dmUsername = document.getElementById('dm-username');
+    const dmAvatar = document.getElementById('dm-avatar');
+    const messageInput = document.getElementById('dm-message-input');
+    const sendBtn = document.getElementById('dm-send-btn');
+    
+    if (!modal) return;
+    
+    // Premium kontrolü
+    const isPremium = await checkUserIsPremium();
+    if (!isPremium) {
+        showAlert('Mesaj göndermek için Premium üyelik gereklidir. Premium paketlerimize göz atabilirsiniz.', 'Premium Gerekli', 'warning');
+        // Premium sayfasına yönlendirme butonu göster
+        setTimeout(() => {
+            if (confirm('Premium paketlerimizi görmek ister misiniz?')) {
+                // Premium modal'ını aç veya sayfaya yönlendir
+                if (typeof openPremiumModal === 'function') {
+                    openPremiumModal();
+                } else {
+                    window.location.hash = '#premium';
+                }
+            }
+        }, 500);
+        return;
+    }
+    
+    // Kullanıcı bilgilerini kaydet
+    currentDMUserId = userId;
+    currentDMUsername = username;
+    currentDMAvatar = avatar || 'https://via.placeholder.com/40';
+    
+    // Modal'ı göster
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Header bilgilerini güncelle
+    if (dmUsername) dmUsername.textContent = username;
+    if (dmAvatar) {
+        dmAvatar.src = currentDMAvatar;
+        dmAvatar.alt = username;
+    }
+    
+    // Mesajları yükle
+    await loadDMMessages(userId);
+    
+    // Realtime subscription başlat
+    startDMRealtimeSubscription(userId);
+    
+    // Mesajları okundu işaretle
+    markMessagesAsRead(userId);
+    
+    // Input'a focus ver
+    if (messageInput) {
+        setTimeout(() => {
+            messageInput.focus();
+        }, 100);
+    }
+    
+    // Enter tuşu ile mesaj gönderme
+    if (messageInput) {
+        messageInput.onkeypress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendDM();
+            }
+        };
+    }
+};
+
+// DM Modal'ı Kapat
+window.closeDMModal = function() {
+    const modal = document.getElementById('dm-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Realtime subscription'ı kapat
+    stopDMRealtimeSubscription();
+    
+    currentDMUserId = null;
+    currentDMUsername = null;
+    currentDMAvatar = null;
+};
+
+// DM Mesajlarını Yükle
+async function loadDMMessages(userId) {
+    const messagesContainer = document.getElementById('dm-messages-container');
+    if (!messagesContainer) return;
+    
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        // Mesajları Supabase'den çek
+        const { data: messages, error } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
+            .order('created_at', { ascending: true })
+            .limit(100);
+        
+        if (error) {
+            console.error('Mesaj yükleme hatası:', error);
+            messagesContainer.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">Mesajlar yüklenemedi.</div>';
+            return;
+        }
+        
+        // Mesajları göster
+        messagesContainer.innerHTML = '';
+        
+        if (messages && messages.length > 0) {
+            const userAvatar = await getCurrentUserAvatar();
+            messages.forEach(message => {
+                const isSent = message.sender_id === user.id;
+                appendMessageToUI(message, isSent, userAvatar);
+            });
+            
+            // En alta scroll
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } else {
+            // İlk mesaj buz kıranı göster
+            showIceBreaker(messagesContainer, userId);
+        }
+    } catch (error) {
+        console.error('Mesaj yükleme hatası:', error);
+        messagesContainer.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">Mesajlar yüklenemedi.</div>';
+    }
+}
+
+// Mesaj Gönder
+window.sendDM = async function() {
+    const messageInput = document.getElementById('dm-message-input');
+    const sendBtn = document.getElementById('dm-send-btn');
+    const messagesContainer = document.getElementById('dm-messages-container');
+    
+    if (!messageInput || !currentDMUserId) return;
+    
+    const messageText = messageInput.value.trim();
+    if (!messageText) return;
+    
+    // Premium kontrolü
+    const isPremium = await checkUserIsPremium();
+    if (!isPremium) {
+        showAlert('Mesaj göndermek için Premium üyelik gereklidir. Premium paketlerimize göz atabilirsiniz.', 'Premium Gerekli', 'warning');
+        // Premium sayfasına yönlendirme butonu göster
+        setTimeout(() => {
+            if (confirm('Premium paketlerimizi görmek ister misiniz?')) {
+                // Premium modal'ını aç veya sayfaya yönlendir
+                if (typeof openPremiumModal === 'function') {
+                    openPremiumModal();
+                } else {
+                    window.location.hash = '#premium';
+                }
+            }
+        }, 500);
+        return;
+    }
+    
+    // Butonu devre dışı bırak
+    if (sendBtn) sendBtn.disabled = true;
+    
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showAlert('Mesaj göndermek için giriş yapmalısınız.', 'Uyarı', 'warning');
+            if (sendBtn) sendBtn.disabled = false;
+            return;
+        }
+        
+        // Mesajı Supabase'e kaydet
+        const { data, error } = await supabase
+            .from('messages')
+            .insert([
+                {
+                    sender_id: user.id,
+                    receiver_id: currentDMUserId,
+                    content: messageText
+                }
+            ])
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Mesaj gönderme hatası:', error);
+            showAlert('Mesaj gönderilemedi. Lütfen tekrar deneyin.', 'Hata', 'error');
+            return;
+        }
+        
+        // Input'u temizle
+        messageInput.value = '';
+        
+        // Mesajı UI'a ekle
+        const userAvatar = await getCurrentUserAvatar();
+        const messageHTML = `
+            <div class="dm-message sent">
+                <img src="${userAvatar}" 
+                     alt="" 
+                     class="dm-message-avatar"
+                     onerror="this.src='https://via.placeholder.com/32'">
+                <div class="dm-message-content">
+                    <div class="dm-message-bubble">${escapeHtml(messageText)}</div>
+                    <div class="dm-message-time">${formatMessageTime(new Date().toISOString())}</div>
+                </div>
+            </div>
+        `;
+        messagesContainer.innerHTML += messageHTML;
+        
+        // En alta scroll
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+    } catch (error) {
+        console.error('Mesaj gönderme hatası:', error);
+        showAlert('Mesaj gönderilemedi. Lütfen tekrar deneyin.', 'Hata', 'error');
+    } finally {
+        if (sendBtn) sendBtn.disabled = false;
+        if (messageInput) messageInput.focus();
+    }
+};
+
+// Yardımcı Fonksiyonlar
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatMessageTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Az önce';
+    if (diffMins < 60) return `${diffMins} dk önce`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} sa önce`;
+    
+    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+async function getCurrentUserAvatar() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return 'https://via.placeholder.com/32';
+        
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('image_url')
+            .eq('user_id', user.id)
+            .single();
+        
+        return profile?.image_url || 'https://via.placeholder.com/32';
+    } catch (error) {
+        return 'https://via.placeholder.com/32';
+    }
+}
+
+// Mesajı UI'a ekle (Realtime için)
+async function appendMessageToUI(message, isSent, userAvatar) {
+    const messagesContainer = document.getElementById('dm-messages-container');
+    if (!messagesContainer) return;
+    
+    const avatar = isSent ? (userAvatar || await getCurrentUserAvatar()) : currentDMAvatar;
+    const messageHTML = `
+        <div class="dm-message ${isSent ? 'sent' : 'received'}">
+            <img src="${avatar}" 
+                 alt="" 
+                 class="dm-message-avatar"
+                 onerror="this.src='https://via.placeholder.com/32'">
+            <div class="dm-message-content">
+                <div class="dm-message-bubble">${escapeHtml(message.content)}</div>
+                <div class="dm-message-time">${formatMessageTime(message.created_at)}</div>
+            </div>
+        </div>
+    `;
+    messagesContainer.innerHTML += messageHTML;
+    
+    // En alta scroll
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// İlk mesaj buz kıranı göster
+async function showIceBreaker(container, userId) {
+    try {
+        // Eşleşme bilgisini al
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        // Kullanıcının profil bilgilerini al
+        const { data: myProfile } = await supabase
+            .from('profiles')
+            .select('city_name, district')
+            .eq('user_id', user.id)
+            .single();
+        
+        // Karşı tarafın profil bilgilerini al
+        const { data: otherProfile } = await supabase
+            .from('profiles')
+            .select('city_name, district')
+            .eq('user_id', userId)
+            .single();
+        
+        let iceBreakerText = '';
+        let iceBreakerButtons = [];
+        
+        // Ortak noktaları bul
+        if (myProfile && otherProfile) {
+            if (myProfile.district && otherProfile.district && myProfile.district === otherProfile.district) {
+                iceBreakerText = `Selam! Ortak noktanız: ${myProfile.district} İlçesi 👋`;
+                iceBreakerButtons = [
+                    { text: '👋 Selam ver', message: 'Selam! 👋' },
+                    { text: '📍 Neredesin?', message: `Merhaba! ${myProfile.district}'de misin?` }
+                ];
+            } else if (myProfile.city_name && otherProfile.city_name && myProfile.city_name === otherProfile.city_name) {
+                iceBreakerText = `Selam! Ortak noktanız: ${myProfile.city_name} Şehri 👋`;
+                iceBreakerButtons = [
+                    { text: '👋 Selam ver', message: 'Selam! 👋' },
+                    { text: '📍 Neredesin?', message: `Merhaba! ${myProfile.city_name}'de misin?` }
+                ];
+            } else {
+                iceBreakerText = 'İlk mesajı sen gönder! 👋';
+                iceBreakerButtons = [
+                    { text: '👋 Selam ver', message: 'Selam! 👋' },
+                    { text: '💬 Nasılsın?', message: 'Merhaba! Nasılsın?' }
+                ];
+            }
+        } else {
+            iceBreakerText = 'İlk mesajı sen gönder! 👋';
+            iceBreakerButtons = [
+                { text: '👋 Selam ver', message: 'Selam! 👋' },
+                { text: '💬 Nasılsın?', message: 'Merhaba! Nasılsın?' }
+            ];
+        }
+        
+        const iceBreakerHTML = `
+            <div class="dm-ice-breaker">
+                <p class="dm-ice-breaker-text">${iceBreakerText}</p>
+                <div class="dm-ice-breaker-buttons">
+                    ${iceBreakerButtons.map(btn => `
+                        <button class="dm-ice-breaker-btn" onclick="sendIceBreakerMessage('${escapeHtml(btn.message)}')">
+                            ${btn.text}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        container.innerHTML = iceBreakerHTML;
+    } catch (error) {
+        console.error('Ice breaker hatası:', error);
+        container.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">Henüz mesaj yok. İlk mesajı sen gönder!</div>';
+    }
+}
+
+// Buz kıran mesaj gönder
+window.sendIceBreakerMessage = function(message) {
+    const messageInput = document.getElementById('dm-message-input');
+    if (messageInput) {
+        messageInput.value = message;
+        sendDM();
+    }
+};
+
+// Realtime Subscription Başlat
+async function startDMRealtimeSubscription(userId) {
+    // Önceki subscription'ı kapat
+    stopDMRealtimeSubscription();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    // Yeni channel oluştur
+    dmRealtimeChannel = supabase
+        .channel(`dm_${userId}_${user.id}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `or(and(sender_id.eq.${userId},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${userId}))`
+        }, async (payload) => {
+            const newMessage = payload.new;
+            const isSent = newMessage.sender_id === user.id;
+            
+            // Sadece alınan mesajları göster (gönderilenler zaten UI'da)
+            if (!isSent && currentDMUserId === userId) {
+                const userAvatar = await getCurrentUserAvatar();
+                appendMessageToUI(newMessage, false, userAvatar);
+                
+                // Mesajı okundu işaretle
+                markMessagesAsRead(userId);
+                
+                // Okunmamış mesaj sayısını güncelle
+                updateUnreadMessageBadge();
+            } else if (!isSent) {
+                // Modal kapalıysa badge'i güncelle
+                updateUnreadMessageBadge();
+            }
+        })
+        .subscribe();
+}
+
+// Realtime Subscription Durdur
+function stopDMRealtimeSubscription() {
+    if (dmRealtimeChannel) {
+        supabase.removeChannel(dmRealtimeChannel);
+        dmRealtimeChannel = null;
+    }
+}
+
+// Mesajları Okundu İşaretle
+async function markMessagesAsRead(userId) {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        await supabase
+            .from('messages')
+            .update({ read_at: new Date().toISOString() })
+            .eq('sender_id', userId)
+            .eq('receiver_id', user.id)
+            .is('read_at', null);
+        
+        // Badge'i güncelle
+        updateUnreadMessageBadge();
+    } catch (error) {
+        console.error('Mesaj okundu işaretleme hatası:', error);
+    }
+}
+
+// Okunmamış Mesaj Badge'ini Güncelle
+async function updateUnreadMessageBadge() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            hideUnreadBadge();
+            return;
+        }
+        
+        const { data: count, error } = await supabase.rpc('get_unread_message_count');
+        
+        if (error) {
+            console.error('Okunmamış mesaj sayısı hatası:', error);
+            return;
+        }
+        
+        const badge = document.getElementById('hypee-badge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Badge güncelleme hatası:', error);
+    }
+}
+
+// Badge'i gizle
+function hideUnreadBadge() {
+    const badge = document.getElementById('hypee-badge');
+    if (badge) {
+        badge.style.display = 'none';
+    }
+}
+
+// Periyodik olarak okunmamış mesaj sayısını kontrol et (10 saniyede bir)
+function startUnreadMessageChecker() {
+    // Önceki interval'i temizle
+    if (unreadMessageCheckInterval) {
+        clearInterval(unreadMessageCheckInterval);
+    }
+    
+    // İlk kontrolü yap
+    updateUnreadMessageBadge();
+    
+    // Her 10 saniyede bir kontrol et
+    unreadMessageCheckInterval = setInterval(() => {
+        updateUnreadMessageBadge();
+    }, 10000);
+}
+
+// Sayfa yüklendiğinde badge kontrolünü başlat
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Kullanıcı giriş yaptıysa kontrolü başlat
+        setTimeout(() => {
+            startUnreadMessageChecker();
+        }, 2000);
+    });
+}
+
+// Modal dışına tıklanınca kapat
+document.addEventListener('click', (e) => {
+    const dmModal = document.getElementById('dm-modal');
+    if (dmModal && !dmModal.classList.contains('hidden')) {
+        if (e.target === dmModal) {
+            closeDMModal();
+        }
+    }
+});

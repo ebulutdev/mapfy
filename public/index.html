@@ -226,6 +226,7 @@
 
         <!-- Hypee Butonu (Harita görünümünde görünür - Yuvarlak buton) -->
         <button class="hypee-btn" id="hypee-btn" onclick="openHypeeDiscover()" title="Hypee Keşfet">
+            <span class="hypee-badge" id="hypee-badge" style="display: none;">0</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polygon points="10 8 16 12 10 16 10 8"></polygon>
@@ -298,7 +299,14 @@
         <!-- Hypee Keşfet Modal (Instagram Keşfet Benzeri) -->
         <div id="hypee-discover-modal" class="hypee-modal-overlay hidden">
             <div class="hypee-modal-header">
-                <h2 class="hypee-modal-title">Hypee Keşfet</h2>
+                <div class="hypee-tabs">
+                    <button class="hypee-tab active" data-tab="discover" onclick="switchHypeeTab('discover')">
+                        <span>Hypee Keşfet</span>
+                    </button>
+                    <button class="hypee-tab" data-tab="matches" onclick="switchHypeeTab('matches')">
+                        <span>Hypelaştıkların</span>
+                    </button>
+                </div>
                 <button class="hypee-modal-close" id="hypee-modal-close" onclick="closeHypeeDiscover()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -307,23 +315,77 @@
                 </button>
             </div>
             <div class="hypee-modal-content">
-                <div class="hypee-stories-grid" id="hypee-stories-grid">
-                    <!-- Hikayeler buraya JavaScript ile yüklenecek -->
+                <!-- Hypee Keşfet Tab -->
+                <div class="hypee-tab-content active" id="hypee-tab-discover">
+                    <div class="hypee-stories-grid" id="hypee-stories-grid">
+                        <!-- Hikayeler buraya JavaScript ile yüklenecek -->
+                    </div>
+                    <div class="hypee-loading" id="hypee-loading" style="display: none;">
+                        <div class="hypee-loading-spinner"></div>
+                        <p>Hikayeler yükleniyor...</p>
+                    </div>
+                    <div class="hypee-empty" id="hypee-empty" style="display: none;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <p style="margin-bottom: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.7);">Henüz keşfedilecek hikaye yok.</p>
+                        <button onclick="closeHypeeDiscover(); if(typeof uploadStory === 'function') { uploadStory(); } else if(document.getElementById('my-story-item')) { document.getElementById('my-story-item').click(); }" 
+                                class="hypee-empty-btn">
+                            İlk Hikayeyi Sen Paylaş
+                        </button>
+                    </div>
                 </div>
-                <div class="hypee-loading" id="hypee-loading" style="display: none;">
-                    <div class="hypee-loading-spinner"></div>
-                    <p>Hikayeler yükleniyor...</p>
+                
+                <!-- Hypelaştıkların Tab -->
+                <div class="hypee-tab-content" id="hypee-tab-matches">
+                    <div class="hype-matches-container" id="hype-matches-list">
+                        <!-- Eşleşmeler buraya JavaScript ile yüklenecek -->
+                    </div>
+                    <div class="hypee-loading" id="hype-matches-loading" style="display: none;">
+                        <div class="hypee-loading-spinner"></div>
+                        <p>Eşleşmeler yükleniyor...</p>
+                    </div>
+                    <div class="hypee-empty" id="hype-matches-empty" style="display: none;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <p style="margin-bottom: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.7);">Henüz uygun bir eşleşme bulunamadı.</p>
+                    </div>
                 </div>
-                <div class="hypee-empty" id="hypee-empty" style="display: none;">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                        <polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
-                    <p style="margin-bottom: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.7);">Henüz keşfedilecek hikaye yok.</p>
-                    <button onclick="closeHypeeDiscover(); if(typeof uploadStory === 'function') { uploadStory(); } else if(document.getElementById('my-story-item')) { document.getElementById('my-story-item').click(); }" 
-                            class="hypee-empty-btn">
-                        İlk Hikayeyi Sen Paylaş
+            </div>
+        </div>
+        
+        <!-- DM Modal (Direct Message) -->
+        <div id="dm-modal" class="dm-modal-overlay hidden">
+            <div class="dm-modal-container">
+                <div class="dm-modal-header">
+                    <div class="dm-header-info">
+                        <img id="dm-avatar" src="" alt="" class="dm-header-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                        <div class="dm-header-text">
+                            <h3 id="dm-username" class="dm-header-name"></h3>
+                            <span class="dm-header-status">Çevrimiçi</span>
+                        </div>
+                    </div>
+                    <button class="dm-modal-close" id="dm-modal-close" onclick="closeDMModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="dm-messages-container" id="dm-messages-container">
+                    <!-- Mesajlar buraya yüklenecek -->
+                </div>
+                <div class="dm-input-container">
+                    <input type="text" id="dm-message-input" class="dm-message-input" placeholder="Mesaj yazın..." maxlength="500">
+                    <button class="dm-send-btn" id="dm-send-btn" onclick="sendDM()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
                     </button>
                 </div>
             </div>

@@ -2881,6 +2881,132 @@ async function updateProfilePositionInSupabase(profileId, x, y) {
     }
 }
 
+// Profili haritadan kaldır
+function removeProfileFromMap(profileId) {
+    const profilesGroup = svg.querySelector('#profiles-group');
+    if (!profilesGroup) return;
+    
+    const profileElement = profilesGroup.querySelector(`g[id="${profileId}"]`);
+    if (profileElement) {
+        profileElement.remove();
+    }
+    
+    // mapState'den de kaldır
+    const profileIndex = mapState.profiles.findIndex(p => p.id === profileId);
+    if (profileIndex !== -1) {
+        mapState.profiles.splice(profileIndex, 1);
+    }
+}
+
+// Profil konumunu haritada güncelle (şehir/ilçe değiştiğinde)
+async function updateProfileLocationOnMap(profileId, newCityId, newCityName, newDistrict, newImageUrl) {
+    try {
+        // 1. Eski profili haritadan kaldır
+        removeProfileFromMap(profileId);
+        
+        // 2. Yeni şehir geometrisini al
+        const cityInfo = getCityGeometry(newCityId);
+        if (!cityInfo) {
+            console.error('Yeni şehir geometrisi bulunamadı:', newCityId);
+            return;
+        }
+        
+        // 3. Yeni şehirdeki mevcut profilleri say
+        const existingProfilesInCity = mapState.profiles.filter(p => 
+            String(p.cityId).toLowerCase().trim() === String(newCityId).toLowerCase().trim()
+        );
+        
+        // 4. Yeni konumu hesapla (spiral dağılım)
+        const nextIndex = existingProfilesInCity.length;
+        const position = calculateSpiralPosition(
+            nextIndex,
+            cityInfo.center,
+            cityInfo.bbox,
+            cityInfo.pathElement
+        );
+        
+        if (!position) {
+            console.error('Yeni konum hesaplanamadı');
+            return;
+        }
+        
+        // 5. Supabase'de pozisyonu güncelle
+        await updateProfilePositionInSupabase(profileId, position.x, position.y);
+        
+        // 6. Profil bilgilerini güncelle
+        const updatedProfile = {
+            id: profileId,
+            cityId: newCityId,
+            city: newCityName,
+            district: newDistrict,
+            x: position.x,
+            y: position.y,
+            imageUrl: newImageUrl
+        };
+        
+        // 7. mapState'e ekle
+        mapState.profiles.push(updatedProfile);
+        
+        // 8. Profil bilgilerini tam olarak yükle
+        const { data: fullProfileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', profileId)
+            .single();
+        
+        if (fullProfileData) {
+            updatedProfile.name = fullProfileData.name;
+            updatedProfile.user_id = fullProfileData.user_id;
+            updatedProfile.snapchat_username = fullProfileData.snapchat_username;
+            updatedProfile.instagram_username = fullProfileData.instagram_username;
+            updatedProfile.facebook_username = fullProfileData.facebook_username;
+            updatedProfile.twitter_username = fullProfileData.twitter_username;
+            updatedProfile.pinterest_username = fullProfileData.pinterest_username;
+            updatedProfile.age = fullProfileData.age;
+            updatedProfile.gender = fullProfileData.gender;
+            updatedProfile.is_premium = fullProfileData.is_premium || false;
+            updatedProfile.daily_message = fullProfileData.daily_message;
+            updatedProfile.message_date = fullProfileData.message_date;
+            
+            // Haritaya ekle (sadece premium ise)
+            if (updatedProfile.is_premium) {
+                addProfileToMap(updatedProfile);
+            }
+        }
+        
+        // 9. Filtreleri güncelle
+        applyFilters();
+        
+        console.log(`✅ Profil konumu güncellendi: ${profileId} -> ${newCityName} (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
+    } catch (error) {
+        console.error('Profil konumu güncelleme hatası:', error);
+    }
+}
+
+// Profil bilgilerini haritada güncelle (konum değişmedi, sadece bilgiler)
+function updateProfileInfoOnMap(profileId, updatedInfo) {
+    const profilesGroup = svg.querySelector('#profiles-group');
+    if (!profilesGroup) return;
+    
+    const profileElement = profilesGroup.querySelector(`g[id="${profileId}"]`);
+    if (!profileElement) return;
+    
+    // Profil görselini güncelle
+    const imageElement = profileElement.querySelector('image');
+    if (imageElement && updatedInfo.imageUrl) {
+        imageElement.setAttribute('href', updatedInfo.imageUrl);
+    }
+    
+    // mapState'deki profili güncelle
+    const profileIndex = mapState.profiles.findIndex(p => p.id === profileId);
+    if (profileIndex !== -1) {
+        mapState.profiles[profileIndex] = {
+            ...mapState.profiles[profileIndex],
+            ...updatedInfo
+        };
+    }
+}
+
 // Profil sil (Supabase'den sil)
 async function deleteProfileFromSupabase(profileId) {
     try {
@@ -4615,6 +4741,9 @@ async function checkUserIsPremium() {
     }
 }
 
+// Global olarak export et (stories.js'den erişilebilir olması için)
+window.checkUserIsPremium = checkUserIsPremium;
+
 // Google ile giriş
 async function signInWithGoogle() {
     try {
@@ -5100,12 +5229,33 @@ async function updateProfile() {
         imageUrl = await uploadImageToSupabase(editModalState.selectedFile, fileName);
     }
     
+    // Şehir/ilçe değişikliğini kontrol et
+    const cityChanged = profile.city_name !== city;
+    const districtChanged = profile.district !== district;
+    const locationChanged = cityChanged || districtChanged;
+    
     try {
+        // Önce şehir ID'sini bul
+        let cityId = null;
+        if (city) {
+            // Şehir ID'sini bul (city name'den)
+            const cityInfo = mapState.cities?.find(c => 
+                c.name.toLowerCase() === city.toLowerCase()
+            );
+            if (cityInfo) {
+                cityId = cityInfo.id || cityInfo.name.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+            } else {
+                // Fallback: city name'i direkt ID olarak kullan
+                cityId = city.toLowerCase().replace(/\s+/g, '-').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+            }
+        }
+        
         const { error } = await supabase
             .from('profiles')
             .update({
                 name: name,
                 image_url: imageUrl,
+                city_id: cityId,
                 city_name: city,
                 district: district,
                 age: age,
@@ -5125,7 +5275,27 @@ async function updateProfile() {
         } else {
             showAlert('Profil başarıyla güncellendi!', 'Başarılı', 'success');
             closeEditProfileModal();
-            // Profilleri yeniden yükle
+            
+            // Eğer şehir/ilçe değiştiyse haritadaki konumu güncelle
+            if (locationChanged && cityId) {
+                await updateProfileLocationOnMap(profile.id, cityId, city, district, imageUrl);
+            } else {
+                // Sadece profil bilgilerini güncelle (konum değişmedi)
+                updateProfileInfoOnMap(profile.id, {
+                    name: name,
+                    imageUrl: imageUrl,
+                    district: district,
+                    age: age,
+                    snapchat_username: snapchat,
+                    instagram_username: instagram,
+                    twitter_username: twitter,
+                    facebook_username: facebook,
+                    pinterest_username: pinterest,
+                    gender: gender
+                });
+            }
+            
+            // Profilleri yeniden yükle (eşleşmeler için)
             loadProfilesFromSupabase();
         }
     } catch (error) {
