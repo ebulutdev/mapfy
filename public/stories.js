@@ -84,51 +84,92 @@ function initStoriesWheelSupport() {
 
 // Navbar Stories Klavye Desteği (Ok Tuşları)
 function initNavbarStoriesKeyboard() {
-    document.addEventListener('keydown', (e) => {
+    // Önce mevcut listener'ı kaldır (çift ekleme önleme)
+    if (window.navbarStoriesKeydownHandler) {
+        document.removeEventListener('keydown', window.navbarStoriesKeydownHandler, true);
+    }
+    
+    window.navbarStoriesKeydownHandler = (e) => {
         const navbarStories = document.querySelector('.navbar-stories');
         const storyViewerModal = document.getElementById('story-viewer-modal');
         
+        // Story viewer modal açıksa navbar stories ok tuşlarını devre dışı bırak
+        const isModalOpen = storyViewerModal && !storyViewerModal.classList.contains('hidden');
+        
+        if (isModalOpen) {
+            // Story viewer açık, navbar stories ok tuşlarını çalıştırma
+            return;
+        }
+        
         // Sadece story viewer modal açık DEĞİLSE ve navbar stories görünürse çalış
         if (navbarStories && storiesContainer && storiesContainer.style.display !== 'none') {
-            const isModalOpen = storyViewerModal && !storyViewerModal.classList.contains('hidden');
-            
-            if (!isModalOpen) {
-                if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    scrollNavbarStories('left');
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    scrollNavbarStories('right');
-                }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                e.stopPropagation();
+                scrollNavbarStories('left');
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                e.stopPropagation();
+                scrollNavbarStories('right');
             }
         }
-    }, true);
+    };
+    
+    document.addEventListener('keydown', window.navbarStoriesKeydownHandler, true);
 }
 
-// Navbar Stories Scroll Fonksiyonu
+// Navbar Stories Scroll Fonksiyonu (Hikaye Bazlı - Daha İyi)
 function scrollNavbarStories(direction) {
     const navbarStories = document.querySelector('.navbar-stories');
     if (!navbarStories) return;
     
-    const scrollAmount = 200; // Her seferinde 200px scroll
-    const currentScroll = navbarStories.scrollLeft;
+    const storyItems = Array.from(navbarStories.querySelectorAll('.story-item'));
+    if (storyItems.length === 0) return;
     
-    if (direction === 'left') {
-        navbarStories.scrollLeft = Math.max(0, currentScroll - scrollAmount);
-    } else if (direction === 'right') {
-        navbarStories.scrollLeft = currentScroll + scrollAmount;
+    // Mevcut görünür hikayeyi bul
+    const containerRect = navbarStories.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+    
+    let currentIndex = -1;
+    storyItems.forEach((item, index) => {
+        const itemRect = item.getBoundingClientRect();
+        const itemCenter = itemRect.left + itemRect.width / 2;
+        // Eğer hikaye container'ın merkezine yakınsa, bu mevcut hikaye
+        if (Math.abs(itemCenter - containerCenter) < itemRect.width / 2) {
+            currentIndex = index;
+        }
+    });
+    
+    // Eğer mevcut hikaye bulunamazsa, ilk görünür hikayeyi bul
+    if (currentIndex === -1) {
+        storyItems.forEach((item, index) => {
+            const itemRect = item.getBoundingClientRect();
+            if (itemRect.left >= containerRect.left && itemRect.left <= containerRect.right) {
+                if (currentIndex === -1) currentIndex = index;
+            }
+        });
     }
     
-    // Smooth scroll
-    navbarStories.scrollTo({
-        left: navbarStories.scrollLeft,
-        behavior: 'smooth'
-    });
+    // Yönüne göre bir sonraki/önceki hikayeyi bul
+    let targetIndex;
+    if (direction === 'left') {
+        targetIndex = currentIndex > 0 ? currentIndex - 1 : storyItems.length - 1;
+    } else {
+        targetIndex = currentIndex < storyItems.length - 1 ? currentIndex + 1 : 0;
+    }
+    
+    // Hedef hikayeyi görünür alana getir
+    const targetItem = storyItems[targetIndex];
+    if (targetItem) {
+        targetItem.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center'
+        });
+    }
 }
 
-// Navbar Stories Otomatik Scroll Başlat
+// Navbar Stories Otomatik Scroll Başlat (Hikaye Bazlı - Daha İyi)
 function startNavbarStoriesAutoScroll() {
     stopNavbarStoriesAutoScroll(); // Önceki timer'ı temizle
     
@@ -137,10 +178,25 @@ function startNavbarStoriesAutoScroll() {
         return;
     }
     
-    const storyItems = navbarStories.querySelectorAll('.story-item');
+    const storyItems = Array.from(navbarStories.querySelectorAll('.story-item'));
     if (storyItems.length === 0) return;
     
-    navbarStoriesAutoScrollIndex = 0;
+    // Mevcut görünür hikayeyi bul
+    const findCurrentStoryIndex = () => {
+        const containerRect = navbarStories.getBoundingClientRect();
+        const containerCenter = containerRect.left + containerRect.width / 2;
+        
+        for (let i = 0; i < storyItems.length; i++) {
+            const itemRect = storyItems[i].getBoundingClientRect();
+            const itemCenter = itemRect.left + itemRect.width / 2;
+            if (Math.abs(itemCenter - containerCenter) < itemRect.width / 2) {
+                return i;
+            }
+        }
+        return 0; // Bulunamazsa ilk hikayeyi döndür
+    };
+    
+    navbarStoriesAutoScrollIndex = findCurrentStoryIndex();
     const scrollDuration = 5000; // 5 saniyede bir scroll
     
     navbarStoriesAutoScrollInterval = setInterval(() => {
@@ -156,11 +212,14 @@ function startNavbarStoriesAutoScroll() {
             return;
         }
         
-        const currentStoryItems = navbarStories.querySelectorAll('.story-item');
+        const currentStoryItems = Array.from(navbarStories.querySelectorAll('.story-item'));
         if (currentStoryItems.length === 0) {
             stopNavbarStoriesAutoScroll();
             return;
         }
+        
+        // Mevcut görünür hikayeyi güncelle
+        navbarStoriesAutoScrollIndex = findCurrentStoryIndex();
         
         // Scroll index'i artır
         navbarStoriesAutoScrollIndex++;
@@ -168,20 +227,16 @@ function startNavbarStoriesAutoScroll() {
         // Eğer son hikayeye ulaştıysak başa dön
         if (navbarStoriesAutoScrollIndex >= currentStoryItems.length) {
             navbarStoriesAutoScrollIndex = 0;
-            navbarStories.scrollTo({
-                left: 0,
-                behavior: 'smooth'
+        }
+        
+        // Hedef hikayeyi görünür alana getir
+        const targetItem = currentStoryItems[navbarStoriesAutoScrollIndex];
+        if (targetItem) {
+            targetItem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center'
             });
-        } else {
-            // Mevcut hikayeyi görünür alana getir
-            const targetItem = currentStoryItems[navbarStoriesAutoScrollIndex];
-            if (targetItem) {
-                targetItem.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
         }
     }, scrollDuration);
 }
@@ -226,9 +281,22 @@ async function toggleStoriesContainer() {
     if (!storiesContainer) initStoriesElements();
     if (!storiesContainer) return;
 
+    // Hero section'da mıyız kontrol et
+    const appContainer = document.querySelector('.app-container');
+    const heroSection = document.getElementById('hero-section');
+    const isHeroView = heroSection && !heroSection.classList.contains('hidden');
+    const isMapView = appContainer && appContainer.classList.contains('map-view');
+
     // Kullanıcı giriş yapmış mı kontrol et
     const { data: { user } } = await supabase.auth.getUser();
     const hasProfile = await checkUserHasProfile();
+    
+    // Hero section'da hikayeleri gizle
+    if (isHeroView) {
+        storiesContainer.style.display = 'none';
+        stopNavbarStoriesAutoScroll();
+        return;
+    }
     
     // Kullanıcı giriş yapmışsa "Hikayeniz" butonunu göster
     if (user && myStoryItem) {
@@ -254,9 +322,9 @@ async function toggleStoriesContainer() {
         myStoryItem.style.display = 'none';
     }
 
-    // Kullanıcı giriş yapmışsa veya hikayeler varsa container'ı göster
+    // Map view'da ve kullanıcı giriş yapmışsa veya hikayeler varsa container'ı göster
     const hasStories = storiesWrapper && storiesWrapper.children.length > 0;
-    if (user || hasStories) {
+    if (isMapView && (user || hasStories)) {
         storiesContainer.style.display = 'flex';
         // Navbar stories otomatik scroll'u başlat (hata olursa devam et)
         try {
@@ -279,6 +347,8 @@ async function toggleStoriesContainer() {
         user: !!user,
         hasProfile,
         hasStories,
+        isHeroView,
+        isMapView,
         display: storiesContainer.style.display,
         myStoryItemDisplay: myStoryItem ? myStoryItem.style.display : 'N/A'
     });
@@ -351,13 +421,49 @@ async function loadStories() {
             }
         }
 
-        // 2. Akıllı Fonksiyonu (RPC) Çağırıyoruz
+        // 2. 24 saatten eski hikayeleri filtrele (otomatik silme)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        // 3. Akıllı Fonksiyonu (RPC) Çağırıyoruz
         // "Benim konumum Bursa/Yıldırım, buna göre sırala getir" diyoruz.
         const { data: stories, error } = await supabase
             .rpc('get_nearby_stories', {
                 my_city: myCity || null,
                 my_district: myDistrict || null
             });
+        
+        // 4. 24 saatten eski hikayeleri filtrele ve sil
+        if (stories && stories.length > 0) {
+            const validStories = [];
+            const expiredStoryIds = [];
+            
+            for (const story of stories) {
+                const storyDate = new Date(story.created_at);
+                if (storyDate >= new Date(oneDayAgo)) {
+                    validStories.push(story);
+                } else {
+                    expiredStoryIds.push(story.id);
+                }
+            }
+            
+            // Eski hikayeleri sil (arka planda, hata olsa bile devam et)
+            if (expiredStoryIds.length > 0) {
+                supabase
+                    .from('stories')
+                    .delete()
+                    .in('id', expiredStoryIds)
+                    .then(() => {
+                        console.log(`✅ ${expiredStoryIds.length} eski hikaye silindi`);
+                    })
+                    .catch(err => {
+                        console.warn('⚠️ Eski hikaye silme hatası:', err);
+                    });
+            }
+            
+            // Sadece geçerli hikayeleri kullan
+            stories.length = 0;
+            stories.push(...validStories);
+        }
 
         if (error) {
             console.error('Hikaye yükleme hatası:', error);
@@ -463,17 +569,54 @@ async function viewStory(storyId, mediaUrl, username, priorityLevel = 3) {
     const allStoryItems = Array.from(storiesWrapper.querySelectorAll('.story-item'));
     currentStoriesList = [];
     
+    // Önce tüm hikayelerin created_at ve user_id bilgilerini toplu olarak al
+    const storyIds = [];
+    allStoryItems.forEach((item) => {
+        const onclickAttr = item.getAttribute('onclick');
+        if (onclickAttr) {
+            const match = onclickAttr.match(/viewStory\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"],\s*['"]([^'"]+)['"](?:,\s*(\d+))?\)/);
+            if (match) {
+                storyIds.push(match[1]);
+            }
+        }
+    });
+    
+    // Veritabanından tüm hikayelerin created_at ve user_id bilgilerini al
+    let storiesWithData = {};
+    if (storyIds.length > 0) {
+        try {
+            const { data: storiesData } = await supabase
+                .from('stories')
+                .select('id, created_at, user_id')
+                .in('id', storyIds);
+            
+            if (storiesData) {
+                storiesData.forEach(s => {
+                    storiesWithData[s.id] = {
+                        created_at: s.created_at,
+                        user_id: s.user_id
+                    };
+                });
+            }
+        } catch (error) {
+            console.warn('Hikaye bilgileri alınamadı:', error);
+        }
+    }
+    
     allStoryItems.forEach((item, index) => {
         const onclickAttr = item.getAttribute('onclick');
         if (onclickAttr) {
             // onclick="viewStory('id', 'url', 'username', priority)" formatından parse et
             const match = onclickAttr.match(/viewStory\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"],\s*['"]([^'"]+)['"](?:,\s*(\d+))?\)/);
             if (match) {
+                const storyData = storiesWithData[match[1]] || {};
                 currentStoriesList.push({
                     id: match[1],
                     mediaUrl: match[2],
                     username: match[3],
                     priorityLevel: match[4] ? parseInt(match[4]) : 3,
+                    created_at: storyData.created_at || null, // created_at bilgisini ekle
+                    user_id: storyData.user_id || null, // user_id bilgisini ekle (çöp kutusu için)
                     index: index
                 });
             }
@@ -486,6 +629,61 @@ async function viewStory(storyId, mediaUrl, username, priorityLevel = 3) {
     
     // Story viewer'ı aç
     openStoryViewer(currentStoriesList[currentStoryIndex]);
+}
+
+// Zaman Farkını Hesapla (Türkçe Format)
+function getTimeAgo(createdAt) {
+    if (!createdAt) return 'Az önce';
+    
+    const now = new Date();
+    const storyDate = new Date(createdAt);
+    const diffMs = now - storyDate;
+    
+    // Saniye cinsinden fark
+    const diffSeconds = Math.floor(diffMs / 1000);
+    
+    if (diffSeconds < 60) {
+        return `${diffSeconds}s önce`;
+    }
+    
+    // Dakika cinsinden fark
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    
+    if (diffMinutes < 60) {
+        return `${diffMinutes}d önce`;
+    }
+    
+    // Saat cinsinden fark
+    const diffHours = Math.floor(diffMinutes / 60);
+    
+    if (diffHours < 24) {
+        return `${diffHours}sa önce`;
+    }
+    
+    // Gün cinsinden fark
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays < 7) {
+        return `${diffDays}g önce`;
+    }
+    
+    // Hafta cinsinden fark
+    const diffWeeks = Math.floor(diffDays / 7);
+    
+    if (diffWeeks < 4) {
+        return `${diffWeeks}w önce`;
+    }
+    
+    // Ay cinsinden fark (yaklaşık)
+    const diffMonths = Math.floor(diffDays / 30);
+    
+    if (diffMonths < 12) {
+        return `${diffMonths}ay önce`;
+    }
+    
+    // Yıl cinsinden fark
+    const diffYears = Math.floor(diffDays / 365);
+    return `${diffYears}y önce`;
 }
 
 // Story Viewer'ı Aç
@@ -533,134 +731,147 @@ async function openStoryViewer(story) {
     }
     
     storyViewerUsername.textContent = story.username || 'Kullanıcı';
-    storyViewerTime.textContent = 'Az önce'; // İleride zaman hesaplanabilir
     
-    // Uyumluluk Badge'ini Güncelle
-    if (compatibilityBadge && compatibilityText) {
-        try {
-            // Kullanıcının kendi hikayesi mi kontrol et
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            // Hikayenin user_id'sini al
-            let storyUserId = story.user_id;
-            if (!storyUserId && story.id) {
-                const { data: storyData } = await supabase
-                    .from('stories')
-                    .select('user_id')
-                    .eq('id', story.id)
-                    .single();
-                if (storyData) {
-                    storyUserId = storyData.user_id;
-                }
-            }
-            
-            // Kendi hikayesi ise badge'i gizle
-            if (user && storyUserId && user.id === storyUserId) {
-                compatibilityBadge.style.display = 'none';
-                compatibilityBadge.classList.remove('visible');
-                return; // Kendi hikayesinde badge gösterme
-            }
-            
-            // Priority level'a göre uyumluluk metnini belirle
-            const priorityLevel = story.priorityLevel || 3;
-            let compatibilityMessage = "";
-            let badgeClass = "";
-            
-            if (priorityLevel === 1) {
-                // Aynı şehir ve ilçe
-                compatibilityMessage = "Aynı İlçe";
-                badgeClass = "compatibility-high";
-            } else if (priorityLevel === 2) {
-                // Sadece aynı şehir
-                compatibilityMessage = "Aynı Şehir";
-                badgeClass = "compatibility-medium";
-            } else {
-                // Farklı şehir - Şehir adını göster
-                // Hikaye sahibinin şehir bilgisini çek
-                let storyCity = "";
-                if (storyUserId) {
-                    const { data: storyProfile } = await supabase
-                        .from('profiles')
-                        .select('city_name')
-                        .eq('user_id', storyUserId)
-                        .single();
-                    if (storyProfile && storyProfile.city_name) {
-                        storyCity = storyProfile.city_name;
+    // Hikaye zamanını göster (hızlı - önce mevcut bilgiyi göster)
+    if (story.created_at) {
+        storyViewerTime.textContent = getTimeAgo(story.created_at);
+    } else {
+        storyViewerTime.textContent = 'Az önce';
+        // Arka planda yükle (non-blocking)
+        if (story.id) {
+            supabase
+                .from('stories')
+                .select('created_at')
+                .eq('id', story.id)
+                .single()
+                .then(({ data: storyData }) => {
+                    if (storyData && storyData.created_at) {
+                        storyViewerTime.textContent = getTimeAgo(storyData.created_at);
                     }
-                }
-                compatibilityMessage = storyCity || "Farklı Konum";
-                badgeClass = "compatibility-low";
-            }
-            
-            // Badge'i göster ve güncelle (animasyon için visible class'ı ekle)
-            compatibilityText.textContent = compatibilityMessage;
-            compatibilityBadge.className = `story-compatibility-badge ${badgeClass}`;
-            compatibilityBadge.style.display = 'flex';
-            
-            // Animasyon için kısa bir gecikme sonra visible class'ını ekle
-            setTimeout(() => {
-                compatibilityBadge.classList.add('visible');
-            }, 50);
-            
-        } catch (error) {
-            console.error('Uyumluluk bilgisi yüklenirken hata:', error);
-            // Hata durumunda badge'i gizle
-            if (compatibilityBadge) {
-                compatibilityBadge.style.display = 'none';
-                compatibilityBadge.classList.remove('visible');
-            }
+                })
+                .catch(() => {}); // Sessizce hata yoksay
         }
     }
     
-    // Çöp kutusu butonunu kontrol et - Sadece kullanıcının kendi hikayesinde görünsün
-    if (storyDeleteBtn) {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                // Hikayenin sahibini kontrol et
-                const { data: storyData } = await supabase
-                    .from('stories')
-                    .select('user_id')
-                    .eq('id', story.id)
-                    .single();
-                
-                if (storyData && storyData.user_id === user.id) {
-                    // Kullanıcının kendi hikayesi - çöp kutusunu göster
-                    storyDeleteBtn.style.display = 'flex';
-                    storyDeleteBtn.setAttribute('data-story-id', story.id);
-                } else {
-                    // Başkasının hikayesi - çöp kutusunu gizle
+    // Otomatik geçiş timer'ını hemen başlat (async işlemlerden önce)
+    startStoryTimer();
+    
+    // Async işlemleri paralel olarak arka planda yap (non-blocking)
+    Promise.all([
+        // Uyumluluk Badge'ini Güncelle (lazy load)
+        (async () => {
+            if (compatibilityBadge && compatibilityText) {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    let storyUserId = story.user_id;
+                    
+                    if (!storyUserId && story.id) {
+                        const { data: storyData } = await supabase
+                            .from('stories')
+                            .select('user_id')
+                            .eq('id', story.id)
+                            .single();
+                        if (storyData) {
+                            storyUserId = storyData.user_id;
+                            story.user_id = storyUserId;
+                        }
+                    }
+                    
+                    if (user && storyUserId && user.id === storyUserId) {
+                        compatibilityBadge.style.display = 'none';
+                        return;
+                    }
+                    
+                    const priorityLevel = story.priorityLevel || 3;
+                    let compatibilityMessage = "";
+                    let badgeClass = "";
+                    
+                    if (priorityLevel === 1) {
+                        compatibilityMessage = "Aynı İlçe";
+                        badgeClass = "compatibility-high";
+                    } else if (priorityLevel === 2) {
+                        compatibilityMessage = "Aynı Şehir";
+                        badgeClass = "compatibility-medium";
+                    } else {
+                        let storyCity = "";
+                        if (storyUserId) {
+                            const { data: storyProfile } = await supabase
+                                .from('profiles')
+                                .select('city_name')
+                                .eq('user_id', storyUserId)
+                                .single();
+                            if (storyProfile && storyProfile.city_name) {
+                                storyCity = storyProfile.city_name;
+                            }
+                        }
+                        compatibilityMessage = storyCity || "Farklı Konum";
+                        badgeClass = "compatibility-low";
+                    }
+                    
+                    compatibilityText.textContent = compatibilityMessage;
+                    compatibilityBadge.className = `story-compatibility-badge ${badgeClass}`;
+                    compatibilityBadge.style.display = 'flex';
+                    setTimeout(() => {
+                        compatibilityBadge.classList.add('visible');
+                    }, 50);
+                } catch (error) {
+                    if (compatibilityBadge) {
+                        compatibilityBadge.style.display = 'none';
+                    }
+                }
+            }
+        })(),
+        
+        // Çöp kutusu butonunu kontrol et (lazy load)
+        (async () => {
+            if (storyDeleteBtn) {
+                try {
+                    const { data: { user }, error: authError } = await supabase.auth.getUser();
+                    
+                    if (authError || !user) {
+                        storyDeleteBtn.style.display = 'none';
+                        storyDeleteBtn.removeAttribute('data-story-id');
+                        return;
+                    }
+                    
+                    let storyUserId = story.user_id;
+                    
+                    if (!storyUserId && story.id) {
+                        const { data: storyData, error: storyError } = await supabase
+                            .from('stories')
+                            .select('user_id')
+                            .eq('id', story.id)
+                            .single();
+                        
+                        if (!storyError && storyData && storyData.user_id) {
+                            storyUserId = storyData.user_id;
+                            story.user_id = storyUserId;
+                        }
+                    }
+                    
+                    if (storyUserId && storyUserId === user.id) {
+                        storyDeleteBtn.style.display = 'flex';
+                        storyDeleteBtn.setAttribute('data-story-id', story.id);
+                    } else {
+                        storyDeleteBtn.style.display = 'none';
+                        storyDeleteBtn.removeAttribute('data-story-id');
+                    }
+                } catch (error) {
                     storyDeleteBtn.style.display = 'none';
                     storyDeleteBtn.removeAttribute('data-story-id');
                 }
-            } else {
-                // Giriş yapmamış - çöp kutusunu gizle
-                storyDeleteBtn.style.display = 'none';
-                storyDeleteBtn.removeAttribute('data-story-id');
             }
-        } catch (error) {
-            console.error('Hikaye sahibi kontrolü hatası:', error);
-            storyDeleteBtn.style.display = 'none';
-        }
-    }
-    
-    // Otomatik geçiş timer'ını başlat
-    startStoryTimer();
+        })()
+    ]).catch(() => {}); // Hataları sessizce yoksay
 }
 
 // Story Viewer'ı Kapat
 function closeStoryViewer() {
-    console.log('🔴 closeStoryViewer() çağrıldı!');
-    
     const storyViewerModal = document.getElementById('story-viewer-modal');
-    console.log('Modal element:', storyViewerModal);
     
     if (storyViewerModal) {
         storyViewerModal.classList.add('hidden');
         document.body.style.overflow = '';
-        console.log('✅ Modal gizlendi');
-    } else {
-        console.error('❌ Modal element bulunamadı!');
     }
     
     // Çöp kutusu butonunu gizle
@@ -689,13 +900,13 @@ function closeStoryViewer() {
     console.log('✅ Story viewer kapatıldı');
 }
 
-// Otomatik Geçiş Timer'ı Başlat
+// Otomatik Geçiş Timer'ı Başlat (Optimize Edilmiş - Daha Hızlı)
 function startStoryTimer() {
     stopStoryTimer(); // Önceki timer'ı temizle
     
     const duration = 5000; // 5 saniye
     let elapsed = pausedElapsed; // Kaldığı yerden devam et
-    const interval = 50; // Her 50ms'de bir güncelle
+    const interval = 16; // Her 16ms'de bir güncelle (60 FPS için optimize)
     const startTime = Date.now() - elapsed; // Gerçek başlangıç zamanı
     
     // Progress bar'ı sıfırla ve başlat
@@ -793,64 +1004,66 @@ function stopStoryTimer() {
     pausedElapsed = 0;
 }
 
-// Sonraki Hikaye
+// Sonraki Hikaye (Optimize Edilmiş - Hızlı Geçiş)
 function nextStory() {
     // Global state'i kontrol et (Hypee'den gelebilir)
     const storiesList = window.currentStoriesList || currentStoriesList;
     if (!storiesList || storiesList.length === 0) return;
     
-    pausedElapsed = 0; // Yeni hikayeye geçerken sıfırla
+    // Timer'ı durdur (hızlı geçiş için)
+    stopStoryTimer();
+    pausedElapsed = 0;
+    
     const currentIdx = window.currentStoryIndex !== undefined ? window.currentStoryIndex : currentStoryIndex;
-    
-    // Mevcut hikayeyi izlendi olarak işaretle
-    const currentStory = storiesList[currentIdx];
-    if (currentStory && currentStory.id) {
-        markAsViewed(currentStory.id);
-    }
-    
     const nextIdx = (currentIdx + 1) % storiesList.length;
     
     // State'i güncelle
     window.currentStoryIndex = nextIdx;
     currentStoryIndex = nextIdx;
     
-    // Yeni hikayeyi izlendi olarak işaretle
-    const nextStory = storiesList[nextIdx];
-    if (nextStory && nextStory.id) {
-        markAsViewed(nextStory.id);
+    // İzlendi işaretlemelerini arka planda yap (non-blocking)
+    const currentStory = storiesList[currentIdx];
+    const nextStoryItem = storiesList[nextIdx];
+    if (currentStory && currentStory.id) {
+        markAsViewed(currentStory.id);
+    }
+    if (nextStoryItem && nextStoryItem.id) {
+        markAsViewed(nextStoryItem.id);
     }
     
-    openStoryViewer(storiesList[nextIdx]);
+    // Hemen hikayeyi aç (async işlemlerden önce)
+    openStoryViewer(nextStoryItem);
 }
 
-// Önceki Hikaye
+// Önceki Hikaye (Optimize Edilmiş - Hızlı Geçiş)
 function prevStory() {
     // Global state'i kontrol et (Hypee'den gelebilir)
     const storiesList = window.currentStoriesList || currentStoriesList;
     if (!storiesList || storiesList.length === 0) return;
     
-    pausedElapsed = 0; // Yeni hikayeye geçerken sıfırla
+    // Timer'ı durdur (hızlı geçiş için)
+    stopStoryTimer();
+    pausedElapsed = 0;
+    
     const currentIdx = window.currentStoryIndex !== undefined ? window.currentStoryIndex : currentStoryIndex;
-    
-    // Mevcut hikayeyi izlendi olarak işaretle
-    const currentStory = storiesList[currentIdx];
-    if (currentStory && currentStory.id) {
-        markAsViewed(currentStory.id);
-    }
-    
     const prevIdx = (currentIdx - 1 + storiesList.length) % storiesList.length;
     
     // State'i güncelle
     window.currentStoryIndex = prevIdx;
     currentStoryIndex = prevIdx;
     
-    // Önceki hikayeyi izlendi olarak işaretle
-    const prevStory = storiesList[prevIdx];
-    if (prevStory && prevStory.id) {
-        markAsViewed(prevStory.id);
+    // İzlendi işaretlemelerini arka planda yap (non-blocking)
+    const currentStory = storiesList[currentIdx];
+    const prevStoryItem = storiesList[prevIdx];
+    if (currentStory && currentStory.id) {
+        markAsViewed(currentStory.id);
+    }
+    if (prevStoryItem && prevStoryItem.id) {
+        markAsViewed(prevStoryItem.id);
     }
     
-    openStoryViewer(storiesList[prevIdx]);
+    // Hemen hikayeyi aç (async işlemlerden önce)
+    openStoryViewer(prevStoryItem);
 }
 
 // Progress Bar'ları Güncelle
@@ -1161,6 +1374,9 @@ window.nextStory = nextStory;
 window.prevStory = prevStory;
 window.closeStoryViewer = closeStoryViewer;
 
+// Global getTimeAgo fonksiyonu (Hypee'den erişilebilir)
+window.getTimeAgo = getTimeAgo;
+
 // Hikaye Modal Event Listeners ve Crop İşlevi
 function initStoryModal() {
     const storyModal = document.getElementById('add-story-modal');
@@ -1461,6 +1677,36 @@ async function handleShareStory() {
             return;
         }
 
+        // Günde bir hikaye kontrolü
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const { data: todayStories, error: todayStoriesError } = await supabase
+            .from('stories')
+            .select('id')
+            .eq('user_id', user.id)
+            .gte('created_at', today.toISOString())
+            .lt('created_at', tomorrow.toISOString());
+        
+        if (todayStoriesError) {
+            console.error('Bugünkü hikaye kontrolü hatası:', todayStoriesError);
+        }
+        
+        if (todayStories && todayStories.length > 0) {
+            if (typeof showCustomAlert === 'function') {
+                showCustomAlert('Günlük Limit', 'Günde sadece bir hikaye paylaşabilirsiniz. Yarın tekrar deneyin.', 'warning');
+            } else {
+                alert('Günde sadece bir hikaye paylaşabilirsiniz.');
+            }
+            if (shareStoryBtn) {
+                shareStoryBtn.disabled = false;
+                shareStoryBtn.innerHTML = '<span>Hikayeyi Paylaş</span>';
+            }
+            return;
+        }
+
         // Dosyayı hazırla (kırpılmış resim varsa onu kullan, yoksa orijinali)
         const fileToUpload = window.storyModalState.croppedImage || window.storyModalState.selectedFile;
         if (!fileToUpload) {
@@ -1554,33 +1800,20 @@ async function handleShareStory() {
 
 // Story Viewer Event Listeners
 function initStoryViewer() {
-    console.log('🔧 Story Viewer init başlatılıyor...');
-    
     const storyViewerClose = document.getElementById('story-viewer-close');
     const storyViewerModal = document.getElementById('story-viewer-modal');
     const storyNavPrev = document.getElementById('story-nav-prev');
     const storyNavNext = document.getElementById('story-nav-next');
     const storyContentWrapper = document.querySelector('.story-content-wrapper');
     
-    console.log('Story Viewer Elementler:', {
-        closeBtn: !!storyViewerClose,
-        modal: !!storyViewerModal,
-        navPrev: !!storyNavPrev,
-        navNext: !!storyNavNext,
-        contentWrapper: !!storyContentWrapper
-    });
-    
     // Kapat butonu - Hem direkt hem de delegated event listener
     if (storyViewerClose) {
-        console.log('✅ Kapat butonu bulundu, event listener ekleniyor...');
-        
         // Önce mevcut listener'ları temizle (çift ekleme önleme)
         const newCloseBtn = storyViewerClose.cloneNode(true);
         storyViewerClose.parentNode.replaceChild(newCloseBtn, storyViewerClose);
         
         // Yeni event listener ekle
         document.getElementById('story-viewer-close').addEventListener('click', function(e) {
-            console.log('🔴 Kapat butonuna tıklandı!');
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -1590,14 +1823,11 @@ function initStoryViewer() {
         
         // Alternatif: Direkt onclick (yedek)
         document.getElementById('story-viewer-close').onclick = function(e) {
-            console.log('🔴 Kapat butonu (onclick) tıklandı!');
             e.preventDefault();
             e.stopPropagation();
             closeStoryViewer();
             return false;
         };
-    } else {
-        console.error('❌ Kapat butonu bulunamadı!');
     }
     
     // Çöp kutusu butonu
@@ -1644,20 +1874,52 @@ function initStoryViewer() {
         });
     }
     
-    // Önceki hikaye
+    // Önceki hikaye - Daha güvenilir event listener
     if (storyNavPrev) {
-        storyNavPrev.addEventListener('click', (e) => {
+        // Önce mevcut listener'ları temizle
+        const newPrevBtn = storyNavPrev.cloneNode(true);
+        storyNavPrev.parentNode.replaceChild(newPrevBtn, storyNavPrev);
+        
+        // Yeni event listener ekle
+        document.getElementById('story-nav-prev').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            prevStory();
+            return false;
+        }, true);
+        
+        // Alternatif: Direkt onclick (yedek)
+        document.getElementById('story-nav-prev').onclick = function(e) {
+            e.preventDefault();
             e.stopPropagation();
             prevStory();
-        });
+            return false;
+        };
     }
     
-    // Sonraki hikaye
+    // Sonraki hikaye - Daha güvenilir event listener
     if (storyNavNext) {
-        storyNavNext.addEventListener('click', (e) => {
+        // Önce mevcut listener'ları temizle
+        const newNextBtn = storyNavNext.cloneNode(true);
+        storyNavNext.parentNode.replaceChild(newNextBtn, storyNavNext);
+        
+        // Yeni event listener ekle
+        document.getElementById('story-nav-next').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            nextStory();
+            return false;
+        }, true);
+        
+        // Alternatif: Direkt onclick (yedek)
+        document.getElementById('story-nav-next').onclick = function(e) {
+            e.preventDefault();
             e.stopPropagation();
             nextStory();
-        });
+            return false;
+        };
     }
     
     // Basılı Tutunca Durdurma (Hold to Pause) - Masaüstü ve Mobil
@@ -1693,36 +1955,54 @@ function initStoryViewer() {
     }
     
     // Klavye kısayolları (Global event listener - modal açıkken çalışır)
-    const handleStoryViewerKeydown = (e) => {
+    // Önce mevcut listener'ı kaldır (çift ekleme önleme)
+    if (window.storyViewerKeydownHandler) {
+        document.removeEventListener('keydown', window.storyViewerKeydownHandler, true);
+    }
+    
+    window.storyViewerKeydownHandler = (e) => {
         const storyViewerModal = document.getElementById('story-viewer-modal');
-        if (storyViewerModal && !storyViewerModal.classList.contains('hidden')) {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                e.stopPropagation();
-                closeStoryViewer();
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                e.stopPropagation();
-                prevStory();
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                e.stopPropagation();
-                nextStory();
-            } else if (e.key === ' ' || e.key === 'Spacebar') {
-                // Boşluk tuşu ile durdur/devam et
-                e.preventDefault();
-                e.stopPropagation();
-                if (isPaused) {
-                    resumeStoryTimer();
-                } else {
-                    pauseStoryTimer();
-                }
+        
+        // Sadece story viewer açıkken çalış
+        if (!storyViewerModal || storyViewerModal.classList.contains('hidden')) {
+            return; // Story viewer kapalı, hiçbir şey yapma
+        }
+        
+        // Story viewer açık - ok tuşlarını işle (öncelik: story viewer > navbar stories)
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            closeStoryViewer();
+            return false;
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            prevStory();
+            return false;
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            nextStory();
+            return false;
+        } else if (e.key === ' ' || e.key === 'Spacebar') {
+            // Boşluk tuşu ile durdur/devam et
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            if (isPaused) {
+                resumeStoryTimer();
+            } else {
+                pauseStoryTimer();
             }
+            return false;
         }
     };
     
     // Event listener'ı ekle (capture phase'de çalışsın ki diğer listener'ları geçsin)
-    document.addEventListener('keydown', handleStoryViewerKeydown, true);
+    document.addEventListener('keydown', window.storyViewerKeydownHandler, true);
 }
 
 // Story input change event - Sayfa yüklendiğinde initialize et
@@ -2007,12 +2287,48 @@ async function loadHypeeDiscoverStories() {
             }
         }
         
-        // 2. Akıllı Fonksiyonu (RPC) Çağırıyoruz - Tüm hikayeleri öncelik sırasına göre al
+        // 2. 24 saatten eski hikayeleri filtrele (otomatik silme)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        // 3. Akıllı Fonksiyonu (RPC) Çağırıyoruz - Tüm hikayeleri öncelik sırasına göre al
         const { data: stories, error } = await supabase
             .rpc('get_nearby_stories', {
                 my_city: myCity || null,
                 my_district: myDistrict || null
             });
+        
+        // 4. 24 saatten eski hikayeleri filtrele ve sil
+        if (stories && stories.length > 0) {
+            const validStories = [];
+            const expiredStoryIds = [];
+            
+            for (const story of stories) {
+                const storyDate = new Date(story.created_at);
+                if (storyDate >= new Date(oneDayAgo)) {
+                    validStories.push(story);
+                } else {
+                    expiredStoryIds.push(story.id);
+                }
+            }
+            
+            // Eski hikayeleri sil (arka planda, hata olsa bile devam et)
+            if (expiredStoryIds.length > 0) {
+                supabase
+                    .from('stories')
+                    .delete()
+                    .in('id', expiredStoryIds)
+                    .then(() => {
+                        console.log(`✅ ${expiredStoryIds.length} eski hikaye silindi`);
+                    })
+                    .catch(err => {
+                        console.warn('⚠️ Eski hikaye silme hatası:', err);
+                    });
+            }
+            
+            // Sadece geçerli hikayeleri kullan
+            stories.length = 0;
+            stories.push(...validStories);
+        }
         
         if (error) {
             console.error('Hypee hikaye yükleme hatası:', error);
@@ -2111,7 +2427,8 @@ function displayHypeeStories(stories) {
                 username: s.username,
                 avatar: s.avatar_url, // Avatar bilgisini de taşıyalım
                 priorityLevel: s.priority_level || 3,
-                time: s.created_at ? new Date(s.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Az önce' // Saat bilgisi
+                created_at: s.created_at, // created_at'i ekle (zaman hesaplaması için)
+                time: s.created_at ? getTimeAgo(s.created_at) : 'Az önce' // Gerçek zaman farkı
             }));
             
             // 2. Tıklanan hikayenin index'i zaten elimizde: "index"
@@ -2154,6 +2471,7 @@ function openHypeeStoryViewer(storyList, startIndex) {
                 username: firstStory.username,
                 priorityLevel: firstStory.priorityLevel,
                 avatar: firstStory.avatar, // Avatar bilgisini de geçelim
+                created_at: firstStory.created_at, // created_at'i ekle (zaman hesaplaması için)
                 time: firstStory.time // Zaman bilgisini de geçelim
             });
             

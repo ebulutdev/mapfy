@@ -2142,6 +2142,30 @@ function addProfileToMap(profile) {
     clickArea.setAttribute('class', 'profile-click-area');
     clickArea.style.cursor = 'pointer';
     
+    // Profil tıklama event listener'ı ekle
+    clickArea.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Harita sürükleme işlemini engelle
+        if (mapState.isDragging) {
+            return; // Sürükleme sırasında tıklama işlemini yoksay
+        }
+        // Profil detay modal'ını aç
+        handleProfileClick(profile.id);
+    });
+    
+    // Touch event için de ekle (mobil)
+    clickArea.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Harita sürükleme işlemini engelle
+        if (mapState.touchMoved) {
+            return; // Sürükleme sırasında tıklama işlemini yoksay
+        }
+        // Profil detay modal'ını aç
+        handleProfileClick(profile.id);
+    });
+    
     profileGroup.appendChild(image);
     profileGroup.appendChild(borderCircle);
     profileGroup.appendChild(clickArea); // Click area en üstte
@@ -2889,15 +2913,30 @@ async function deleteProfileFromSupabase(profileId) {
 // Görseli Supabase Storage'a yükle
 async function uploadImageToSupabase(file, fileName) {
     try {
+        // Dosya boyutunu kontrol et ve optimize et (2MB'dan büyükse resize et)
+        let fileToUpload = file;
+        if (file.size > 2 * 1024 * 1024) {
+            // Canvas ile resize et (daha hızlı yükleme için)
+            const maxDimension = 1200; // Maksimum boyut
+            fileToUpload = await resizeImage(file, maxDimension);
+        }
+        
         const fileExt = fileName.split('.').pop();
         const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         
-        const { data, error } = await supabase.storage
+        // Upload işlemi (timeout ile - 30 saniye)
+        const uploadPromise = supabase.storage
             .from('profile-images')
-            .upload(filePath, file, {
+            .upload(filePath, fileToUpload, {
                 cacheControl: '3600',
                 upsert: false
             });
+        
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Görsel yükleme zaman aşımına uğradı')), 30000);
+        });
+        
+        const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
         
         if (error) {
             console.error('Supabase görsel yükleme hatası:', error);
@@ -2912,19 +2951,19 @@ async function uploadImageToSupabase(file, fileName) {
             throw error;
         }
         
-        // Public URL al
+        // Public URL al (hızlı işlem)
         const { data: urlData } = supabase.storage
             .from('profile-images')
             .getPublicUrl(data.path);
         
-        console.log('Görsel Supabase Storage\'a yüklendi:', urlData.publicUrl);
         return urlData.publicUrl;
     } catch (error) {
         // Network hatalarını daha iyi yakala
         if (error.message && (
             error.message.includes('Failed to fetch') || 
             error.message.includes('NetworkError') ||
-            error.message.includes('ERR_CONNECTION_CLOSED')
+            error.message.includes('ERR_CONNECTION_CLOSED') ||
+            error.message.includes('zaman aşımı')
         )) {
             console.warn('Bağlantı hatası: Görsel yüklenemedi. İnternet bağlantınızı kontrol edin.');
             throw new Error('İnternet bağlantısı hatası. Lütfen tekrar deneyin.');
@@ -2932,6 +2971,51 @@ async function uploadImageToSupabase(file, fileName) {
         console.error('Görsel yükleme hatası:', error);
         throw error;
     }
+}
+
+// Görseli resize et (daha hızlı yükleme için)
+function resizeImage(file, maxDimension) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                
+                // Boyutları kontrol et ve resize et
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = (height / width) * maxDimension;
+                        width = maxDimension;
+                    } else {
+                        width = (width / height) * maxDimension;
+                        height = maxDimension;
+                    }
+                }
+                
+                // Canvas ile resize et
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Blob'a çevir (JPEG formatında - daha küçük dosya boyutu)
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Görsel resize edilemedi'));
+                    }
+                }, 'image/jpeg', 0.85); // %85 kalite - iyi kalite, küçük dosya
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 // ==================== MODAL FUNCTIONS ====================
@@ -3671,20 +3755,11 @@ async function saveProfile() {
     // Kaydet butonunu kilitle
     if (saveProfileBtn) {
         saveProfileBtn.disabled = true;
-        saveProfileBtn.innerHTML = '<span>Kaydediliyor...</span>';
+        saveProfileBtn.innerHTML = '<span>Görsel yükleniyor...</span>';
     }
     
     try {
-        // 2. Görseli Yükle
-        let imageUrl;
-        if (modalState.croppedImage) {
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-            imageUrl = await uploadImageToSupabase(modalState.croppedImage, fileName);
-        } else if (modalState.selectedFile) {
-            imageUrl = await uploadImageToSupabase(modalState.selectedFile, modalState.selectedFile.name);
-        }
-        
-        // 3. Şehir Geometrisini Al
+        // 2. Şehir Geometrisini Al (Görsel yüklemeden önce - paralel hazırlık)
         const cityId = modalState.selectedCity.id;
         const cityInfo = getCityGeometry(cityId);
         
@@ -3692,16 +3767,11 @@ async function saveProfile() {
             throw new Error('Şehir geometrisi bulunamadı');
         }
 
-        // 4. KONUM HESAPLAMA (Kritik Nokta)
-        // O şehirdeki mevcut profilleri say (Böylece sıradaki index'i buluruz)
+        // 3. KONUM HESAPLAMA (Görsel yüklemeden önce - paralel hazırlık)
         const existingProfilesInCity = mapState.profiles.filter(p => 
             String(p.cityId).toLowerCase().trim() === String(cityId).toLowerCase().trim()
         );
-
-        // Yeni profilin index'i (Örn: 5 kişi varsa, yeni kişi 6. olacak)
         const nextIndex = existingProfilesInCity.length;
-
-        // Spiraldeki konumu hesapla
         const position = calculateSpiralPosition(
             nextIndex, 
             cityInfo.center, 
@@ -3711,6 +3781,19 @@ async function saveProfile() {
         
         if (!position) {
             throw new Error('Konum hesaplanamadı');
+        }
+        
+        // 4. Görseli Yükle (Progress göster)
+        if (saveProfileBtn) {
+            saveProfileBtn.innerHTML = '<span>Görsel yükleniyor...</span>';
+        }
+        
+        let imageUrl;
+        if (modalState.croppedImage) {
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+            imageUrl = await uploadImageToSupabase(modalState.croppedImage, fileName);
+        } else if (modalState.selectedFile) {
+            imageUrl = await uploadImageToSupabase(modalState.selectedFile, modalState.selectedFile.name);
         }
         
         // 5. Profil Objesini Oluştur
@@ -3731,22 +3814,28 @@ async function saveProfile() {
             gender: modalState.selectedGender,
         };
         
-        // 6. Supabase'e Kaydet
+        // 6. Supabase'e Kaydet (Progress göster)
+        if (saveProfileBtn) {
+            saveProfileBtn.innerHTML = '<span>Profil kaydediliyor...</span>';
+        }
+        
         const savedProfile = await saveProfileToSupabase(profile);
         
-        // 7. Haritaya Ekle (State güncelle)
+        // 7. Haritaya Ekle (State güncelle) - Hızlı işlem
         profile.id = savedProfile.id;
         mapState.profiles.push(profile); // Listeye ekle
         addProfileToMap(profile); // Görsel olarak ekle
         
-        // Modalı kapat
+        // Modalı kapat (hemen)
         closeAddProfileModal();
         
-        // Başarı mesajı
+        // Başarı mesajı (hemen göster)
         showAlert('Profil başarıyla eklendi!', 'Başarılı', 'success');
         
-        // Update filters and results
-        applyFilters();
+        // Update filters and results (arka planda - non-blocking)
+        setTimeout(() => {
+            applyFilters();
+        }, 100);
         
     } catch (error) {
         console.error('Profil kaydetme hatası:', error);

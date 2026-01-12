@@ -6372,15 +6372,17 @@ body {
     cursor: not-allowed;
 }
 
-/* Navigation Buttons */
+/* Navigation Buttons - Daha Kullanılabilir */
 .story-nav-btn {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 50px;
-    height: 50px;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     color: #fff;
     cursor: pointer;
@@ -6388,11 +6390,25 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 10002;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .story-nav-btn:hover {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.story-nav-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.story-nav-btn svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.5;
 }
 
 .story-nav-prev {
@@ -6452,8 +6468,13 @@ body {
     }
     
     .story-nav-btn {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .story-nav-btn svg {
+        width: 24px;
+        height: 24px;
     }
     
     .story-nav-prev {
