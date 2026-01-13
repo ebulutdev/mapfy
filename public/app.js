@@ -1155,15 +1155,36 @@ function setupModalListeners() {
         });
     }
     
-    // Filter listeners
+    // Filter listeners - Premium kontrolü ile
     if (genderAllBtn) {
-        genderAllBtn.addEventListener('click', () => selectFilterGender('all'));
+        genderAllBtn.addEventListener('click', async () => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+                return;
+            }
+            selectFilterGender('all');
+        });
     }
     if (genderMaleBtn) {
-        genderMaleBtn.addEventListener('click', () => selectFilterGender('male'));
+        genderMaleBtn.addEventListener('click', async () => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+                return;
+            }
+            selectFilterGender('male');
+        });
     }
     if (genderFemaleBtn) {
-        genderFemaleBtn.addEventListener('click', () => selectFilterGender('female'));
+        genderFemaleBtn.addEventListener('click', async () => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+                return;
+            }
+            selectFilterGender('female');
+        });
     }
     
     // Input event listener'ları kaldırıldı - sadece "Sonuçları Göster" butonunda filtreleme yapılacak
@@ -1174,13 +1195,64 @@ function setupModalListeners() {
     //     ageMaxInput.addEventListener('input', applyFilters);
     // }
     if (filterCityInput) {
-        filterCityInput.addEventListener('input', handleFilterCityInput);
+        filterCityInput.addEventListener('input', async (e) => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                e.target.value = '';
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+                return;
+            }
+            handleFilterCityInput(e);
+        });
+        filterCityInput.addEventListener('focus', async (e) => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                e.target.blur();
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+            }
+        });
     }
     // if (filterDistrictInput) {
     //     filterDistrictInput.addEventListener('input', applyFilters);
     // }
     if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', clearAllFilters);
+        clearFiltersBtn.addEventListener('click', async () => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+                return;
+            }
+            clearAllFilters();
+        });
+    }
+    
+    // Yaş ve ilçe input'larına premium kontrolü ekle
+    if (ageMinInput) {
+        ageMinInput.addEventListener('focus', async (e) => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                e.target.blur();
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+            }
+        });
+    }
+    if (ageMaxInput) {
+        ageMaxInput.addEventListener('focus', async (e) => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                e.target.blur();
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+            }
+        });
+    }
+    if (filterDistrictInput) {
+        filterDistrictInput.addEventListener('focus', async (e) => {
+            const isPremium = await checkUserIsPremium();
+            if (!isPremium) {
+                e.target.blur();
+                await showAlert('Filtreleme özelliği Premium üyelere özeldir. Premium pakete geçerek filtreleme yapabilirsiniz.', 'Premium Gerekli', 'warning');
+            }
+        });
     }
     
     // Search filter button - Premium kontrolü burada yapılıyor
@@ -2756,15 +2828,10 @@ async function loadProfilesFromSupabase() {
                             imageUrl: profile.imageUrl ? 'Var' : 'Yok'
                         });
                         
-                        // Sadece PREMIUM profilleri haritaya ekle
-                        if (profile.is_premium) {
-                            mapState.profiles.push(profile);
-                            addProfileToMap(profile);
-                            profilesAdded++;
-                        } else {
-                            // FREE kullanıcıları sadece filtre listesine ekle (haritada görünmez)
-                            mapState.profiles.push(profile);
-                        }
+                        // Tüm profilleri haritaya ekle (hem FREE hem PREMIUM)
+                        mapState.profiles.push(profile);
+                        addProfileToMap(profile);
+                        profilesAdded++;
             });
                 } else {
                     console.warn(`⚠ Şehir geometrisi bulunamadı: ${cityId}, ${cityProfiles.length} profil atlanıyor`);
@@ -2968,10 +3035,8 @@ async function updateProfileLocationOnMap(profileId, newCityId, newCityName, new
             updatedProfile.daily_message = fullProfileData.daily_message;
             updatedProfile.message_date = fullProfileData.message_date;
             
-            // Haritaya ekle (sadece premium ise)
-            if (updatedProfile.is_premium) {
-                addProfileToMap(updatedProfile);
-            }
+            // Haritaya ekle (tüm profiller)
+            addProfileToMap(updatedProfile);
         }
         
         // 9. Filtreleri güncelle
@@ -3218,9 +3283,10 @@ async function updatePremiumInfoInModal() {
     }
     
     // Kullanıcının premium durumunu kontrol et
+    // 406 hatası önlemek için tüm profil bilgilerini çek, sonra is_premium'ı al
     const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('is_premium')
+        .select('id, is_premium')
         .eq('user_id', user.id)
         .single();
     
@@ -4554,20 +4620,28 @@ async function handleFilterCityInput(e) {
 
 // Apply filters
 async function applyFilters() {
-    // Premium kontrolü - Eğer premium değilse, filtreleme yapma, sadece tüm profilleri göster
+    // Premium kontrolü - Filtreleme sadece premium kullanıcılar için
     const isPremium = await checkUserIsPremium();
     if (!isPremium) {
         // Free kullanıcılar için tüm profilleri göster (filtreleme olmadan)
-        renderFilterResults(mapState.profiles);
-        // Haritada tüm premium profilleri göster (zaten sadece premium'lar haritada)
         mapState.profiles.forEach(profile => {
             const profileElement = document.getElementById(profile.id);
-            if (profileElement && profile.is_premium) {
+            if (profileElement) {
                 profileElement.style.display = 'block';
             }
         });
+        renderFilterResults(mapState.profiles);
         return;
     }
+    
+    // Tüm kullanıcılar için tüm profilleri göster (hem FREE hem PREMIUM)
+    // Haritada tüm profilleri göster
+    mapState.profiles.forEach(profile => {
+        const profileElement = document.getElementById(profile.id);
+        if (profileElement) {
+            profileElement.style.display = 'block';
+        }
+    });
     
     // Premium kullanıcılar için filtreleme yap
     // Update filter state from inputs
@@ -4770,13 +4844,19 @@ async function checkUserIsPremium() {
             return false;
         }
         
+        // 406 hatası önlemek için id ile birlikte çek
         const { data, error } = await supabase
             .from('profiles')
-            .select('is_premium')
+            .select('id, is_premium')
             .eq('user_id', user.id)
             .single();
         
         if (error && error.code !== 'PGRST116') {
+            // 406 hatası sessizce yakalanır, false döndür
+            if (error.code === 'PGRST301' || error.status === 406) {
+                console.warn('Premium kontrolü: RLS politikası nedeniyle erişim reddedildi');
+                return false;
+            }
             console.error('Premium kontrolü hatası:', error);
             return false;
         }
@@ -5373,6 +5453,10 @@ async function deleteProfile() {
     }
     
     try {
+        // Önce kullanıcının tüm hikayelerini sil
+        await deleteUserStories(user.id);
+        
+        // Sonra profili sil
         const { error } = await supabase
             .from('profiles')
             .delete()
@@ -5390,6 +5474,68 @@ async function deleteProfile() {
     } catch (error) {
         console.error('Profil silme hatası:', error);
         showAlert('Profil silinirken bir hata oluştu.', 'Hata', 'error');
+    }
+}
+
+// Kullanıcının tüm hikayelerini sil (profil silindiğinde)
+async function deleteUserStories(userId) {
+    try {
+        // Kullanıcının tüm hikayelerini al
+        const { data: stories, error: fetchError } = await supabase
+            .from('stories')
+            .select('id, media_url')
+            .eq('user_id', userId);
+        
+        if (fetchError) {
+            console.error('Hikayeler yüklenirken hata:', fetchError);
+            return;
+        }
+        
+        if (!stories || stories.length === 0) {
+            console.log('Silinecek hikaye bulunamadı');
+            return;
+        }
+        
+        console.log(`${stories.length} hikaye siliniyor...`);
+        
+        // Her hikaye için storage'dan dosyayı sil
+        for (const story of stories) {
+            if (story.media_url) {
+                try {
+                    // URL'den dosya yolunu çıkar
+                    const urlParts = story.media_url.split('/stories/');
+                    if (urlParts.length > 1) {
+                        const filePath = `stories/${urlParts[1]}`;
+                        const { error: storageError } = await supabase.storage
+                            .from('stories')
+                            .remove([filePath]);
+                        
+                        if (storageError) {
+                            console.warn(`Storage silme hatası (${story.id}):`, storageError);
+                            // Storage hatası olsa bile devam et
+                        }
+                    }
+                } catch (storageErr) {
+                    console.warn(`Storage silme hatası (${story.id}):`, storageErr);
+                }
+            }
+        }
+        
+        // Veritabanından tüm hikayeleri sil
+        const { error: deleteError } = await supabase
+            .from('stories')
+            .delete()
+            .eq('user_id', userId);
+        
+        if (deleteError) {
+            console.error('Hikayeler silinirken hata:', deleteError);
+            throw deleteError;
+        }
+        
+        console.log(`✅ ${stories.length} hikaye başarıyla silindi`);
+    } catch (error) {
+        console.error('Hikaye silme hatası:', error);
+        // Hata olsa bile devam et (profil silme işlemi devam etsin)
     }
 }
 

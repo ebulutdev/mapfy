@@ -5,6 +5,11 @@
 // Supabase import
 import { supabase } from './supabase-client.js';
 
+// Default Avatar Constants
+const DEFAULT_AVATAR_32 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTE2IDEwQzEzLjc5IDEwIDEyIDExLjc5IDEyIDE0QzEyIDE2LjIxIDEzLjc5IDE4IDE2IDE4QzE4LjIxIDE4IDIwIDE2LjIxIDIwIDE0QzIwIDExLjc5IDE4LjIxIDEwIDE2IDEwWk0xNiAyMEMxMy43OSAyMCAxMiAyMS43OSAxMiAyNEwxMiAyOEMyMCAyOCAyMCAyNCAyMCAyNEMyMCAyMS43OSAxOC4yMSAyMCAxNiAyMFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+';
+const DEFAULT_AVATAR_40 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTIwIDEyQzE3LjIzIDEyIDE1IDE0LjIzIDE1IDE3QzE1IDE5Ljc3IDE3LjIzIDIyIDIwIDIyQzIyLjc3IDIyIDI1IDE5Ljc3IDI1IDE3QzI1IDE0LjIzIDIyLjc3IDEyIDIwIDEyWk0yMCAyNEMxNy4yMyAyNCAxNSAyNi4yMyAxNSAyOUwxNSAzNUMxNSAzNSAyMCAzNSAyMCAzNUMxNSAzNSAxNSAyOSAxNSAyOUMxNSAyNi4yMyAxNy4yMyAyNCAyMCAyNFoiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+';
+const DEFAULT_AVATAR_64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMyNjI2MjYiLz4KPHBhdGggZD0iTTMyIDE5QzI3LjU4IDE5IDI0IDIyLjU4IDI0IDI3QzI0IDMxLjQyIDI3LjU4IDM1IDMyIDM1QzM2LjQyIDM1IDQwIDMxLjQyIDQwIDI3QzQwIDIyLjU4IDM2LjQyIDE5IDMyIDE5Wk0zMiA0MkMyNy41OCA0MiAyNCA0NC41OCAyNCA0OUwyNCA1NkMzMiA1NiAzMiA0OSAzMiA0OUMzMiA0NC41OCAyOC40MiA0MiAzMiA0MloiIGZpbGw9IiM1NTU1NTUiLz4KPC9zdmc+';
+
 let storiesContainer = null;
 let storiesWrapper = null;
 let myStoryItem = null;
@@ -1063,9 +1068,26 @@ async function openStoryViewer(story) {
                         const messageBtnEl = document.getElementById('story-viewer-message-btn');
                         
                         if (messageBtnEl) {
-                            messageBtnEl.addEventListener('click', (e) => {
+                            messageBtnEl.addEventListener('click', async (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                
+                                // Premium kontrolü - Mesaj göndermek için premium gerekli
+                                const isPremium = await checkUserIsPremium();
+                                if (!isPremium) {
+                                    showAlert('Hikayelere mesaj göndermek için Premium üyelik gereklidir. Premium paketlerimize göz atabilirsiniz.', 'Premium Gerekli', 'warning');
+                                    setTimeout(() => {
+                                        if (confirm('Premium paketlerimizi görmek ister misiniz?')) {
+                                            if (typeof openPremiumModal === 'function') {
+                                                openPremiumModal();
+                                            } else {
+                                                window.location.hash = '#premium';
+                                            }
+                                        }
+                                    }, 500);
+                                    return;
+                                }
+                                
                                 if (typeof handleMessageButtonClick === 'function') {
                                     // Hikayeden geliyorsa story.id'yi geç (hikayeye özel mesaj için)
                                     handleMessageButtonClick(storyUserId, storyUsername, storyAvatar || '', story.id);
@@ -3882,7 +3904,22 @@ async function loadStoryMessages(storyId, container, countEl) {
                 
                 const senderHeader = document.createElement('div');
                 senderHeader.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 12px; cursor: pointer;';
-                senderHeader.onclick = () => {
+                senderHeader.onclick = async () => {
+                    // Premium kontrolü - Hikayeye yorum yapmak için premium gerekli
+                    const isPremium = await checkUserIsPremium();
+                    if (!isPremium) {
+                        showAlert('Hikayelere yorum yapmak için Premium üyelik gereklidir. Premium paketlerimize göz atabilirsiniz.', 'Premium Gerekli', 'warning');
+                        setTimeout(() => {
+                            if (confirm('Premium paketlerimizi görmek ister misiniz?')) {
+                                if (typeof openPremiumModal === 'function') {
+                                    openPremiumModal();
+                                } else {
+                                    window.location.hash = '#premium';
+                                }
+                            }
+                        }, 500);
+                        return;
+                    }
                     // DM modal'ını aç (hikaye sahibi bu kullanıcıya cevap verebilir)
                     if (typeof openDMModal === 'function') {
                         closeStoryMessagesModal();
@@ -3913,8 +3950,23 @@ async function loadStoryMessages(storyId, container, countEl) {
                 const replyBtn = document.createElement('button');
                 replyBtn.textContent = 'Cevap Ver';
                 replyBtn.style.cssText = 'background: #3ECF8E; color: #000; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 14px;';
-                replyBtn.onclick = (e) => {
+                replyBtn.onclick = async (e) => {
                     e.stopPropagation();
+                    // Premium kontrolü - Hikayeye yorum yapmak için premium gerekli
+                    const isPremium = await checkUserIsPremium();
+                    if (!isPremium) {
+                        showAlert('Hikayelere yorum yapmak için Premium üyelik gereklidir. Premium paketlerimize göz atabilirsiniz.', 'Premium Gerekli', 'warning');
+                        setTimeout(() => {
+                            if (confirm('Premium paketlerimizi görmek ister misiniz?')) {
+                                if (typeof openPremiumModal === 'function') {
+                                    openPremiumModal();
+                                } else {
+                                    window.location.hash = '#premium';
+                                }
+                            }
+                        }, 500);
+                        return;
+                    }
                     closeStoryMessagesModal();
                     if (typeof openDMModal === 'function') {
                         openDMModal(senderId, senderName, senderAvatar);
